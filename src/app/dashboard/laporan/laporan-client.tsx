@@ -410,10 +410,10 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
                 >
                   <option value="">Pilih penerima...</option>
-                  <option value="Ketua OSIS">Ketua OSIS</option>
-                  <option value="Wakil Ketua OSIS">Wakil Ketua OSIS</option>
-                  <option value="Pembina OSIS">Pembina OSIS</option>
-                  <option value="Sekretaris">Sekretaris</option>
+                  <option value="ketua_umum">Ketua Umum</option>
+                  <option value="ketua_1">Ketua 1</option>
+                  <option value="ketua_2 OSIS">Ketua 2</option>
+             
                 </select>
               </Field>
             </div>
