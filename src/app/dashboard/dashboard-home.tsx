@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Divisi, LaporanHarian, TransaksiKeuangan } from "@/lib/types";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import type { Profile, Divisi, LaporanHarian, TransaksiKeuangan, KendalaSolusi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { formatDate, todayISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -61,6 +63,9 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
   const [pemasukan, setPemasukan] = useState(0);
   const [pengeluaran, setPengeluaran] = useState(0);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [detailReport, setDetailReport] = useState<LaporanHarian | null>(null);
+  const [detailKendala, setDetailKendala] = useState<KendalaSolusi[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -160,6 +165,17 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
     );
   }
 
+  async function handleOpenDetail(report: LaporanHarian) {
+    setDetailReport(report);
+    setLoadingDetail(true);
+    const { data: ks } = await supabase
+      .from("kendala_solusi")
+      .select("*")
+      .eq("laporan_id", report.id);
+    setDetailKendala(ks ?? []);
+    setLoadingDetail(false);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -186,48 +202,154 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Pemasukan" value={formatRupiah(pemasukan)} color="green" />
         <StatCard label="Pengeluaran" value={formatRupiah(pengeluaran)} color="red" />
-        <Card>
-          <CardContent className="flex h-full flex-col justify-center">
-            {laporanToday ? (
-              <Link
-                href="/dashboard/laporan"
-                className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-              >
-                Edit Laporan Hari Ini
-              </Link>
-            ) : (
-              <Link
-                href="/dashboard/laporan"
-                className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-              >
-                + Isi Laporan Hari Ini
-              </Link>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
-      {lastReport && (
-        <Card>
-          <CardHeader title="Laporan Terakhir" />
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
-                  {formatDate(lastReport.tanggal)}
-                </span>
-                <Badge color="blue">Terakhir</Badge>
+      <Card>
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Laporan Terakhir</h2>
+            <p className="text-xs text-slate-500">Ringkasan status pelaporan divisi</p>
+          </div>
+          <Link
+            href="/dashboard/laporan"
+            className="inline-flex items-center rounded-lg bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
+          >
+            {laporanToday ? "Buka Laporan Harian" : "+ Isi Laporan Hari Ini"}
+          </Link>
+        </div>
+        <CardContent className="pt-4">
+          {lastReport ? (
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-bold text-slate-800">
+                    {formatDate(lastReport.tanggal)}
+                  </span>
+                  {lastReport.tanggal === todayISO() ? (
+                    <Badge color="green">Hari Ini</Badge>
+                  ) : (
+                    <Badge color="blue">Terakhir</Badge>
+                  )}
+                  {lastReport.penerima_laporan && (
+                    <span className="text-xs text-slate-400">
+                      • Penerima: {lastReport.penerima_laporan}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDetail(lastReport)}
+                    className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  >
+                    👁️ Detail
+                  </button>
+                  <Link
+                    href={`/dashboard/laporan?edit=${lastReport.id}`}
+                    className="inline-flex items-center rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                  >
+                    ✏️ Edit Laporan Hari Ini
+                  </Link>
+                </div>
               </div>
-              <p className="text-sm text-slate-600 line-clamp-3">
-                {lastReport.kegiatan_hari_ini}
-              </p>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Kegiatan
+                </p>
+                <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                  {lastReport.kegiatan_hari_ini}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="py-6 text-center">
+              <p className="text-sm text-slate-500">Belum ada laporan yang tercatat.</p>
+              <Link
+                href="/dashboard/laporan"
+                className="mt-3 inline-flex items-center rounded-lg border border-brand-500 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+              >
+                + Mulai Buat Laporan Hari Ini
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Modal
+        open={Boolean(detailReport)}
+        onClose={() => setDetailReport(null)}
+        title={`Detail Laporan — ${detailReport ? formatDate(detailReport.tanggal) : ""}`}
+      >
+        {detailReport && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="text-xs text-slate-400">Tanggal Laporan</p>
+                <p className="font-semibold text-slate-800">{formatDate(detailReport.tanggal)}</p>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="text-xs text-slate-400">Penerima Laporan</p>
+                <p className="font-semibold text-slate-800">{detailReport.penerima_laporan || "-"}</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kegiatan Hari Ini</p>
+              <div className="mt-1.5 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                {detailReport.kegiatan_hari_ini}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kendala dan Solusi</p>
+              {loadingDetail ? (
+                <div className="py-4 text-center text-xs text-slate-400">Memuat kendala...</div>
+              ) : detailKendala.length > 0 ? (
+                <div className="mt-1.5 space-y-2">
+                  {detailKendala.map((k) => (
+                    <div key={k.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm">
+                      <p className="text-red-700 font-medium">⚠️ Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></p>
+                      <p className="mt-1 text-emerald-700 font-medium">💡 Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+                  Tidak ada kendala yang dilaporkan.
+                </p>
+              )}
+            </div>
+
+            {detailReport.informasi_lain && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Informasi Lain-lain</p>
+                <p className="mt-1 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                  {detailReport.informasi_lain}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <Link
+                href={`/dashboard/laporan?edit=${detailReport.id}`}
+                className="rounded-lg border border-blue-400 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 shadow-sm"
+              >
+                ✏️ Edit Laporan
+              </Link>
+              <button
+                type="button"
+                onClick={() => setDetailReport(null)}
+                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

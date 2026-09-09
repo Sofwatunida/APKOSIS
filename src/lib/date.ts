@@ -45,6 +45,18 @@ export function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+export function endOfMonthISO(year: number, month: number): string {
+  const lastDay = new Date(year, month, 0).getDate();
+  const m = String(month).padStart(2, "0");
+  const d = String(lastDay).padStart(2, "0");
+  return `${year}-${m}-${d}`;
+}
+
+export function startOfMonthISO(year: number, month: number): string {
+  const m = String(month).padStart(2, "0");
+  return `${year}-${m}-01`;
+}
+
 export const MONTHS_ID = [
   "Januari",
   "Februari",

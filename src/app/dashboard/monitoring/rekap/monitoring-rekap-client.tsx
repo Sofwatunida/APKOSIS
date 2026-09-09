@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
-import { MONTH_NAMES_ID } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
@@ -38,11 +38,14 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
       const year = String(filterYear);
       const month = String(filterMonth).padStart(2, "0");
 
+      const startDate = `${year}-${month}-01`;
+      const endDate = endOfMonthISO(filterYear, filterMonth);
+
       const { data: reports } = await supabase
         .from("laporan_harian")
         .select("id, divisi_id, tanggal")
-        .gte("tanggal", `${year}-${month}-01`)
-        .lte("tanggal", `${year}-${month}-31`);
+        .gte("tanggal", startDate)
+        .lte("tanggal", endDate);
       const reportsList = reports ?? [];
       const reportIds = reportsList.map((r) => r.id);
 
@@ -65,8 +68,8 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
         .select("divisi_id, tanggal, jenis_transaksi, nominal")
-        .gte("tanggal", `${year}-${month}-01`)
-        .lte("tanggal", `${year}-${month}-31`);
+        .gte("tanggal", startDate)
+        .lte("tanggal", endDate);
       const finMap: Record<string, { masuk: number; keluar: number }> = {};
       let totalMasuk = 0;
       let totalKeluar = 0;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
-import { MONTH_NAMES_ID } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
@@ -42,7 +42,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
         .from("transaksi_keuangan")
         .select("divisi_id, jenis_transaksi, nominal")
         .gte("tanggal", `${year}-${month}-01`)
-        .lte("tanggal", `${year}-${month}-31`);
+        .lte("tanggal", endOfMonthISO(filterYear, filterMonth));
 
       const map = new Map<string, { masuk: number; keluar: number }>();
       (txs ?? []).forEach((t) => {

@@ -16,9 +16,10 @@ interface FormState {
   nama_program: string;
   deskripsi: string;
   file: File | null;
+  is_unggulan: boolean;
 }
 
-const emptyForm: FormState = { nama_program: "", deskripsi: "", file: null };
+const emptyForm: FormState = { nama_program: "", deskripsi: "", file: null, is_unggulan: false };
 
 export function ProgramKerjaClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -59,7 +60,14 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   function openEdit(p: ProgramKerja) {
     setEditing(p);
-    setForm({ nama_program: p.nama_program ?? "", deskripsi: p.deskripsi ?? "", file: null });
+    const isUnggulan = Boolean(p.deskripsi?.startsWith("[UNGGULAN]"));
+    const cleanDeskripsi = p.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") ?? "";
+    setForm({
+      nama_program: p.nama_program ?? "",
+      deskripsi: cleanDeskripsi,
+      file: null,
+      is_unggulan: isUnggulan,
+    });
     setErrors({});
     setOpen(true);
   }
@@ -75,7 +83,6 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   async function uploadFile(userId: string): Promise<{ name: string; path: string } | null> {
     if (!form.file || !profile.divisi_id) return null;
-    const ext = form.file.name.split(".").pop() || "file";
     const path = `${profile.divisi_id}/${Date.now()}-${form.file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
     const { error: upErr } = await supabase.storage
       .from("program-kerja")
@@ -99,6 +106,10 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       }
     }
 
+    const finalDeskripsi = form.is_unggulan
+      ? `[UNGGULAN] ${form.deskripsi.trim()}`
+      : form.deskripsi.trim();
+
     if (editing) {
       const payload: {
         nama_program: string;
@@ -107,7 +118,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
         file_path?: string;
       } = {
         nama_program: form.nama_program,
-        deskripsi: form.deskripsi || null,
+        deskripsi: finalDeskripsi || null,
       };
       if (fileInfo) {
         payload.file_name = fileInfo.name;
@@ -124,7 +135,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       const { error: insErr } = await supabase.from("program_kerja").insert({
         divisi_id: profile.divisi_id,
         nama_program: form.nama_program,
-        deskripsi: form.deskripsi || null,
+        deskripsi: finalDeskripsi || null,
         file_name: fileInfo?.name ?? null,
         file_path: fileInfo?.path ?? null,
         uploaded_by: user?.id ?? null,
@@ -142,92 +153,231 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
     load();
   }
 
-  function downloadUrl(item: ProgramKerja) {
-    if (!item.file_path) return null;
-    return supabase.storage.from("program-kerja").getPublicUrl(item.file_path).data.publicUrl;
+  // Requirement 3: Direct download file handler
+  async function handleDownloadFile(item: ProgramKerja) {
+    if (!item.file_path) return;
+    try {
+      const { data, error: downErr } = await supabase.storage.from("program-kerja").download(item.file_path);
+      if (!downErr && data) {
+        const blobUrl = URL.createObjectURL(data);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = item.file_name || "program-kerja";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+        return;
+      }
+
+      const { data: signed } = await supabase.storage.from("program-kerja").createSignedUrl(item.file_path, 300);
+      if (signed?.signedUrl) {
+        const a = document.createElement("a");
+        a.href = signed.signedUrl;
+        a.download = item.file_name || "program-kerja";
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+
+      const publicUrl = supabase.storage.from("program-kerja").getPublicUrl(item.file_path).data.publicUrl;
+      window.open(publicUrl, "_blank");
+    } catch (e: any) {
+      error("Gagal mendownload file: " + (e?.message || "File tidak ditemukan"));
+    }
   }
 
   if (loading) return <Spinner />;
+
+  const unggulanItems = items.filter((p) => p.deskripsi?.startsWith("[UNGGULAN]"));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Program Kerja Divisi</h1>
-          <p className="text-sm text-slate-500">Kelola program kerja divisi</p>
+          <p className="text-sm text-slate-500">Kelola dan monitor program kerja divisi</p>
         </div>
         <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
       </div>
 
-      <Card>
-        <CardHeader title="Daftar Program Kerja" />
-        <CardContent>
-          {items.length === 0 ? (
-            <EmptyState title="Belum ada program kerja" description="Tambahkan program kerja divisi Anda." />
+      {/* Requirement 3: Card Program Unggulan */}
+      <Card className="border-amber-200 bg-gradient-to-br from-amber-50/40 via-white to-white">
+        <div className="flex items-center justify-between border-b border-amber-100 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⭐</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Program Unggulan</h2>
+              <p className="text-xs text-slate-500">Program prioritas utama divisi periode ini</p>
+            </div>
+          </div>
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+            {unggulanItems.length} Program
+          </span>
+        </div>
+        <CardContent className="pt-4">
+          {unggulanItems.length === 0 ? (
+            <div className="py-6 text-center text-sm text-slate-400">
+              Belum ada program unggulan yang ditandai. Centang &quot;Tandai sebagai Program Unggulan&quot; saat menambah/mengedit program.
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {items.map((p) => (
-                <div key={p.id} className="rounded-lg border border-slate-200 p-4">
-                  <h3 className="font-semibold text-slate-900">{p.nama_program}</h3>
-                  {p.deskripsi && (
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500">{p.deskripsi}</p>
-                  )}
-                  <div className="mt-3 flex items-center gap-2">
-                    {p.file_path && (
-                      <a
-                        href={downloadUrl(p) ?? "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-brand-600 hover:bg-slate-50"
+              {unggulanItems.map((p) => {
+                const desc = p.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") || "";
+                return (
+                  <div key={p.id} className="rounded-xl border border-amber-300 bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-bold text-slate-900">{p.nama_program}</h3>
+                      <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                        UNGGULAN
+                      </span>
+                    </div>
+                    {desc && <p className="mt-1 line-clamp-3 text-sm text-slate-600">{desc}</p>}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                      {p.file_path && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(p)}
+                          className="rounded-lg border border-brand-500 bg-brand-50/50 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-100 inline-flex items-center gap-1"
+                        >
+                          📥 Download File
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                       >
-                        Lihat File
-                      </a>
-                    )}
-                    <button
-                      onClick={() => openEdit(p)}
-                      className="rounded-lg px-3 py-1.5 text-sm text-brand-600 hover:bg-slate-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Hapus "${p.nama_program}"?`)) return;
-                        if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
-                        const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
-                        if (delErr) {
-                          error("Gagal menghapus program kerja.");
-                          return;
-                        }
-                        success("Program kerja dihapus.");
-                        load();
-                      }}
-                      className="rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Hapus
-                    </button>
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Hapus program unggulan "${p.nama_program}"?`)) return;
+                          if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
+                          const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
+                          if (delErr) {
+                            error("Gagal menghapus program kerja.");
+                            return;
+                          }
+                          success("Program kerja dihapus.");
+                          load();
+                        }}
+                        className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Semua Program Kerja */}
+      <Card>
+        <CardHeader title="Daftar Semua Program Kerja" subtitle={`Total ${items.length} program`} />
+        <CardContent>
+          {items.length === 0 ? (
+            <EmptyState title="Belum ada program kerja" description="Tambahkan program kerja divisi Anda." />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {items.map((p) => {
+                const isUnggulan = p.deskripsi?.startsWith("[UNGGULAN]");
+                const cleanDesc = p.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") || "";
+                return (
+                  <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-slate-900">{p.nama_program}</h3>
+                      {isUnggulan && (
+                        <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                          ⭐ Unggulan
+                        </span>
+                      )}
+                    </div>
+                    {cleanDesc && (
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{cleanDesc}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                      {p.file_path && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(p)}
+                          className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1"
+                        >
+                          📥 Download File
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Hapus "${p.nama_program}"?`)) return;
+                          if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
+                          const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
+                          if (delErr) {
+                            error("Gagal menghapus program kerja.");
+                            return;
+                          }
+                          success("Program kerja dihapus.");
+                          load();
+                        }}
+                        className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal Tambah/Edit */}
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit Program Kerja" : "Tambah Program Kerja"}>
         <div className="space-y-4">
           <Field label="Nama Program" error={errors.nama_program}>
             <Input
               value={form.nama_program}
               onChange={(e) => setForm({ ...form, nama_program: e.target.value })}
+              placeholder="Contoh: Pengadaan Seragam, Bakti Sosial, Pelatihan..."
             />
           </Field>
           <Field label="Deskripsi">
             <Textarea
               value={form.deskripsi}
               onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
+              placeholder="Jelaskan tujuan dan sasaran program..."
             />
           </Field>
-          <Field label="File (PDF/DOC/DOCX/XLS/XLSX)" error={errors.file} hint={editing ? "Kosongkan jika tidak mengubah file." : undefined}>
+
+          {/* Checkbox Program Unggulan */}
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+            <input
+              type="checkbox"
+              id="is_unggulan"
+              checked={form.is_unggulan}
+              onChange={(e) => setForm({ ...form, is_unggulan: e.target.checked })}
+              className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+            />
+            <label htmlFor="is_unggulan" className="text-sm font-medium text-slate-800 cursor-pointer">
+              ⭐ Tandai sebagai <strong>Program Unggulan</strong> (akan disorot di card atas)
+            </label>
+          </div>
+
+          <Field label="File Lampiran (PDF/DOC/DOCX/XLS/XLSX)" error={errors.file} hint={editing ? "Kosongkan jika tidak mengubah file." : undefined}>
             <input
               type="file"
               accept=".pdf,.doc,.docx,.xls,.xlsx"
@@ -235,12 +385,12 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
             />
           </Field>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
             <Button onClick={handleSave} loading={saving}>
-              Simpan
+              {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
         </div>
@@ -248,3 +398,4 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
     </div>
   );
 }
+

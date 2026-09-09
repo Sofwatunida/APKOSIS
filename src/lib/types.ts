@@ -27,3 +27,4 @@ export type TransaksiKeuangan =
   Database["public"]["Tables"]["transaksi_keuangan"]["Row"];
 
 export type JenisTransaksi = "pemasukan" | "pengeluaran";
+

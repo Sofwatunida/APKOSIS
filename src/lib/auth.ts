@@ -1,22 +1,21 @@
+import { cache } from "react";
 import { createClient } from "./supabase/server";
 import type { Profile } from "./types";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
-export async function getProfile(): Promise<Profile | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const getProfile = cache(async (): Promise<Profile | null> => {
+  const user = await getCurrentUser();
 
   if (!user) return null;
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -34,4 +33,4 @@ export async function getProfile(): Promise<Profile | null> {
     created_at: data.created_at,
     updated_at: data.updated_at,
   };
-}
+});

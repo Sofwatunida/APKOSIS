@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
-import { formatDate, MONTH_NAMES_ID } from "@/lib/date";
+import { formatDate, MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/form";
@@ -43,9 +43,15 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     if (filterJenis !== "all")
       query = query.eq("jenis_transaksi", filterJenis as "pemasukan" | "pengeluaran");
     if (filterTanggal) query = query.eq("tanggal", filterTanggal);
-    if (filterBulan !== "all")
-      query = query.gte("tanggal", `${filterTahun}-${filterBulan}-01`).lte("tanggal", `${filterTahun}-${filterBulan}-31`);
-    else if (filterTahun) query = query.gte("tanggal", `${filterTahun}-01-01`).lte("tanggal", `${filterTahun}-12-31`);
+    if (filterBulan !== "all") {
+      const bNum = parseInt(filterBulan, 10);
+      const tNum = parseInt(filterTahun, 10);
+      query = query
+        .gte("tanggal", `${filterTahun}-${filterBulan}-01`)
+        .lte("tanggal", endOfMonthISO(tNum, bNum));
+    } else if (filterTahun) {
+      query = query.gte("tanggal", `${filterTahun}-01-01`).lte("tanggal", `${filterTahun}-12-31`);
+    }
 
     const { data } = await query;
     const list = (data ?? []) as Row[];
