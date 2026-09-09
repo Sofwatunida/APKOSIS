@@ -579,7 +579,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                             className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400"
                             title="Lihat rincian laporan beserta kendala dan solusi"
                           >
-                            👁️ Detail
+                            Detail
                           </button>
                           <button
                             type="button"
@@ -642,8 +642,8 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 <div className="mt-1.5 space-y-2">
                   {detailKendala.map((k) => (
                     <div key={k.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm">
-                      <p className="font-semibold text-red-700">⚠️ Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></p>
-                      <p className="mt-1 font-semibold text-emerald-700">💡 Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></p>
+                      <p className="font-semibold text-red-700">Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></p>
+                      <p className="mt-1 font-semibold text-emerald-700">Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></p>
                     </div>
                   ))}
                 </div>

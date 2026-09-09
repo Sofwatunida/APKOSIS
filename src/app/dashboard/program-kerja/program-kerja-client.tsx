@@ -207,13 +207,13 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       <Card className="border-amber-200 bg-gradient-to-br from-amber-50/40 via-white to-white">
         <div className="flex items-center justify-between border-b border-amber-100 px-6 py-4">
           <div className="flex items-center gap-2">
-            <span className="text-lg">⭐</span>
+            <span className="text-lg"></span>
             <div>
               <h2 className="text-base font-bold text-slate-900">Program Unggulan</h2>
               <p className="text-xs text-slate-500">Program prioritas utama divisi periode ini</p>
             </div>
           </div>
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+          <span className="rounded-full bg-amber-300 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
             {unggulanItems.length} Program
           </span>
         </div>
@@ -373,7 +373,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
               className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
             />
             <label htmlFor="is_unggulan" className="text-sm font-medium text-slate-800 cursor-pointer">
-              ⭐ Tandai sebagai <strong>Program Unggulan</strong> (akan disorot di card atas)
+              Tandai sebagai <strong>Program Unggulan</strong> (akan disorot di card atas)
             </label>
           </div>
 
