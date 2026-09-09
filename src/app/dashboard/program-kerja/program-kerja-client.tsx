@@ -250,7 +250,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                         onClick={() => openEdit(p)}
                         className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                       >
-                        ✏️ Edit
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -267,7 +267,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                         }}
                         className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
                       >
-                        🗑️ Hapus
+                        Hapus
                       </button>
                     </div>
                   </div>
@@ -309,7 +309,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                           onClick={() => handleDownloadFile(p)}
                           className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1"
                         >
-                          📥 Download File
+                          Download File
                         </button>
                       )}
                       <button
@@ -317,7 +317,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                         onClick={() => openEdit(p)}
                         className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                       >
-                        ✏️ Edit
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -334,7 +334,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                         }}
                         className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
                       >
-                        🗑️ Hapus
+                        Hapus
                       </button>
                     </div>
                   </div>

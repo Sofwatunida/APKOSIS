@@ -526,7 +526,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           {/* Search Input (Requirement 5) */}
           <div className="w-full sm:w-72">
             <Input
-              placeholder="🔍 Cari riwayat kegiatan/tanggal..."
+              placeholder=" Caririwayat kegiatan/tanggal..."
               value={searchHistory}
               onChange={(e) => setSearchHistory(e.target.value)}
             />
@@ -587,7 +587,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                             className="rounded-lg border border-blue-400 bg-blue-50/70 px-2.5 py-1 text-xs font-medium text-blue-700 shadow-sm transition hover:bg-blue-100"
                             title="Edit laporan ini"
                           >
-                            ✏️ Edit
+                            Edit
                           </button>
                           <button
                             type="button"
@@ -595,7 +595,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                             className="rounded-lg border border-red-400 bg-red-50/70 px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm transition hover:bg-red-100"
                             title="Hapus laporan ini"
                           >
-                            🗑️ Hapus
+                            Hapus
                           </button>
                         </div>
                       </td>
@@ -673,7 +673,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 }}
                 className="rounded-lg border border-blue-400 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 shadow-sm"
               >
-                ✏️ Edit Laporan Ini
+                Edit Laporan Ini
               </button>
               <button
                 type="button"

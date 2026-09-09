@@ -245,13 +245,13 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                     onClick={() => handleOpenDetail(lastReport)}
                     className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
-                    👁️ Detail
+                    Detail
                   </button>
                   <Link
                     href={`/dashboard/laporan?edit=${lastReport.id}`}
                     className="inline-flex items-center rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                   >
-                    ✏️ Edit Laporan Hari Ini
+                    Edit Laporan Hari Ini
                   </Link>
                 </div>
               </div>
@@ -337,7 +337,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                 href={`/dashboard/laporan?edit=${detailReport.id}`}
                 className="rounded-lg border border-blue-400 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 shadow-sm"
               >
-                ✏️ Edit Laporan
+                Edit Laporan
               </Link>
               <button
                 type="button"

@@ -305,7 +305,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
             {/* Search Bar (Requirement 5) */}
             <div className="w-full sm:w-64">
               <Input
-                placeholder="🔍 Cari transaksi/nominal..."
+                placeholder="Cari transaksi/nominal..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -376,14 +376,14 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                               onClick={() => openEdit(t)}
                               className="rounded-lg border border-blue-400 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                             >
-                              ✏️ Edit
+                              Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(t)}
                               className="rounded-lg border border-red-400 bg-red-50/70 px-2.5 py-1 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
                             >
-                              🗑️ Hapus
+                              Hapus
                             </button>
                           </div>
                         </td>

@@ -115,7 +115,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
             onClick={() => setIsEditing(true)}
             className="rounded-lg border border-blue-400 bg-blue-50/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
           >
-            ✏️ Edit Profil
+            Edit Profil
           </button>
         )}
       </div>
@@ -191,7 +191,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                   onClick={() => setIsEditing(true)}
                   className="rounded-lg border border-blue-400 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                 >
-                  ✏️ Edit Profil
+                  Edit Profil
                 </button>
               </div>
             </div>
