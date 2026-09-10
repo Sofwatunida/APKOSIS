@@ -6,7 +6,7 @@ import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import {
   BarChart,
@@ -17,7 +17,12 @@ import {
   ResponsiveContainer,
   Legend,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
+
+const PIE_COLORS = ["#10b981", "#ef4444", "#6366f1"];
 
 export function RekapBulananClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -30,6 +35,9 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
   const [perDivisi, setPerDivisi] = useState<
     Array<{ id: string; nama: string; masuk: number; keluar: number }>
   >([]);
+  const [saldoAwal, setSaldoAwal] = useState(0);
+  const [editingSaldo, setEditingSaldo] = useState(false);
+  const [saldoInput, setSaldoInput] = useState("0");
 
   useEffect(() => {
     async function load() {
@@ -68,6 +76,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
 
   const totalMasuk = perDivisi.reduce((s, d) => s + d.masuk, 0);
   const totalKeluar = perDivisi.reduce((s, d) => s + d.keluar, 0);
+  const saldoSekarang = saldoAwal + totalMasuk - totalKeluar;
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
   const chartData = perDivisi.map((d) => ({
@@ -75,6 +84,12 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
     Pemasukan: d.masuk,
     Pengeluaran: d.keluar,
   }));
+
+  const pieData = [
+    { name: "Pemasukan", value: totalMasuk },
+    { name: "Pengeluaran", value: totalKeluar },
+    { name: "Saldo", value: Math.max(0, saldoSekarang) },
+  ].filter((d) => d.value > 0);
 
   if (loading) return <Spinner />;
 
@@ -108,6 +123,68 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
+      {/* Saldo Awal & Saldo Sekarang */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500">Saldo Awal</p>
+              {!editingSaldo ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaldoInput(String(saldoAwal));
+                    setEditingSaldo(true);
+                  }}
+                  className="text-xs text-brand-600 hover:underline font-medium"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingSaldo(false)}
+                  className="text-xs text-slate-500 hover:underline font-medium"
+                >
+                  Selesai
+                </button>
+              )}
+            </div>
+            {editingSaldo ? (
+              <div className="mt-2">
+                <Input
+                  type="number"
+                  value={saldoInput}
+                  onChange={(e) => setSaldoInput(e.target.value)}
+                  className="text-2xl font-bold"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaldoAwal(Number(saldoInput) || 0);
+                    setEditingSaldo(false);
+                  }}
+                  className="mt-2 rounded-lg bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700"
+                >
+                  Simpan
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-2xl font-bold text-brand-600">{formatRupiah(saldoAwal)}</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <p className="text-sm text-slate-500">Saldo Sekarang</p>
+            <p className={`mt-1 text-2xl font-bold ${saldoSekarang >= 0 ? "text-brand-600" : "text-red-600"}`}>
+              {formatRupiah(saldoSekarang)}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">Saldo Awal + Pemasukan - Pengeluaran</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent>
@@ -130,6 +207,46 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pie Chart */}
+      {pieData.length > 0 && (
+        <Card>
+          <CardHeader title="Diagram Lingkaran" subtitle={`Pemasukan, Pengeluaran & Saldo - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`} />
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="h-72 w-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => formatRupiah(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-center gap-6">
+              {pieData.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-2 text-sm">
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-slate-600">{d.name}: {formatRupiah(d.value)}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader

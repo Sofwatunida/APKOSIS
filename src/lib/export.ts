@@ -90,7 +90,7 @@ export async function buildAdministrasiWorkbook(
     "Laporan Harian",
     [
       { header: "Tanggal", key: "tanggal", width: 14 },
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Divisi", key: "divisi", width: 0 },
       { header: "Kegiatan Hari Ini", key: "kegiatan", width: 40 },
       { header: "Informasi Lain", key: "informasi", width: 30 },
@@ -110,7 +110,7 @@ export async function buildAdministrasiWorkbook(
     "Kendala & Solusi",
     [
       { header: "Tanggal", key: "tanggal", width: 14 },
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Kendala", key: "kendala", width: 35 },
       { header: "Solusi", key: "solusi", width: 35 },
     ],
@@ -126,7 +126,7 @@ export async function buildAdministrasiWorkbook(
   buildSheet(
     "Anggota",
     [
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Nama", key: "nama", width: 25 },
       { header: "Jabatan", key: "jabatan", width: 18 },
       { header: "Status", key: "status", width: 12 },
@@ -143,7 +143,7 @@ export async function buildAdministrasiWorkbook(
   buildSheet(
     "Inventaris",
     [
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Nama Barang", key: "nama_barang", width: 25 },
       { header: "Jumlah", key: "jumlah", width: 10 },
       { header: "Kondisi", key: "kondisi", width: 15 },
@@ -162,7 +162,7 @@ export async function buildAdministrasiWorkbook(
   buildSheet(
     "Kebutuhan",
     [
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Kebutuhan", key: "nama_kebutuhan", width: 25 },
       { header: "Jumlah", key: "jumlah", width: 10 },
       { header: "Status Pembelian", key: "status", width: 18 },
@@ -182,7 +182,7 @@ export async function buildAdministrasiWorkbook(
     "Keuangan",
     [
       { header: "Tanggal", key: "tanggal", width: 14 },
-      { header: "nama_divisi", key: "nama_divisi", width: 20 },
+      { header: "Divisi", key: "nama_divisi", width: 20 },
       { header: "Jenis", key: "jenis", width: 14 },
       { header: "Keterangan", key: "keterangan", width: 30 },
       { header: "Nominal", key: "nominal", width: 18 },

@@ -517,31 +517,48 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 }
 
 /* ============ BENDAHARA ============ */
+function extractBukti(raw: string): { cleanKeterangan: string; buktiUrl: string | null } {
+  if (!raw) return { cleanKeterangan: "", buktiUrl: null };
+  const match = raw.match(/\[BUKTI:([^\]]+)\]/);
+  if (match) {
+    return {
+      cleanKeterangan: raw.replace(/\[BUKTI:[^\]]+\]/, "").trim(),
+      buktiUrl: match[1],
+    };
+  }
+  return { cleanKeterangan: raw, buktiUrl: null };
+}
+
+interface RecentRow extends TransaksiKeuangan {
+  divisi?: { nama_divisi: string } | null;
+}
+
 function BendaharaDashboard({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [finance, setFinance] = useState({ pemasukan: 0, pengeluaran: 0 });
-  const [recent, setRecent] = useState<TransaksiKeuangan[]>([]);
+  const [recent, setRecent] = useState<RecentRow[]>([]);
+  const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
-        .select("*")
+        .select("*, divisi(nama_divisi)")
         .order("tanggal", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(10);
 
       let pemasukan = 0;
       let pengeluaran = 0;
-      (txs ?? []).forEach((t) => {
+      (txs ?? []).forEach((t: any) => {
         const n = Number(t.nominal) || 0;
         if (t.jenis_transaksi === "pemasukan") pemasukan += n;
         else pengeluaran += n;
       });
 
       setFinance({ pemasukan, pengeluaran });
-      setRecent(txs ?? []);
+      setRecent((txs ?? []) as RecentRow[]);
       setLoading(false);
     }
     load();
@@ -573,32 +590,74 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
                     <th className="px-3 py-2">Tanggal</th>
+                    <th className="px-3 py-2">Divisi</th>
                     <th className="px-3 py-2">Jenis</th>
                     <th className="px-3 py-2">Keterangan</th>
+                    <th className="px-3 py-2">Bukti</th>
                     <th className="px-3 py-2 text-right">Nominal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recent.map((t) => (
-                    <tr key={t.id} className="border-b border-slate-50">
-                      <td className="px-3 py-2">{formatDate(t.tanggal)}</td>
-                      <td className="px-3 py-2">
-                        <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                          {t.jenis_transaksi}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2">{t.keterangan}</td>
-                      <td className="px-3 py-2 text-right font-medium">
-                        {formatRupiah(t.nominal)}
-                      </td>
-                    </tr>
-                  ))}
+                  {recent.map((t) => {
+                    const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
+                    return (
+                      <tr key={t.id} className="border-b border-slate-50">
+                        <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
+                        <td className="px-3 py-2 font-medium">{t.divisi?.nama_divisi ?? "-"}</td>
+                        <td className="px-3 py-2">
+                          <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
+                            {t.jenis_transaksi}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">{cleanKeterangan}</td>
+                        <td className="px-3 py-2">
+                          {buktiUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => setViewBuktiUrl(buktiUrl)}
+                              className="rounded-lg border border-emerald-400 bg-emerald-50/70 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100"
+                            >
+                              Lihat Bukti
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium">
+                          {formatRupiah(t.nominal)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <Modal open={Boolean(viewBuktiUrl)} onClose={() => setViewBuktiUrl(null)} title="Bukti Transaksi">
+        {viewBuktiUrl && (
+          <div className="space-y-4">
+            <div className="max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
+              <img
+                src={viewBuktiUrl}
+                alt="Bukti Transaksi"
+                className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewBuktiUrl(null)}
+                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

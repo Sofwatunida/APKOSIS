@@ -30,6 +30,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState("");
 
   async function load() {
     if (!profile.divisi_id) {
@@ -47,6 +48,10 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     load();
+    if (profile.divisi_id) {
+      const saved = localStorage.getItem(`program-kerja-notes-${profile.divisi_id}`);
+      if (saved) setNotes(saved);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.divisi_id]);
 
@@ -253,6 +258,37 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Catatan Program Belum Terlaksana */}
+      <Card>
+        <CardHeader
+          title="Catatan Program Belum Terlaksana"
+          subtitle="Catatan program kerja yang belum dapat dilaksanakan"
+        />
+        <CardContent>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Tuliskan catatan program kerja yang belum terlaksana di sini..."
+            rows={5}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none resize-y"
+          />
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                if (profile.divisi_id) {
+                  localStorage.setItem(`program-kerja-notes-${profile.divisi_id}`, notes);
+                  success("Catatan tersimpan.");
+                }
+              }}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Simpan Catatan
+            </button>
+          </div>
         </CardContent>
       </Card>
 

@@ -28,6 +28,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [filterYear, setFilterYear] = useState(currentYear);
   const [byMonth, setByMonth] = useState<Array<{ month: string; masuk: number; keluar: number }>>([]);
+  const [yearlyData, setYearlyData] = useState<Array<{ year: string; Pemasukan: number; Pengeluaran: number }>>([]);
 
   useEffect(() => {
     async function load() {
@@ -52,6 +53,26 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       setByMonth(
         MONTHS.map((m) => ({ month: m, masuk: map.get(m)!.masuk, keluar: map.get(m)!.keluar }))
       );
+
+      // Load multi-year data for the yearly comparison chart
+      const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+      const yearResults: Array<{ year: string; Pemasukan: number; Pengeluaran: number }> = [];
+      for (const y of years) {
+        const { data: yTxs } = await supabase
+          .from("transaksi_keuangan")
+          .select("jenis_transaksi, nominal")
+          .gte("tanggal", `${y}-01-01`)
+          .lte("tanggal", `${y}-12-31`);
+        let masuk = 0;
+        let keluar = 0;
+        (yTxs ?? []).forEach((t) => {
+          const n = Number(t.nominal) || 0;
+          if (t.jenis_transaksi === "pemasukan") masuk += n;
+          else keluar += n;
+        });
+        yearResults.push({ year: String(y), Pemasukan: masuk, Pengeluaran: keluar });
+      }
+      setYearlyData(yearResults.reverse());
       setLoading(false);
     }
     load();
@@ -112,6 +133,26 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Diagram Batang Perbandingan Tahunan */}
+      <Card>
+        <CardHeader title="Diagram Batang Pemasukan & Pengeluaran per Tahun" subtitle="5 Tahun Terakhir" />
+        <CardContent>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={yearlyData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="year" />
+                <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                <Tooltip formatter={(v: number) => formatRupiah(v)} />
+                <Legend />
+                <Bar dataKey="Pemasukan" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader title="Diagram Pemasukan & Pengeluaran per Bulan" subtitle={`Tahun ${filterYear}`} />
