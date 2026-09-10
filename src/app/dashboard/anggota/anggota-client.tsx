@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { sortByJabatan } from "@/lib/jabatan";
 
 interface FormState {
   nama: string;
@@ -148,8 +149,8 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
 
   if (loading) return <Spinner />;
 
-  const aktif = anggota.filter((a) => a.status === "aktif");
-  const nonaktif = anggota.filter((a) => a.status === "nonaktif");
+  const aktif = sortByJabatan(anggota.filter((a) => a.status === "aktif"));
+  const nonaktif = sortByJabatan(anggota.filter((a) => a.status === "nonaktif"));
 
   return (
     <div className="space-y-6">

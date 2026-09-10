@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Divisi } from "@/lib/types";
+import type { Profile, Divisi, AnggotaDivisi } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/form";
@@ -19,13 +19,15 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     nama_divisi: "",
-    ketua_divisi: "",
-    wakil_divisi: "",
     periode: "",
     deskripsi: "",
+    ketua_divisi: "",
+    wakil_divisi: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [ketua, setKetua] = useState<AnggotaDivisi | null>(null);
+  const [wakil, setWakil] = useState<AnggotaDivisi | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -42,15 +44,35 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
       if (data) {
         setForm({
           nama_divisi: data.nama_divisi,
-          ketua_divisi: data.ketua_divisi ?? "",
-          wakil_divisi: data.wakil_divisi ?? "",
           periode: data.periode ?? "",
           deskripsi: data.deskripsi ?? "",
+          ketua_divisi: data.ketua_divisi ?? "",
+          wakil_divisi: data.wakil_divisi ?? "",
         });
         // If profile is already filled, start in view/edit mode
-        const isFilled = Boolean(data.ketua_divisi || data.wakil_divisi || data.deskripsi);
+        const isFilled = Boolean(data.deskripsi);
         setIsEditing(!isFilled);
       }
+      
+      // Load ketua and wakil from anggota list
+      const { data: anggotaList } = await supabase
+        .from("anggota_divisi")
+        .select("*")
+        .eq("divisi_id", profile.divisi_id)
+        .eq("status", "aktif");
+      
+      if (anggotaList) {
+        const foundKetua = anggotaList.find(a => 
+          a.jabatan?.toLowerCase().includes("ketua") && 
+          !a.jabatan?.toLowerCase().includes("wakil")
+        );
+        const foundWakil = anggotaList.find(a => 
+          a.jabatan?.toLowerCase().includes("wakil")
+        );
+        setKetua(foundKetua ?? null);
+        setWakil(foundWakil ?? null);
+      }
+      
       setLoading(false);
     }
     load();
@@ -60,6 +82,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
   function validate() {
     const e: Record<string, string> = {};
     if (!form.nama_divisi.trim()) e.nama_divisi = "Nama divisi wajib diisi.";
+    if (!form.ketua_divisi.trim()) e.ketua_divisi = "Nama ketua wajib diisi.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -69,22 +92,98 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
     setSaving(true);
     const payload = {
       nama_divisi: form.nama_divisi,
-      ketua_divisi: form.ketua_divisi || null,
-      wakil_divisi: form.wakil_divisi || null,
       periode: form.periode || null,
       deskripsi: form.deskripsi || null,
+      ketua_divisi: form.ketua_divisi.trim() || null,
+      wakil_divisi: form.wakil_divisi.trim() || null,
     };
     const { error: upErr } = await supabase
       .from("divisi")
       .update(payload)
       .eq("id", profile.divisi_id);
-    setSaving(false);
     if (upErr) {
+      setSaving(false);
       error("Gagal menyimpan profil divisi: " + upErr.message);
       return;
     }
+
+    // Auto-sync ketua & wakil ke anggota_divisi
+    const syncAnggota = async (
+      nama: string,
+      jabatan: string
+    ): Promise<boolean> => {
+      if (!nama) return true;
+      const { data: existing } = await supabase
+        .from("anggota_divisi")
+        .select("id")
+        .eq("divisi_id", profile.divisi_id!)
+        .eq("jabatan", jabatan)
+        .maybeSingle();
+      if (existing) {
+        const { error: synErr } = await supabase
+          .from("anggota_divisi")
+          .update({ nama, status: "aktif" })
+          .eq("id", existing.id);
+        return !synErr;
+      }
+      const { error: insErr } = await supabase
+        .from("anggota_divisi")
+        .insert({
+          divisi_id: profile.divisi_id!,
+          nama,
+          jabatan,
+          status: "aktif",
+        });
+      return !insErr;
+    };
+
+    const ketuaOk = await syncAnggota(form.ketua_divisi.trim(), "Ketua");
+    const wakilOk = await syncAnggota(form.wakil_divisi.trim(), "Wakil Ketua");
+    if (!ketuaOk || !wakilOk) {
+      setSaving(false);
+      error("Profil divisi tersimpan, tetapi gagal menyinkronkan anggota.");
+      return;
+    }
+
+    setSaving(false);
     // Update local divisi state
     setDivisi((prev) => (prev ? { ...prev, ...payload } : null));
+    setKetua((prev) =>
+      form.ketua_divisi.trim()
+        ? prev
+          ? { ...prev, nama: form.ketua_divisi.trim() }
+          : {
+              id: "",
+              divisi_id: profile.divisi_id!,
+              nama: form.ketua_divisi.trim(),
+              jabatan: "Ketua",
+              status: "aktif",
+              tanggal_masuk: null,
+              tanggal_keluar: null,
+              keterangan: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+        : null
+    );
+    setWakil((prev) =>
+      form.wakil_divisi.trim()
+        ? prev
+          ? { ...prev, nama: form.wakil_divisi.trim() }
+          : {
+              id: "",
+              divisi_id: profile.divisi_id!,
+              nama: form.wakil_divisi.trim(),
+              jabatan: "Wakil Ketua",
+              status: "aktif",
+              tanggal_masuk: null,
+              tanggal_keluar: null,
+              keterangan: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+        : null
+    );
     setIsEditing(false); // Switch button to Edit Profil (Requirement 4)
     success("Profil divisi berhasil disimpan.");
     router.refresh();
@@ -128,7 +227,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
             </h2>
             <p className="text-xs text-slate-500">
               {isEditing
-                ? "Ubah data nama divisi, ketua, wakil, dan deskripsi."
+                ? "Ubah data nama divisi, periode, dan deskripsi."
                 : "Profil divisi yang tersimpan saat ini."}
             </p>
           </div>
@@ -161,7 +260,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                     Ketua Divisi
                   </p>
                   <p className="mt-1 text-base font-semibold text-slate-800">
-                    {divisi.ketua_divisi || <span className="text-slate-400 font-normal">Belum diisi</span>}
+                    {ketua?.nama || <span className="text-slate-400 font-normal">Belum diisi</span>}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
@@ -169,7 +268,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                     Wakil Divisi
                   </p>
                   <p className="mt-1 text-base font-semibold text-slate-800">
-                    {divisi.wakil_divisi || <span className="text-slate-400 font-normal">Belum diisi</span>}
+                    {wakil?.nama || <span className="text-slate-400 font-normal">Belum diisi</span>}
                   </p>
                 </div>
               </div>
@@ -214,18 +313,18 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                 </Field>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Ketua Divisi">
+                <Field label="Ketua Divisi" error={errors.ketua_divisi}>
                   <Input
                     value={form.ketua_divisi}
                     onChange={(e) => setForm({ ...form, ketua_divisi: e.target.value })}
-                    placeholder="Nama lengkap ketua divisi"
+                    placeholder="Nama ketua divisi"
                   />
                 </Field>
                 <Field label="Wakil Divisi">
                   <Input
                     value={form.wakil_divisi}
                     onChange={(e) => setForm({ ...form, wakil_divisi: e.target.value })}
-                    placeholder="Nama lengkap wakil divisi"
+                    placeholder="Nama wakil divisi"
                   />
                 </Field>
               </div>
@@ -247,10 +346,10 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                     onClick={() => {
                       setForm({
                         nama_divisi: divisi.nama_divisi,
-                        ketua_divisi: divisi.ketua_divisi ?? "",
-                        wakil_divisi: divisi.wakil_divisi ?? "",
                         periode: divisi.periode ?? "",
                         deskripsi: divisi.deskripsi ?? "",
+                        ketua_divisi: divisi.ketua_divisi ?? "",
+                        wakil_divisi: divisi.wakil_divisi ?? "",
                       });
                       setIsEditing(false);
                     }}
