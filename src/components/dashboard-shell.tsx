@@ -24,9 +24,10 @@ function ShellInner({
 
   const role = profile.role ?? "division_admin";
 
-  const sections = NAV_STRUCTURE.filter((section) =>
-    section.items.some((item) => item.roles.includes(role))
-  );
+  const sections = NAV_STRUCTURE.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => item.roles.includes(role)),
+  })).filter((section) => section.items.length > 0);
 
   async function handleLogout() {
     await supabase.auth.signOut();
