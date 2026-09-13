@@ -57,6 +57,7 @@ export interface Database {
           wakil_divisi: string | null;
           periode: string | null;
           deskripsi: string | null;
+          catatan_program_belum_terlaksana: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -68,6 +69,7 @@ export interface Database {
           wakil_divisi?: string | null;
           periode?: string | null;
           deskripsi?: string | null;
+          catatan_program_belum_terlaksana?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -79,6 +81,7 @@ export interface Database {
           wakil_divisi?: string | null;
           periode?: string | null;
           deskripsi?: string | null;
+          catatan_program_belum_terlaksana?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -344,6 +347,34 @@ export interface Database {
             foreignKeyName: "kebutuhan_laporan_id_fkey";
             columns: ["laporan_id"];
             referencedRelation: "laporan_harian";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      saldo_awal: {
+        Row: {
+          id: number;
+          nominal: number;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          nominal?: number;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          nominal?: number;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saldo_awal_updated_by_fkey";
+            columns: ["updated_by"];
+            referencedRelation: "users";
             referencedColumns: ["id"];
           }
         ];

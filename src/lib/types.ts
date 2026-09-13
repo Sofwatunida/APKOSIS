@@ -25,6 +25,7 @@ export type Inventaris = Database["public"]["Tables"]["inventaris"]["Row"];
 export type Kebutuhan = Database["public"]["Tables"]["kebutuhan"]["Row"];
 export type TransaksiKeuangan =
   Database["public"]["Tables"]["transaksi_keuangan"]["Row"];
+export type SaldoAwal = Database["public"]["Tables"]["saldo_awal"]["Row"];
 
 export type JenisTransaksi = "pemasukan" | "pengeluaran";
 

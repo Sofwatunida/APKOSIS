@@ -11,6 +11,7 @@ import { formatDate, todayISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/feedback";
+import { FinanceSummary } from "@/components/finance-summary";
 
 export function DashboardHome({ profile }: { profile: Profile }) {
   const role = profile.role;
@@ -364,7 +365,6 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
     sudah: 0,
     belum: 0,
   });
-  const [finance, setFinance] = useState({ pemasukan: 0, pengeluaran: 0 });
 
   useEffect(() => {
     async function load() {
@@ -374,8 +374,6 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
 
       const today = todayISO();
       let sudah = 0;
-      let pembelian = 0;
-      let pengeluaran = 0;
 
       const { data: reports } = await supabase
         .from("laporan_harian")
@@ -384,17 +382,7 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
       const reportedIds = new Set(reports?.map((r) => r.divisi_id) ?? []);
       sudah = reportedIds.size;
 
-      const { data: txs } = await supabase
-        .from("transaksi_keuangan")
-        .select("nominal, jenis_transaksi");
-      (txs ?? []).forEach((t) => {
-        const n = Number(t.nominal) || 0;
-        if (t.jenis_transaksi === "pemasukan") pembelian += n;
-        else pengeluaran += n;
-      });
-
       setCounts({ total: list.length, sudah, belum: list.length - sudah });
-      setFinance({ pemasukan: pembelian, pengeluaran });
       setLoading(false);
     }
     load();
@@ -410,12 +398,9 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
         <StatCard label="Total Divisi" value={String(counts.total)} color="brand" />
         <StatCard label="Sudah Mengisi" value={String(counts.sudah)} color="green" />
         <StatCard label="Belum Mengisi" value={String(counts.belum)} color="red" />
-        <StatCard
-          label="Saldo Keseluruhan"
-          value={formatRupiah(finance.pemasukan - finance.pengeluaran)}
-          color="indigo"
-        />
       </div>
+
+      <FinanceSummary />
 
       <Card>
         <CardHeader
@@ -457,29 +442,18 @@ function StaffDashboard({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ divisi: 0, laporan: 0, anggota: 0 });
-  const [finance, setFinance] = useState({ pemasukan: 0, pengeluaran: 0 });
 
   useEffect(() => {
     async function load() {
       const { data: div } = await supabase.from("divisi").select("*");
       const { data: laporan } = await supabase.from("laporan_harian").select("*");
       const { data: anggota } = await supabase.from("anggota_divisi").select("*");
-      const { data: txs } = await supabase.from("transaksi_keuangan").select("nominal, jenis_transaksi");
-
-      let pemasukan = 0;
-      let pengeluaran = 0;
-      (txs ?? []).forEach((t) => {
-        const n = Number(t.nominal) || 0;
-        if (t.jenis_transaksi === "pemasukan") pemasukan += n;
-        else pengeluaran += n;
-      });
 
       setStats({
         divisi: div?.length ?? 0,
         laporan: laporan?.length ?? 0,
         anggota: anggota?.length ?? 0,
       });
-      setFinance({ pemasukan, pengeluaran });
       setLoading(false);
     }
     load();
@@ -508,10 +482,7 @@ function StaffDashboard({ profile }: { profile: Profile }) {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard label="Total Pemasukan" value={formatRupiah(finance.pemasukan)} color="green" />
-        <StatCard label="Total Pengeluaran" value={formatRupiah(finance.pengeluaran)} color="red" />
-      </div>
+      <FinanceSummary />
     </div>
   );
 }
@@ -536,7 +507,6 @@ interface RecentRow extends TransaksiKeuangan {
 function BendaharaDashboard({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
-  const [finance, setFinance] = useState({ pemasukan: 0, pengeluaran: 0 });
   const [recent, setRecent] = useState<RecentRow[]>([]);
   const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
 
@@ -549,15 +519,6 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
         .order("created_at", { ascending: false })
         .limit(10);
 
-      let pemasukan = 0;
-      let pengeluaran = 0;
-      (txs ?? []).forEach((t: any) => {
-        const n = Number(t.nominal) || 0;
-        if (t.jenis_transaksi === "pemasukan") pemasukan += n;
-        else pengeluaran += n;
-      });
-
-      setFinance({ pemasukan, pengeluaran });
       setRecent((txs ?? []) as RecentRow[]);
       setLoading(false);
     }
@@ -569,15 +530,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Dashboard Bendahara</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Pemasukan" value={formatRupiah(finance.pemasukan)} color="green" />
-        <StatCard label="Total Pengeluaran" value={formatRupiah(finance.pengeluaran)} color="red" />
-        <StatCard
-          label="Saldo"
-          value={formatRupiah(finance.pemasukan - finance.pengeluaran)}
-          color={finance.pemasukan - finance.pengeluaran >= 0 ? "brand" : "red"}
-        />
-      </div>
+      <FinanceSummary />
 
       <Card>
         <CardHeader title="Transaksi Terbaru" />

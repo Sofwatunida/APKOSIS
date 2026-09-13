@@ -8,11 +8,11 @@ import { formatDate } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { FinanceSummary } from "@/components/finance-summary";
 
 export function BendaharaHome({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
-  const [finance, setFinance] = useState({ pemasukan: 0, pengeluaran: 0 });
   const [recent, setRecent] = useState<TransaksiKeuangan[]>([]);
 
   useEffect(() => {
@@ -23,14 +23,6 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
         .order("tanggal", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(10);
-      let pemasukan = 0;
-      let pengeluaran = 0;
-      (txs ?? []).forEach((t) => {
-        const n = Number(t.nominal) || 0;
-        if (t.jenis_transaksi === "pemasukan") pemasukan += n;
-        else pengeluaran += n;
-      });
-      setFinance({ pemasukan, pengeluaran });
       setRecent(txs ?? []);
       setLoading(false);
     }
@@ -39,33 +31,10 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
 
   if (loading) return <Spinner />;
 
-  const saldo = finance.pemasukan - finance.pengeluaran;
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Dashboard Bendahara</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Total Pemasukan</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">{formatRupiah(finance.pemasukan)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Total Pengeluaran</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{formatRupiah(finance.pengeluaran)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Saldo</p>
-            <p className={`mt-1 text-2xl font-bold ${saldo >= 0 ? "text-brand-600" : "text-red-600"}`}>
-              {formatRupiah(saldo)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <FinanceSummary />
 
       <Card>
         <CardHeader title="Transaksi Terbaru" />

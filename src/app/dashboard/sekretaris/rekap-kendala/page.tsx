@@ -1,14 +1,14 @@
 import { requireProfile, requireRole } from "@/lib/guard";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { MonitoringRekapClient } from "@/app/dashboard/monitoring/rekap/monitoring-rekap-client";
+import { RekapKendalaClient } from "@/app/dashboard/monitoring/rekap-kendala/rekap-kendala-client";
 
-export default async function SekretarisRekapPage() {
+export default async function SekretarisRekapKendalaPage() {
   const { profile } = await requireProfile();
   requireRole(profile, ["sekretaris"]);
   return (
     <DashboardShell profile={profile}>
       <div className="space-y-6">
-        <MonitoringRekapClient profile={profile} />
+        <RekapKendalaClient profile={profile} />
       </div>
     </DashboardShell>
   );

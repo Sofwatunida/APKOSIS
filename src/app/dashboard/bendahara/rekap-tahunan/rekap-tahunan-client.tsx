@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID } from "@/lib/date";
+import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
@@ -29,6 +30,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
   const [filterYear, setFilterYear] = useState(currentYear);
   const [byMonth, setByMonth] = useState<Array<{ month: string; masuk: number; keluar: number }>>([]);
   const [yearlyData, setYearlyData] = useState<Array<{ year: string; Pemasukan: number; Pengeluaran: number }>>([]);
+  const [saldoAwal, setSaldoAwal] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -53,6 +55,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       setByMonth(
         MONTHS.map((m) => ({ month: m, masuk: map.get(m)!.masuk, keluar: map.get(m)!.keluar }))
       );
+      setSaldoAwal(await fetchSaldoAwal(supabase));
 
       // Load multi-year data for the yearly comparison chart
       const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -80,6 +83,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
 
   const totalMasuk = byMonth.reduce((s, d) => s + d.masuk, 0);
   const totalKeluar = byMonth.reduce((s, d) => s + d.keluar, 0);
+  const saldoTotal = saldoAwal + totalMasuk - totalKeluar;
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
   const chartData = byMonth.map((d, i) => ({
@@ -126,9 +130,9 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Saldo</p>
-            <p className={`mt-1 text-2xl font-bold ${totalMasuk - totalKeluar >= 0 ? "text-brand-600" : "text-red-600"}`}>
-              {formatRupiah(totalMasuk - totalKeluar)}
+            <p className="text-sm text-slate-500">Saldo (termasuk Saldo Awal)</p>
+            <p className={`mt-1 text-2xl font-bold ${saldoTotal >= 0 ? "text-brand-600" : "text-red-600"}`}>
+              {formatRupiah(saldoTotal)}
             </p>
           </CardContent>
         </Card>

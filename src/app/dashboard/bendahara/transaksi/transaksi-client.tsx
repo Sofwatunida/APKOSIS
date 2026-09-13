@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { useToast } from "@/components/ui/toast";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
@@ -16,6 +17,7 @@ interface Row extends TransaksiKeuangan {
 
 export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
+  const { success, error } = useToast();
   const currentYear = new Date().getFullYear();
 
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,20 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [pemasukan, setPemasukan] = useState(0);
   const [pengeluaran, setPengeluaran] = useState(0);
+
+  const [saldoAwal, setSaldoAwal] = useState(0);
+  const [editingSaldo, setEditingSaldo] = useState(false);
+  const [saldoInput, setSaldoInput] = useState("");
+  const [savingSaldo, setSavingSaldo] = useState(false);
+
+  async function loadSaldoAwal() {
+    const { data } = await supabase
+      .from("saldo_awal")
+      .select("nominal")
+      .eq("id", 1)
+      .maybeSingle();
+    setSaldoAwal(Number(data?.nominal) || 0);
+  }
 
   async function load() {
     setLoading(true);
@@ -72,11 +88,37 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     async function init() {
       const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
       setDivisiOptions((div ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi })));
+      await loadSaldoAwal();
     }
     init();
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleSaveSaldoAwal() {
+    const nominal = Number(saldoInput);
+    if (isNaN(nominal) || nominal < 0) {
+      error("Nominal saldo awal tidak valid.");
+      return;
+    }
+    setSavingSaldo(true);
+    const user = (await supabase.auth.getUser()).data.user;
+    const payload = {
+      id: 1,
+      nominal,
+      updated_by: user?.id ?? null,
+    };
+    const { error: upErr } = await supabase.from("saldo_awal").upsert(payload, { onConflict: "id" });
+    if (upErr) {
+      setSavingSaldo(false);
+      error("Gagal menyimpan saldo awal: " + upErr.message);
+      return;
+    }
+    setSaldoAwal(nominal);
+    setEditingSaldo(false);
+    setSavingSaldo(false);
+    success("Saldo awal berhasil disimpan.");
+  }
 
   useEffect(() => {
     load();
@@ -139,24 +181,92 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Saldo Awal Setting */}
+      <Card>
+        <CardHeader
+          title="Saldo Awal"
+          subtitle="Set saldo awal kas OSIS. Nilai konstan sampai di-edit kembali."
+        />
+        <CardContent>
+          {!editingSaldo ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-500">Saldo Awal Tersimpan</p>
+                <p className="mt-1 text-2xl font-bold text-brand-600">
+                  {formatRupiah(saldoAwal)}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Saldo ini dipakai di semua role untuk menghitung saldo OSIS.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSaldoInput(saldoAwal === 0 ? "" : String(saldoAwal));
+                  setEditingSaldo(true);
+                }}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Edit Saldo Awal
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-sm space-y-3">
+              <Field label="Nominal Saldo Awal (Rp)">
+                <Input
+                  type="number"
+                  min="0"
+                  value={saldoInput}
+                  onChange={(e) => setSaldoInput(e.target.value)}
+                  placeholder="Ketik nominal saldo awal..."
+                />
+              </Field>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveSaldoAwal}
+                  disabled={savingSaldo}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {savingSaldo ? "Menyimpan..." : "Simpan Saldo Awal"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingSaldo(false)}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Pemasukan</p>
+            <p className="text-sm text-slate-500">Total Pemasukan</p>
             <p className="mt-1 text-2xl font-bold text-emerald-600">{formatRupiah(pemasukan)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Pengeluaran</p>
+            <p className="text-sm text-slate-500">Total Pengeluaran</p>
             <p className="mt-1 text-2xl font-bold text-red-600">{formatRupiah(pengeluaran)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Saldo</p>
-            <p className={`mt-1 text-2xl font-bold ${pemasukan - pengeluaran >= 0 ? "text-brand-600" : "text-red-600"}`}>
-              {formatRupiah(pemasukan - pengeluaran)}
+            <p className="text-sm text-slate-500">Saldo Awal</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-600">{formatRupiah(saldoAwal)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <p className="text-sm text-slate-500">Saldo (Saldo Awal + Masuk - Keluar)</p>
+            <p className={`mt-1 text-2xl font-bold ${saldoAwal + pemasukan - pengeluaran >= 0 ? "text-brand-600" : "text-red-600"}`}>
+              {formatRupiah(saldoAwal + pemasukan - pengeluaran)}
             </p>
           </CardContent>
         </Card>

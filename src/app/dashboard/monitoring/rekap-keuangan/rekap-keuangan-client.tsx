@@ -6,18 +6,13 @@ import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Field, Input, Select } from "@/components/ui/form";
-import { Spinner, EmptyState } from "@/components/ui/feedback";
-import { useToast } from "@/components/ui/toast";
+import { Field, Select } from "@/components/ui/form";
+import { Spinner } from "@/components/ui/feedback";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import { FinanceSummary } from "@/components/finance-summary";
 
-interface KendalaWithDate {
-  kendala: string;
-  solusi: string;
-  tanggal: string;
-}
-
-export function MonitoringRekapClient({ profile }: { profile: Profile }) {
+export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const { success, error } = useToast();
   const currentYear = new Date().getFullYear();
@@ -28,10 +23,8 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
   const [filterDivisi, setFilterDivisi] = useState("all");
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
-  const [searchKendala, setSearchKendala] = useState("");
   const [exporting, setExporting] = useState(false);
 
-  const [kendalaData, setKendalaData] = useState<Record<string, KendalaWithDate[]>>({});
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
   const [allDivSaldo, setAllDivSaldo] = useState<Array<{ id: string; nama: string; masuk: number; keluar: number }>>([]);
@@ -72,30 +65,6 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
         masuk: allDivMap.get(d.id)?.masuk ?? 0,
         keluar: allDivMap.get(d.id)?.keluar ?? 0,
       })));
-
-      // Fetch reports for kendala
-      const { data: reports } = await supabase
-        .from("laporan_harian")
-        .select("id, divisi_id, tanggal")
-        .gte("tanggal", startDate)
-        .lte("tanggal", endDate);
-      const reportsList = reports ?? [];
-      const reportIds = reportsList.map((r) => r.id);
-
-      const ksMap: Record<string, KendalaWithDate[]> = {};
-      if (reportIds.length > 0) {
-        const { data: ks } = await supabase
-          .from("kendala_solusi")
-          .select("laporan_id, kendala, solusi");
-        const laporanToDivisi = new Map(reportsList.map((r) => [r.id, { divisi_id: r.divisi_id, tanggal: r.tanggal }]));
-        (ks ?? []).forEach((k) => {
-          const info = laporanToDivisi.get(k.laporan_id);
-          if (!info) return;
-          if (!ksMap[info.divisi_id]) ksMap[info.divisi_id] = [];
-          ksMap[info.divisi_id].push({ kendala: k.kendala, solusi: k.solusi, tanggal: info.tanggal });
-        });
-      }
-      setKendalaData(ksMap);
 
       // Finance per divisi (filtered month)
       const { data: txs } = await supabase
@@ -155,7 +124,6 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
           nominal: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(Number(t.nominal) || 0),
         });
       });
-      // Style header
       const headerRow = ws.getRow(1);
       headerRow.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: "FFFFFF" } };
@@ -181,25 +149,13 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
     setExporting(false);
   }
 
-  // Filter kendala by search
-  const filteredKendalaData: Record<string, KendalaWithDate[]> = {};
-  Object.entries(kendalaData).forEach(([divId, list]) => {
-    if (filterDivisi !== "all" && divId !== filterDivisi) return;
-    const filtered = list.filter((ks) => {
-      if (!searchKendala.trim()) return true;
-      const q = searchKendala.toLowerCase();
-      return ks.kendala.toLowerCase().includes(q) || ks.tanggal.includes(q);
-    });
-    if (filtered.length > 0) filteredKendalaData[divId] = filtered;
-  });
-
   if (loading) return <Spinner />;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Rekap & Kendala Solusi</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Rekap Keuangan</h1>
 
       <Card>
         <CardHeader title="Filter" />
@@ -236,6 +192,8 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
           </div>
         </CardContent>
       </Card>
+
+      <FinanceSummary title="Ringkasan Keuangan OSIS" />
 
       {/* Saldo Keseluruhan */}
       <Card>
@@ -357,54 +315,6 @@ export function MonitoringRekapClient({ profile }: { profile: Profile }) {
                   })}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Rekap Kendala & Solusi Bulanan */}
-      <Card>
-        <CardHeader title="Rekap Kendala & Solusi Bulanan" subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`} />
-        <CardContent>
-          {/* Search filter for kendala */}
-          <div className="mb-4">
-            <Input
-              placeholder="Cari berdasarkan kendala atau tanggal (YYYY-MM-DD)..."
-              value={searchKendala}
-              onChange={(e) => setSearchKendala(e.target.value)}
-            />
-          </div>
-          <div className="space-y-6">
-            {Object.entries(filteredKendalaData).length > 0 ? (
-              Object.entries(filteredKendalaData).map(([divId, list]) => {
-                const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
-                return (
-                  <div key={divId}>
-                    <h3 className="mb-2 font-semibold text-slate-800">{divName}</h3>
-                    <div className="space-y-2">
-                      {list.map((ks, i) => (
-                        <div key={i} className="rounded-lg border border-slate-200 p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{ks.tanggal}</span>
-                          </div>
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            <div>
-                              <p className="text-xs text-slate-400">Kendala</p>
-                              <p className="text-sm">{ks.kendala}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-400">Solusi</p>
-                              <p className="text-sm">{ks.solusi}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <EmptyState title="Tidak ada kendala pada periode ini" />
-            )}
           </div>
         </CardContent>
       </Card>

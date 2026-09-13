@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
+import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Field, Input, Select } from "@/components/ui/form";
+import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import {
   BarChart,
@@ -36,8 +37,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
     Array<{ id: string; nama: string; masuk: number; keluar: number }>
   >([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
-  const [editingSaldo, setEditingSaldo] = useState(false);
-  const [saldoInput, setSaldoInput] = useState("0");
 
   useEffect(() => {
     async function load() {
@@ -69,6 +68,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           keluar: map.get(d.id)?.keluar ?? 0,
         }))
       );
+      setSaldoAwal(await fetchSaldoAwal(supabase));
       setLoading(false);
     }
     load();
@@ -127,51 +127,9 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">Saldo Awal</p>
-              {!editingSaldo ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSaldoInput(String(saldoAwal));
-                    setEditingSaldo(true);
-                  }}
-                  className="text-xs text-brand-600 hover:underline font-medium"
-                >
-                  Edit
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEditingSaldo(false)}
-                  className="text-xs text-slate-500 hover:underline font-medium"
-                >
-                  Selesai
-                </button>
-              )}
-            </div>
-            {editingSaldo ? (
-              <div className="mt-2">
-                <Input
-                  type="number"
-                  value={saldoInput}
-                  onChange={(e) => setSaldoInput(e.target.value)}
-                  className="text-2xl font-bold"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSaldoAwal(Number(saldoInput) || 0);
-                    setEditingSaldo(false);
-                  }}
-                  className="mt-2 rounded-lg bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700"
-                >
-                  Simpan
-                </button>
-              </div>
-            ) : (
-              <p className="mt-1 text-2xl font-bold text-brand-600">{formatRupiah(saldoAwal)}</p>
-            )}
+            <p className="text-sm text-slate-500">Saldo Awal</p>
+            <p className="mt-1 text-2xl font-bold text-brand-600">{formatRupiah(saldoAwal)}</p>
+            <p className="mt-1 text-xs text-slate-400">Diset pada fitur Transaksi oleh Bendahara</p>
           </CardContent>
         </Card>
         <Card>
@@ -201,8 +159,8 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
         <Card>
           <CardContent>
             <p className="text-sm text-slate-500">Saldo</p>
-            <p className={`mt-1 text-2xl font-bold ${totalMasuk - totalKeluar >= 0 ? "text-brand-600" : "text-red-600"}`}>
-              {formatRupiah(totalMasuk - totalKeluar)}
+            <p className={`mt-1 text-2xl font-bold ${saldoSekarang >= 0 ? "text-brand-600" : "text-red-600"}`}>
+              {formatRupiah(saldoSekarang)}
             </p>
           </CardContent>
         </Card>
