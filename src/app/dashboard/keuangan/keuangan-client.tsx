@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 interface FormState {
   tanggal: string;
@@ -271,6 +272,27 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Export data sesuai filter */}
+            <ExportMenu
+              title="Keuangan Divisi"
+              filename="keuangan-divisi"
+              disabled={filteredTransaksi.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Jenis", key: "jenis", width: 14 },
+                { header: "Keterangan", key: "keterangan", width: 40 },
+                { header: "Nominal", key: "nominal", width: 20, align: "right" },
+              ]}
+              rows={filteredTransaksi.map((t) => {
+                const { cleanKeterangan } = extractBukti(t.keterangan);
+                return {
+                  tanggal: formatDate(t.tanggal),
+                  jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                  keterangan: cleanKeterangan,
+                  nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
+                };
+              })}
+            />
             {/* Filter Jenis Tabs */}
             <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium text-slate-600">
               <button

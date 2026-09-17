@@ -8,13 +8,11 @@ import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
 import { FinanceSummary } from "@/components/finance-summary";
+import { ExportMenu } from "@/components/export-menu";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
-  const { success, error } = useToast();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
@@ -23,7 +21,6 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const [filterDivisi, setFilterDivisi] = useState("all");
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
-  const [exporting, setExporting] = useState(false);
 
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
@@ -92,62 +89,6 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
     }
     load();
   }, [filterMonth, filterYear]);
-
-  async function handleExportBulanan() {
-    setExporting(true);
-    try {
-      const year = String(filterYear);
-      const month = String(filterMonth).padStart(2, "0");
-      const { data: txs } = await supabase
-        .from("transaksi_keuangan")
-        .select("*, divisi(nama_divisi)")
-        .gte("tanggal", `${year}-${month}-01`)
-        .lte("tanggal", endOfMonthISO(filterYear, filterMonth))
-        .order("tanggal", { ascending: true });
-
-      const ExcelJS = (await import("exceljs")).default;
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Rekap Keuangan Bulanan");
-      ws.columns = [
-        { header: "Tanggal", key: "tanggal", width: 14 },
-        { header: "Divisi", key: "divisi", width: 24 },
-        { header: "Jenis", key: "jenis", width: 14 },
-        { header: "Keterangan", key: "keterangan", width: 35 },
-        { header: "Nominal", key: "nominal", width: 20 },
-      ];
-      (txs ?? []).forEach((t: any) => {
-        ws.addRow({
-          tanggal: t.tanggal,
-          divisi: t.divisi?.nama_divisi ?? "-",
-          jenis: t.jenis_transaksi,
-          keterangan: t.keterangan?.replace(/\[BUKTI:[^\]]+\]/, "").trim() ?? "",
-          nominal: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(Number(t.nominal) || 0),
-        });
-      });
-      const headerRow = ws.getRow(1);
-      headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: "FFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4F46E5" } };
-      });
-      headerRow.height = 22;
-      ws.views = [{ state: "frozen", ySplit: 1 }];
-
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `rekap-keuangan-${year}-${month}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      success("Export Excel bulanan berhasil diunduh.");
-    } catch {
-      error("Gagal membuat export.");
-    }
-    setExporting(false);
-  }
 
   if (loading) return <Spinner />;
 
@@ -280,9 +221,29 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
             <p className="text-xs text-slate-500">{MONTH_NAMES_ID[filterMonth - 1]} {filterYear}</p>
           </div>
           {profile.role === "sekretaris" && (
-            <Button onClick={handleExportBulanan} loading={exporting} variant="outline">
-              {exporting ? "Membuat..." : "Export Excel Bulan Ini"}
-            </Button>
+            <ExportMenu
+              title={`Rekap Keuangan per Divisi - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+              subtitle={`Periode ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+              filename="rekap-keuangan-per-divisi"
+              disabled={divisiOptions.length === 0}
+              columns={[
+                { header: "Divisi", key: "divisi", width: 24 },
+                { header: "Pemasukan", key: "pemasukan", width: 20, align: "right" },
+                { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
+                { header: "Saldo", key: "saldo", width: 20, align: "right" },
+              ]}
+              rows={divisiOptions
+                .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
+                .map((d) => {
+                  const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
+                  return {
+                    divisi: d.nama,
+                    pemasukan: formatRupiah(f.masuk),
+                    pengeluaran: formatRupiah(f.keluar),
+                    saldo: formatRupiah(f.masuk - f.keluar),
+                  };
+                })}
+            />
           )}
         </div>
         <CardContent>

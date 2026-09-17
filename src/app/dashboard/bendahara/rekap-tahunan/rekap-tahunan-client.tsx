@@ -9,6 +9,7 @@ import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
+import { ExportMenu } from "@/components/export-menu";
 import {
   BarChart,
   Bar,
@@ -178,7 +179,29 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       </Card>
 
       <Card>
-        <CardHeader title="Tabel Bulanan" />
+        <CardHeader
+          title="Tabel Bulanan"
+          action={
+            <ExportMenu
+              title={`Rekap Keuangan Tahunan - ${filterYear}`}
+              subtitle={`Periode tahun ${filterYear}`}
+              filename="rekap-keuangan-tahunan"
+              disabled={byMonth.length === 0}
+              columns={[
+                { header: "Bulan", key: "bulan", width: 18 },
+                { header: "Pemasukan", key: "pemasukan", width: 20, align: "right" },
+                { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
+                { header: "Saldo", key: "saldo", width: 20, align: "right" },
+              ]}
+              rows={byMonth.map((d, i) => ({
+                bulan: MONTH_NAMES_ID[i],
+                pemasukan: formatRupiah(d.masuk),
+                pengeluaran: formatRupiah(d.keluar),
+                saldo: formatRupiah(d.masuk - d.keluar),
+              }))}
+            />
+          }
+        />
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

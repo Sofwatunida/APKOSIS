@@ -44,7 +44,6 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Laporan", href: "/dashboard/sekretaris/laporan", roles: ["sekretaris"] },
       { label: "Rekap Keuangan", href: "/dashboard/sekretaris/rekap-keuangan", roles: ["sekretaris"] },
       { label: "Rekap Kendala", href: "/dashboard/sekretaris/rekap-kendala", roles: ["sekretaris"] },
-      { label: "Export Excel", href: "/dashboard/sekretaris/export", roles: ["sekretaris"] },
     ],
   },
   {
@@ -53,7 +52,6 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Transaksi", href: "/dashboard/bendahara/transaksi", roles: ["bendahara"] },
       { label: "Rekap Bulanan", href: "/dashboard/bendahara/rekap-bulanan", roles: ["bendahara"] },
       { label: "Rekap Tahunan", href: "/dashboard/bendahara/rekap-tahunan", roles: ["bendahara"] },
-      { label: "Export Excel", href: "/dashboard/bendahara/export", roles: ["bendahara"] },
     ],
   },
 ];

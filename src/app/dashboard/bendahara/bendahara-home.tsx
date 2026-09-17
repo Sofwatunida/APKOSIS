@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { FinanceSummary } from "@/components/finance-summary";
+import { ExportMenu } from "@/components/export-menu";
 
 export function BendaharaHome({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -37,7 +38,28 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
       <FinanceSummary />
 
       <Card>
-        <CardHeader title="Transaksi Terbaru" />
+        <CardHeader
+          title="Transaksi Terbaru"
+          action={
+            <ExportMenu
+              title="Transaksi Keuangan Terbaru"
+              filename="transaksi-keuangan-terbaru"
+              disabled={recent.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Jenis", key: "jenis", width: 14 },
+                { header: "Keterangan", key: "keterangan", width: 40 },
+                { header: "Nominal", key: "nominal", width: 20, align: "right" },
+              ]}
+              rows={recent.map((t) => ({
+                tanggal: formatDate(t.tanggal),
+                jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                keterangan: t.keterangan?.replace(/\[BUKTI:[^\]]+\]/, "").trim() ?? "-",
+                nominal: formatRupiah(t.nominal),
+              }))}
+            />
+          }
+        />
         <CardContent>
           {recent.length === 0 ? (
             <EmptyState title="Belum ada transaksi" />

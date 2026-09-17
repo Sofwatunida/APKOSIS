@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea, Select, Label } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 interface KendalaRow {
   kendala: string;
@@ -523,12 +524,33 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               Total {history.length} laporan tercatat
             </p>
           </div>
-          {/* Search Input (Requirement 5) */}
-          <div className="w-full sm:w-72">
-            <Input
-              placeholder=" Caririwayat kegiatan/tanggal..."
-              value={searchHistory}
-              onChange={(e) => setSearchHistory(e.target.value)}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {/* Search Input (Requirement 5) */}
+            <div className="w-full sm:w-72">
+              <Input
+                placeholder=" Cari riwayat kegiatan/tanggal..."
+                value={searchHistory}
+                onChange={(e) => setSearchHistory(e.target.value)}
+              />
+            </div>
+            <ExportMenu
+              title="Laporan Harian"
+              filename="laporan-harian"
+              disabled={filteredHistory.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Kegiatan", key: "kegiatan", width: 45 },
+                { header: "Penerima", key: "penerima", width: 18 },
+                { header: "Status", key: "status", width: 12 },
+                { header: "Informasi Lain", key: "informasi", width: 30 },
+              ]}
+              rows={filteredHistory.map((h) => ({
+                tanggal: formatDate(h.tanggal),
+                kegiatan: h.kegiatan_hari_ini,
+                penerima: h.penerima_laporan ?? "-",
+                status: h.tanggal === todayISO() ? "Hari Ini" : "Tersimpan",
+                informasi: h.informasi_lain ?? "-",
+              }))}
             />
           </div>
         </div>

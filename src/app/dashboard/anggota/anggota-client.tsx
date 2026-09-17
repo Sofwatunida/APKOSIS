@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 import { sortByJabatan } from "@/lib/jabatan";
 
 interface FormState {
@@ -154,14 +155,37 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Anggota Divisi</h1>
           <p className="text-sm text-slate-500">
             {aktif.length} anggota aktif, {nonaktif.length} nonaktif
           </p>
         </div>
-        <Button onClick={openAdd}>+ Tambah Anggota</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            title="Anggota Divisi"
+            filename="anggota-divisi"
+            disabled={anggota.length === 0}
+            columns={[
+              { header: "Nama", key: "nama", width: 25 },
+              { header: "Jabatan", key: "jabatan", width: 18 },
+              { header: "Status", key: "status", width: 12 },
+              { header: "Tanggal Masuk", key: "tanggal_masuk", width: 14 },
+              { header: "Tanggal Keluar", key: "tanggal_keluar", width: 14 },
+              { header: "Keterangan", key: "keterangan", width: 30 },
+            ]}
+            rows={[...aktif, ...nonaktif].map((a) => ({
+              nama: a.nama,
+              jabatan: a.jabatan ?? "-",
+              status: a.status === "aktif" ? "Aktif" : "Nonaktif",
+              tanggal_masuk: a.tanggal_masuk ?? "-",
+              tanggal_keluar: a.tanggal_keluar ?? "-",
+              keterangan: a.keterangan ?? "-",
+            }))}
+          />
+          <Button onClick={openAdd}>+ Tambah Anggota</Button>
+        </div>
       </div>
 
       <Card>

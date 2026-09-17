@@ -9,6 +9,7 @@ import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
+import { ExportMenu } from "@/components/export-menu";
 import {
   BarChart,
   Bar,
@@ -229,7 +230,29 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       </Card>
 
       <Card>
-        <CardHeader title="Tabel per Divisi" />
+        <CardHeader
+          title="Tabel per Divisi"
+          action={
+            <ExportMenu
+              title={`Rekap Keuangan Bulanan per Divisi - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+              subtitle={`Periode ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+              filename="rekap-keuangan-bulanan-per-divisi"
+              disabled={perDivisi.length === 0}
+              columns={[
+                { header: "Divisi", key: "divisi", width: 24 },
+                { header: "Pemasukan", key: "pemasukan", width: 20, align: "right" },
+                { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
+                { header: "Saldo", key: "saldo", width: 20, align: "right" },
+              ]}
+              rows={perDivisi.map((d) => ({
+                divisi: d.nama,
+                pemasukan: formatRupiah(d.masuk),
+                pengeluaran: formatRupiah(d.keluar),
+                saldo: formatRupiah(d.masuk - d.keluar),
+              }))}
+            />
+          }
+        />
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

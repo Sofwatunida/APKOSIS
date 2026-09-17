@@ -6,9 +6,8 @@ import type { Profile } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
-import { Button } from "@/components/ui/button";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
-import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 interface DivisiNote {
   id: string;
@@ -21,12 +20,10 @@ const EMPTY_NOTE = "Tidak ada catatan program yang belum terlaksana.";
 
 export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile }) {
   const supabase = createClient();
-  const { success, error } = useToast();
   const [loading, setLoading] = useState(true);
   const [divisiList, setDivisiList] = useState<DivisiNote[]>([]);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<DivisiNote | null>(null);
-  const [exporting, setExporting] = useState(false);
 
   async function load() {
     const { data } = await supabase
@@ -56,50 +53,6 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
     );
   }, [divisiList, search]);
 
-  async function handleExport() {
-    setExporting(true);
-    try {
-      const ExcelJS = (await import("exceljs")).default;
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Program Belum Terlaksana");
-      ws.columns = [
-        { header: "No", key: "no", width: 6 },
-        { header: "Nama Divisi", key: "divisi", width: 28 },
-        { header: "Program Belum Terlaksana", key: "catatan", width: 60 },
-      ];
-      divisiList.forEach((d, idx) => {
-        ws.addRow({
-          no: idx + 1,
-          divisi: d.nama_divisi,
-          catatan: d.catatan?.trim() || EMPTY_NOTE,
-        });
-      });
-      const headerRow = ws.getRow(1);
-      headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: "FFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4F46E5" } };
-        cell.alignment = { vertical: "middle" };
-      });
-      headerRow.height = 22;
-      ws.views = [{ state: "frozen", ySplit: 1 }];
-
-      const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "rekapitulasi-program-belum-terlaksana.xlsx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      success("Dokumen rekapitulasi berhasil diunduh.");
-    } catch {
-      error("Gagal membuat dokumen export.");
-    }
-    setExporting(false);
-  }
-
   if (loading) return <Spinner />;
 
   return (
@@ -109,9 +62,21 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
         subtitle="Program kerja yang belum dilaksanakan per divisi"
         action={
           profile.role === "sekretaris" ? (
-            <Button onClick={handleExport} loading={exporting} variant="outline" size="sm">
-              {exporting ? "Membuat..." : "Export Dokumen"}
-            </Button>
+            <ExportMenu
+              title="Rekapitulasi Program Belum Terlaksana"
+              filename="rekapitulasi-program-belum-terlaksana"
+              disabled={divisiList.length === 0}
+              columns={[
+                { header: "No", key: "no", width: 6 },
+                { header: "Nama Divisi", key: "divisi", width: 28 },
+                { header: "Program Belum Terlaksana", key: "catatan", width: 60 },
+              ]}
+              rows={divisiList.map((d, idx) => ({
+                no: idx + 1,
+                divisi: d.nama_divisi,
+                catatan: d.catatan?.trim() || EMPTY_NOTE,
+              }))}
+            />
           ) : undefined
         }
       />

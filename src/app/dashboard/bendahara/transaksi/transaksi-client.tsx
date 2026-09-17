@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
@@ -273,7 +274,30 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       </div>
 
       <Card>
-        <CardHeader title="Daftar Transaksi" />
+        <CardHeader
+          title="Daftar Transaksi"
+          action={
+            <ExportMenu
+              title="Transaksi Keuangan"
+              filename="transaksi-keuangan"
+              disabled={rows.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Divisi", key: "divisi", width: 24 },
+                { header: "Jenis", key: "jenis", width: 14 },
+                { header: "Keterangan", key: "keterangan", width: 40 },
+                { header: "Nominal", key: "nominal", width: 20, align: "right" },
+              ]}
+              rows={rows.map((t) => ({
+                tanggal: formatDate(t.tanggal),
+                divisi: t.divisi?.nama_divisi ?? "-",
+                jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                keterangan: t.keterangan?.replace(/\[BUKTI:[^\]]+\]/, "").trim() ?? "-",
+                nominal: formatRupiah(t.nominal),
+              }))}
+            />
+          }
+        />
         <CardContent>
           {loading ? (
             <Spinner />

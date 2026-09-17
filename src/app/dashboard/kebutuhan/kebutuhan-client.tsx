@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 const STATUS = ["belum_dibeli", "sudah_dibeli", "tidak_dibeli"];
 const STATUS_LABEL: Record<string, string> = {
@@ -141,12 +142,31 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Kebutuhan Divisi</h1>
           <p className="text-sm text-slate-500">Daftar kebutuhan yang diajukan divisi</p>
         </div>
-        <Button onClick={openAdd}>+ Tambah Kebutuhan</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            title="Kebutuhan Divisi"
+            filename="kebutuhan-divisi"
+            disabled={items.length === 0}
+            columns={[
+              { header: "Kebutuhan", key: "nama_kebutuhan", width: 25 },
+              { header: "Jumlah", key: "jumlah", width: 10 },
+              { header: "Status Pembelian", key: "status_pembelian", width: 18 },
+              { header: "Keterangan", key: "keterangan", width: 30 },
+            ]}
+            rows={items.map((k) => ({
+              nama_kebutuhan: k.nama_kebutuhan,
+              jumlah: k.jumlah ?? "-",
+              status_pembelian: STATUS_LABEL[k.status_pembelian] ?? k.status_pembelian,
+              keterangan: k.keterangan ?? "-",
+            }))}
+          />
+          <Button onClick={openAdd}>+ Tambah Kebutuhan</Button>
+        </div>
       </div>
 
       <Card>

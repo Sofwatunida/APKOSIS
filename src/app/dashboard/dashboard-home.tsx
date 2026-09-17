@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/feedback";
 import { FinanceSummary } from "@/components/finance-summary";
+import { ExportMenu } from "@/components/export-menu";
 
 export function DashboardHome({ profile }: { profile: Profile }) {
   const role = profile.role;
@@ -470,17 +471,6 @@ function StaffDashboard({ profile }: { profile: Profile }) {
         <StatCard label="Total Divisi" value={String(stats.divisi)} color="brand" />
         <StatCard label="Total Laporan" value={String(stats.laporan)} color="indigo" />
         <StatCard label="Total Anggota" value={String(stats.anggota)} color="amber" />
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Aksi Cepat</p>
-            <Link
-              href={profile.role === "sekretaris" ? "/dashboard/sekretaris/export" : "/dashboard/laporan"}
-              className="mt-2 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              Export Excel
-            </Link>
-          </CardContent>
-        </Card>
       </div>
       <FinanceSummary />
     </div>
@@ -533,7 +523,33 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
       <FinanceSummary />
 
       <Card>
-        <CardHeader title="Transaksi Terbaru" />
+        <CardHeader
+          title="Transaksi Terbaru"
+          action={
+            <ExportMenu
+              title="Transaksi Keuangan Terbaru"
+              filename="transaksi-keuangan-terbaru"
+              disabled={recent.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Divisi", key: "divisi", width: 22 },
+                { header: "Jenis", key: "jenis", width: 14 },
+                { header: "Keterangan", key: "keterangan", width: 40 },
+                { header: "Nominal", key: "nominal", width: 20, align: "right" },
+              ]}
+              rows={recent.map((t) => {
+                const { cleanKeterangan } = extractBukti(t.keterangan);
+                return {
+                  tanggal: formatDate(t.tanggal),
+                  divisi: t.divisi?.nama_divisi ?? "-",
+                  jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                  keterangan: cleanKeterangan,
+                  nominal: formatRupiah(t.nominal),
+                };
+              })}
+            />
+          }
+        />
         <CardContent>
           {recent.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">Belum ada transaksi.</p>

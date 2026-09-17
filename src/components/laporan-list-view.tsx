@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { ExportMenu } from "@/components/export-menu";
 
 export interface DivisiOption {
   id: string;
@@ -131,7 +132,28 @@ export function LaporanListView({
       </Card>
 
       <Card>
-        <CardHeader title="Daftar Laporan" />
+        <CardHeader
+          title="Daftar Laporan"
+          action={
+            <ExportMenu
+              title="Laporan Semua Divisi"
+              filename="laporan-semua-divisi"
+              disabled={laporan.length === 0}
+              columns={[
+                { header: "Divisi", key: "divisi", width: 22 },
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Kegiatan", key: "kegiatan", width: 45 },
+                { header: "Penerima", key: "penerima", width: 18 },
+              ]}
+              rows={laporan.map((l) => ({
+                divisi: l.divisi?.nama_divisi ?? "-",
+                tanggal: formatDate(l.tanggal),
+                kegiatan: l.kegiatan_hari_ini,
+                penerima: l.penerima_laporan || "-",
+              }))}
+            />
+          }
+        />
         <CardContent>
           {laporan.length === 0 ? (
             <EmptyState title="Tidak ada laporan" description="Atur filter untuk melihat laporan." />
