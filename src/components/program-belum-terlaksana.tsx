@@ -18,6 +18,19 @@ interface DivisiNote {
 
 const EMPTY_NOTE = "Tidak ada catatan program yang belum terlaksana.";
 
+function parseNoteList(raw?: string | null): string[] {
+  return (raw ?? "")
+    .split("\n")
+    .map((l) => {
+      let s = l.trim();
+      while (/^[•▪◦●]\s*/.test(s)) s = s.replace(/^[•▪◦●]\s*/, "");
+      while (/^-\s+/.test(s)) s = s.replace(/^-\s+/, "");
+      while (/^\d+[.)]\s*/.test(s)) s = s.replace(/^\d+[.)]\s*/, "");
+      return s.trim();
+    })
+    .filter(Boolean);
+}
+
 export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -68,8 +81,8 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
               disabled={divisiList.length === 0}
               columns={[
                 { header: "No", key: "no", width: 6 },
-                { header: "Nama Divisi", key: "divisi", width: 28 },
-                { header: "Program Belum Terlaksana", key: "catatan", width: 60 },
+                { header: "Divisi", key: "divisi", width: 24 },
+                { header: "Program yang Belum Terlaksana", key: "catatan", width: 60 },
               ]}
               rows={divisiList.map((d, idx) => ({
                 no: idx + 1,
@@ -142,8 +155,26 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
                 <p className="font-semibold text-slate-800">{view.nama_divisi}</p>
               </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 whitespace-pre-wrap">
-              {view.catatan?.trim() ? view.catatan : <span className="text-slate-400">{EMPTY_NOTE}</span>}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Program yang Belum Terlaksana
+              </p>
+              {parseNoteList(view.catatan).length > 0 ? (
+                <ul className="mt-1.5 space-y-1.5">
+                  {parseNoteList(view.catatan).map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-700">
+                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                        {i + 1}
+                      </span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1.5 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-400">
+                  {EMPTY_NOTE}
+                </p>
+              )}
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button

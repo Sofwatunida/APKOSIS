@@ -30,7 +30,8 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [notes, setNotes] = useState("");
+  const [notesList, setNotesList] = useState<string[]>([]);
+  const [newNote, setNewNote] = useState("");
 
   const [unggulanItems, setUnggulanItems] = useState<ProgramKerja[]>([]);
   const [unggulanOpen, setUnggulanOpen] = useState(false);
@@ -70,10 +71,50 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
         .select("catatan_program_belum_terlaksana")
         .eq("id", profile.divisi_id)
         .maybeSingle()
-        .then(({ data }) => setNotes(data?.catatan_program_belum_terlaksana ?? ""));
+        .then(({ data }) =>
+          setNotesList(parseNoteList(data?.catatan_program_belum_terlaksana ?? ""))
+        );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.divisi_id]);
+
+  function parseNoteList(raw: string): string[] {
+    return raw
+      .split("\n")
+      .map((l) => {
+        let s = l.trim();
+        while (/^[•▪◦●]\s*/.test(s)) s = s.replace(/^[•▪◦●]\s*/, "");
+        while (/^-\s+/.test(s)) s = s.replace(/^-\s+/, "");
+        while (/^\d+[.)]\s*/.test(s)) s = s.replace(/^\d+[.)]\s*/, "");
+        return s.trim();
+      })
+      .filter(Boolean);
+  }
+
+  function addNote() {
+    const v = newNote.trim();
+    if (!v) return;
+    setNotesList((prev) => (prev.includes(v) ? prev : [...prev, v]));
+    setNewNote("");
+  }
+
+  function removeNote(idx: number) {
+    setNotesList((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function saveNotes() {
+    if (!profile.divisi_id) return;
+    const value = notesList.map((n) => n.trim()).filter(Boolean).join("\n");
+    const { error: noteErr } = await supabase
+      .from("divisi")
+      .update({ catatan_program_belum_terlaksana: value })
+      .eq("id", profile.divisi_id);
+    if (noteErr) {
+      error("Gagal menyimpan catatan.");
+      return;
+    }
+    success("Catatan tersimpan.");
+  }
 
   function openAdd() {
     setEditing(null);
@@ -457,31 +498,64 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Catatan Program Belum Terlaksana"
-          subtitle="Catatan program kerja yang belum dapat dilaksanakan"
+          subtitle="Tambahkan program kerja yang belum dapat dilaksanakan satu per satu agar rapi"
         />
         <CardContent>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Tuliskan catatan program kerja yang belum terlaksana di sini..."
-            rows={5}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none resize-y"
-          />
-          <div className="mt-3 flex justify-end">
+          <p className="mb-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+            Daftar ini akan dilihat dan diekspor oleh Sekretaris menjadi rekap program yang belum
+            terlaksana seluruh divisi.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nama program yang belum terlaksana..."
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addNote();
+                }
+              }}
+            />
+            <Button type="button" variant="secondary" size="sm" onClick={addNote}>
+              + Tambah
+            </Button>
+          </div>
+
+          {notesList.length === 0 ? (
+            <p className="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+              Belum ada program yang dicatat. Klik &quot;+ Tambah&quot; untuk menambahkan program
+              yang belum terlaksana.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {notesList.map((n, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-800">
+                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                      {idx + 1}
+                    </span>
+                    {n}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeNote(idx)}
+                    className="shrink-0 rounded-lg border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition"
+                  >
+                    ✕ Hapus
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
-              onClick={async () => {
-                if (!profile.divisi_id) return;
-                const { error: noteErr } = await supabase
-                  .from("divisi")
-                  .update({ catatan_program_belum_terlaksana: notes })
-                  .eq("id", profile.divisi_id);
-                if (noteErr) {
-                  error("Gagal menyimpan catatan.");
-                  return;
-                }
-                success("Catatan tersimpan.");
-              }}
+              onClick={saveNotes}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
             >
               Simpan Catatan

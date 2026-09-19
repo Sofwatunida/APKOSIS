@@ -173,18 +173,17 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           <CardHeader title="Diagram Lingkaran" subtitle={`Pemasukan, Pengeluaran & Saldo - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`} />
           <CardContent>
             <div className="flex justify-center">
-              <div className="h-72 w-72">
+              <div className="h-64 w-full max-w-[340px] sm:h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius="42%"
+                      outerRadius="70%"
                       paddingAngle={3}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
                       {pieData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
@@ -195,10 +194,10 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="mt-4 flex justify-center gap-6">
+            <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2">
               {pieData.map((d, i) => (
                 <div key={d.name} className="flex items-center gap-2 text-sm">
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
                   <span className="text-slate-600">{d.name}: {formatRupiah(d.value)}</span>
                 </div>
               ))}

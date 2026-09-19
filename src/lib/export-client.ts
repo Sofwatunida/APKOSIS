@@ -21,7 +21,12 @@ interface DownloadOptions extends ExportInput {
   format: ExportFormat;
 }
 
-/* ---------------------------------- utils ---------------------------------- */
+/* ------------------------------ shared values ------------------------------ */
+
+const BRAND_HEX = "#4f46e5";
+const BRAND_ARGB = "FF4F46E5";
+const HEADER_BORDER_HEX = "#4338ca";
+const BODY_BORDER_HEX = "#cbd5e1";
 
 function escapeHtml(value: string): string {
   return value
@@ -31,11 +36,15 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// Normalisasi teks supaya konsisten di semua format (bullet, newline, dll)
+function prepText(value: string): string {
+  return value.replace(/[•▪◦●]/g, "-").replace(/\r\n?/g, "\n").replace(/\t/g, " ");
+}
+
 function cellValue(row: Record<string, unknown> | undefined, key: string): string {
   const v = row?.[key];
   if (v === null || v === undefined || v === "") return "-";
-  if (typeof v === "object") return String(v);
-  return String(v);
+  return prepText(String(v));
 }
 
 function slugify(value: string): string {
@@ -69,19 +78,48 @@ function triggerDownload(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/* ---------------------------------- excel ---------------------------------- */
+function columnRatios(columns: ExportColumn[]): number[] {
+  const widths = columns.map((c) => c.width ?? 1);
+  const total = widths.reduce((a, b) => a + b, 0) || 1;
+  return widths.map((w) => w / total);
+}
+
+function cellAlign(c: ExportColumn): "left" | "right" | "center" {
+  return c.align === "right" ? "right" : c.align === "center" ? "center" : "left";
+}
+
+/* ----------------------------------- excel ----------------------------------- */
 
 async function buildExcelBlob(input: ExportInput): Promise<Blob> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Data");
+  const ratios = columnRatios(input.columns);
 
-  ws.columns = input.columns.map((c) => ({ key: c.key, width: c.width ?? 20 }));
+  ws.columns = input.columns.map((c, i) => ({
+    key: c.key,
+    width: Math.min(Math.max(Math.round(ratios[i] * 42), 12), 52),
+  }));
+
+  const bodyBorder = {
+    top: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+    left: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+    bottom: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+    right: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+  };
+
+  const headerBorder = {
+    top: { style: "thin" as const, color: { argb: "FF4338CA" } },
+    left: { style: "thin" as const, color: { argb: "FF4338CA" } },
+    bottom: { style: "thin" as const, color: { argb: "FF4338CA" } },
+    right: { style: "thin" as const, color: { argb: "FF4338CA" } },
+  };
 
   const titleRow = ws.addRow([input.title]);
   ws.mergeCells(1, 1, 1, input.columns.length);
-  titleRow.getCell(1).font = { bold: true, size: 14 };
-  titleRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+  const titleCell = titleRow.getCell(1);
+  titleCell.font = { bold: true, size: 14 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
   titleRow.height = 26;
 
   let headerIndex = 2;
@@ -89,23 +127,42 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
     const subRow = ws.addRow([input.subtitle]);
     ws.mergeCells(2, 1, 2, input.columns.length);
     subRow.getCell(1).value = input.subtitle;
-    subRow.getCell(1).font = { size: 10, italic: true, color: { argb: "64748B" } };
-    subRow.getCell(1).alignment = { horizontal: "center" };
+    subRow.getCell(1).font = { size: 10, italic: true, color: { argb: "FF64748B" } };
+    subRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
     subRow.height = 16;
     headerIndex = 3;
   }
 
   const headerRow = ws.addRow(input.columns.map((c) => c.header));
-  headerRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: "FFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4F46E5" } };
-    cell.alignment = { vertical: "middle" };
-  });
   headerRow.height = 22;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BRAND_ARGB } };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = headerBorder;
+  });
 
   const keys = input.columns.map((c) => c.key);
   input.rows.forEach((r) => {
-    ws.addRow(keys.map((k) => cellValue(r, k)));
+    const row = ws.addRow(keys.map((k) => cellValue(r, k)));
+    let maxLines = 1;
+    row.eachCell((cell, col) => {
+      const colIdx = col - 1;
+      cell.alignment = {
+        vertical: "top",
+        wrapText: true,
+        horizontal: cellAlign(input.columns[colIdx] ?? { header: "", key: "" }),
+      };
+      cell.border = bodyBorder;
+      const width = ws.columns[colIdx]?.width ?? 20;
+      const text = String(cell.value ?? "");
+      let lines = 1;
+      text.split("\n").forEach((seg) => {
+        lines += Math.ceil(seg.length / Math.max(width * 1.2, 8));
+      });
+      maxLines = Math.max(maxLines, lines);
+    });
+    row.height = Math.max(18, maxLines * 15 + 6);
   });
 
   ws.views = [{ state: "frozen", ySplit: headerIndex }];
@@ -116,22 +173,36 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
   });
 }
 
-/* ----------------------------------- doc ----------------------------------- */
+/* ------------------------------------ doc ------------------------------------ */
 
 function buildDocBlob(input: ExportInput): Blob {
+  const ratios = columnRatios(input.columns);
+  const pct = ratios.map((r) => (r * 100).toFixed(2));
+
+  const colgroup = input.columns
+    .map((_, i) => `<col width="${pct[i]}%" />`)
+    .join("");
+
   const headerCells = input.columns
     .map(
-      (c) =>
-        `<th style="padding:6px 10px;border:1px solid #4f46e5;background-color:#4f46e5;color:#ffffff;text-align:${c.align === "right" ? "right" : "left"}">${escapeHtml(c.header)}</th>`
+      (c, i) =>
+        `<th width="${pct[i]}%" style="border:1pt solid ${HEADER_BORDER_HEX};background-color:${BRAND_HEX};color:#ffffff;padding:6pt 8pt;font-weight:bold;text-align:center;vertical-align:middle;">${escapeHtml(
+          c.header
+        )}</th>`
     )
     .join("");
 
   const bodyRows = input.rows
     .map((r) => {
       const tds = input.columns
-        .map((c) => {
-          const v = cellValue(r, c.key);
-          return `<td style="padding:6px 10px;border:1px solid #94a3b8;text-align:${c.align === "right" ? "right" : "left"}">${escapeHtml(v)}</td>`;
+        .map((c, i) => {
+          const html = cellValue(r, c.key)
+            .split("\n")
+            .map((line) => escapeHtml(line))
+            .join("<br/>");
+          return `<td width="${pct[i]}%" style="border:1pt solid ${BODY_BORDER_HEX};padding:5pt 8pt;text-align:${cellAlign(
+            c
+          )};vertical-align:top;">${html ? html : "&nbsp;"}</td>`;
         })
         .join("");
       return `<tr>${tds}</tr>`;
@@ -139,7 +210,7 @@ function buildDocBlob(input: ExportInput): Blob {
     .join("");
 
   const subtitleHtml = input.subtitle
-    ? `<p style="text-align:center;font-size:11pt;color:#64748b;margin:0 0 10pt;">${escapeHtml(input.subtitle)}</p>`
+    ? `<p class="subtitle">${escapeHtml(input.subtitle)}</p>`
     : "";
 
   const doc = `<!DOCTYPE html>
@@ -147,18 +218,23 @@ function buildDocBlob(input: ExportInput): Blob {
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(input.title)}</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
 <style>
-  body { font-family: Calibri, Arial, sans-serif; }
-  h2 { text-align: center; margin: 4pt 0; }
-  table { border-collapse: collapse; width: 100%; }
+  @page { size: 21cm 29.7cm; margin: 1.5cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #0f172a; }
+  h1 { font-size: 16pt; text-align: center; margin: 0 0 4pt; }
+  .subtitle { text-align: center; font-size: 10pt; color: #64748b; margin: 0 0 2pt; }
+  .meta { text-align: center; font-size: 8.5pt; color: #94a3b8; margin: 0 0 12pt; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; mso-table-layout-alt: fixed; }
+  td, th { mso-padding-alt: 0in 0in 0in 0in; }
 </style>
 </head>
 <body>
-<h2>${escapeHtml(input.title)}</h2>
+<h1>${escapeHtml(input.title)}</h1>
 ${subtitleHtml}
-<p style="text-align:center;font-size:9pt;color:#94a3b8;margin:0 0 12pt;">Dicetak pada ${escapeHtml(todayLabel())}</p>
-<table>
+<p class="meta">Dicetak pada ${escapeHtml(todayLabel())}</p>
+<table border="1" cellpadding="0" cellspacing="0">
+<colgroup>${colgroup}</colgroup>
 <thead><tr>${headerCells}</tr></thead>
 <tbody>${bodyRows}</tbody>
 </table>
@@ -170,7 +246,7 @@ ${subtitleHtml}
   });
 }
 
-/* ----------------------------------- pdf ----------------------------------- */
+/* ------------------------------------ pdf ------------------------------------ */
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
@@ -182,8 +258,9 @@ type RGB = [number, number, number];
 
 const COLOR_TEXT: RGB = [0.13, 0.14, 0.16];
 const COLOR_MUTED: RGB = [0.45, 0.47, 0.51];
-const COLOR_HEADER_BG: RGB = [0.31, 0.27, 0.9];
-const COLOR_BORDER: RGB = [0.62, 0.65, 0.73];
+const COLOR_HEADER_BG: RGB = [0.31, 0.27, 0.9]; // #4f46e5 (sama dengan DOC/Excel)
+const COLOR_BORDER: RGB = [0.796, 0.835, 0.882]; // #cbd5e1
+const COLOR_HEADER_BORDER: RGB = [0.26, 0.22, 0.79]; // #4338ca
 
 function num(n: number): string {
   return n.toFixed(2).replace(/\.?0+$/, "").replace(/\.$/, "");
@@ -249,7 +326,7 @@ function hardSplit(word: string, size: number, maxWidth: number): string[] {
   return lines.length > 0 ? lines : [word];
 }
 
-function wrapText(str: string, size: number, maxWidth: number): string[] {
+function wrapSegment(str: string, size: number, maxWidth: number): string[] {
   const tokens = str.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return [""];
   const lines: string[] = [];
@@ -277,6 +354,15 @@ function wrapText(str: string, size: number, maxWidth: number): string[] {
   flush();
 
   return lines.length > 0 ? lines : [""];
+}
+
+// Membungkus teks, termasuk menghormati baris baru (untuk list)
+function wrapText(str: string, size: number, maxWidth: number): string[] {
+  const out: string[] = [];
+  str.split("\n").forEach((seg) => {
+    wrapSegment(seg, size, maxWidth).forEach((l) => out.push(l));
+  });
+  return out.length > 0 ? out : [""];
 }
 
 function buildPdfBlob(input: ExportInput): Blob {
@@ -323,10 +409,10 @@ function buildPdfBlob(input: ExportInput): Blob {
     ops.push(`${num(x)} ${num(y)} ${num(w)} ${num(h)} re f`);
   }
 
-  function strokeRect(x: number, yTop: number, w: number, h: number) {
+  function strokeRect(x: number, yTop: number, w: number, h: number, color: RGB = COLOR_BORDER) {
     const y = PAGE_H - yTop - h;
     ops.push("0.6 w RG");
-    ops.push(`${num(COLOR_BORDER[0])} ${num(COLOR_BORDER[1])} ${num(COLOR_BORDER[2])} RG`);
+    ops.push(`${num(color[0])} ${num(color[1])} ${num(color[2])} RG`);
     ops.push(`${num(x)} ${num(y)} ${num(w)} ${num(h)} re S`);
   }
 
@@ -336,9 +422,9 @@ function buildPdfBlob(input: ExportInput): Blob {
     fillRect(MARGIN, topY, CONTENT_W, HEADER_H, COLOR_HEADER_BG);
     input.columns.forEach((c, i) => {
       const x = MARGIN + widths.slice(0, i).reduce((a, b) => a + b, 0);
-      drawText(c.header, 9, true, x + 4, topY + 2, [1, 1, 1], widths[i] - 7, c.align ?? "left");
+      drawText(c.header, 9, true, x + 4, topY + 2, [1, 1, 1], widths[i] - 7, "center");
     });
-    strokeRect(MARGIN, topY, CONTENT_W, HEADER_H);
+    strokeRect(MARGIN, topY, CONTENT_W, HEADER_H, COLOR_HEADER_BORDER);
     topY += HEADER_H;
   }
 
@@ -354,8 +440,8 @@ function buildPdfBlob(input: ExportInput): Blob {
   drawHeaderRow();
 
   const ROW_PAD_X = 4;
-  const ROW_PAD_TOP = 3;
-  const ROW_LINE_H = 10;
+  const ROW_PAD_TOP = 4;
+  const ROW_LINE_H = 10.5;
 
   function ensureSpace(rowHeight: number) {
     if (topY + rowHeight <= PAGE_H - BOTTOM) return;
@@ -363,12 +449,16 @@ function buildPdfBlob(input: ExportInput): Blob {
     drawHeaderRow();
   }
 
+  function rowValue(r: Record<string, unknown>, c: ExportColumn): string {
+    return cellValue(r, c.key);
+  }
+
   input.rows.forEach((r) => {
     const wrapped = input.columns.map((c) =>
-      wrapText(cellValue(r, c.key), 9, widths[input.columns.indexOf(c)] - ROW_PAD_X * 2)
+      wrapText(rowValue(r, c), 9, widths[input.columns.indexOf(c)] - ROW_PAD_X * 2)
     );
     const lineCount = Math.max(...wrapped.map((l) => l.length), 1);
-    const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + 2;
+    const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + 3;
 
     ensureSpace(rowHeight);
 
@@ -385,7 +475,7 @@ function buildPdfBlob(input: ExportInput): Blob {
           topY + ROW_PAD_TOP + j * ROW_LINE_H,
           COLOR_TEXT,
           widths[i] - ROW_PAD_X * 2,
-          c.align ?? "left"
+          cellAlign(c)
         );
       });
     });

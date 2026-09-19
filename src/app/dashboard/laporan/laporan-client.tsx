@@ -41,6 +41,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   // dropdown kegiatan custom (dikelola ketua/wakil)
   const [opsiKegiatan, setOpsiKegiatan] = useState<OpsiKegiatan[]>([]);
   const [kegiatanMode, setKegiatanMode] = useState<"ketik" | "pilih">("ketik");
+  const [selectedKegiatan, setSelectedKegiatan] = useState<string[]>([]);
   const [newOpsi, setNewOpsi] = useState("");
   const [manageOpen, setManageOpen] = useState(false);
   const [savingOpsi, setSavingOpsi] = useState(false);
@@ -196,6 +197,38 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     return Object.keys(e).length === 0;
   }
 
+  function applyKegiatanSelection(next: string[]) {
+    setSelectedKegiatan(next);
+    setForm({ ...form, kegiatan_hari_ini: next.length ? next.join("\n") : "" });
+  }
+
+  function switchToPilihMode() {
+    if (kegiatanMode !== "pilih") {
+      const known = new Set(opsiKegiatan.map((o) => o.nama_kegiatan));
+      const lines = form.kegiatan_hari_ini
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      setSelectedKegiatan(lines.filter((l) => known.has(l)));
+    }
+    setKegiatanMode("pilih");
+  }
+
+  function toggleKegiatan(name: string) {
+    const next = selectedKegiatan.includes(name)
+      ? selectedKegiatan.filter((k) => k !== name)
+      : [...selectedKegiatan, name];
+    applyKegiatanSelection(next);
+  }
+
+  function selectAllKegiatan() {
+    applyKegiatanSelection(opsiKegiatan.map((o) => o.nama_kegiatan));
+  }
+
+  function clearKegiatan() {
+    applyKegiatanSelection([]);
+  }
+
   async function handleAddOpsi() {
     const trimmed = newOpsi.trim();
     if (!profile.divisi_id || !trimmed) return;
@@ -223,7 +256,9 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
     setOpsiKegiatan((prev) => [...prev, data]);
     if (kegiatanMode === "pilih") {
-      setForm({ ...form, kegiatan_hari_ini: data.nama_kegiatan });
+      if (!selectedKegiatan.includes(data.nama_kegiatan)) {
+        applyKegiatanSelection([...selectedKegiatan, data.nama_kegiatan]);
+      }
     }
     setNewOpsi("");
     setSavingOpsi(false);
@@ -243,6 +278,11 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       return;
     }
     setOpsiKegiatan((prev) => prev.filter((o) => o.id !== id));
+    if (selectedKegiatan.includes(target?.nama_kegiatan ?? "")) {
+      applyKegiatanSelection(
+        selectedKegiatan.filter((k) => k !== target?.nama_kegiatan)
+      );
+    }
     success("Kegiatan dihapus dari daftar.");
   }
 
@@ -500,7 +540,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setKegiatanMode("pilih")}
+                  onClick={() => switchToPilihMode()}
                   className={
                     kegiatanMode === "pilih"
                       ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm"
@@ -520,19 +560,72 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 />
               ) : (
                 <div className="space-y-2.5">
-                  <Select
-                    value={form.kegiatan_hari_ini}
-                    onChange={(e) =>
-                      setForm({ ...form, kegiatan_hari_ini: e.target.value })
-                    }
-                  >
-                    <option value="">Pilih kegiatan dari daftar...</option>
-                    {opsiKegiatan.map((o) => (
-                      <option key={o.id} value={o.nama_kegiatan}>
-                        {o.nama_kegiatan}
-                      </option>
-                    ))}
-                  </Select>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-slate-500">
+                      Centang satu atau lebih kegiatan:
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={selectAllKegiatan}
+                        className="text-xs font-semibold text-brand-600 hover:underline"
+                      >
+                        Pilih Semua
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearKegiatan}
+                        className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                      >
+                        Bersihkan
+                      </button>
+                    </div>
+                  </div>
+
+                  {opsiKegiatan.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+                      Belum ada kegiatan di daftar. Tambahkan lewat kotak di bawah atau tombol
+                      &quot;Kelola Daftar&quot;.
+                    </p>
+                  ) : (
+                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5">
+                      {opsiKegiatan.map((o) => {
+                        const checked = selectedKegiatan.includes(o.nama_kegiatan);
+                        return (
+                          <label
+                            key={o.id}
+                            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleKegiatan(o.nama_kegiatan)}
+                              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            />
+                            <span className={checked ? "font-semibold text-slate-900" : "text-slate-700"}>
+                              {o.nama_kegiatan}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {selectedKegiatan.length > 0 && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-sm">
+                      <p className="text-xs font-semibold text-emerald-700">
+                        Kegiatan terpilih ({selectedKegiatan.length}):
+                      </p>
+                      <ul className="mt-1 space-y-0.5 text-slate-800">
+                        {selectedKegiatan.map((k, i) => (
+                          <li key={i} className="flex gap-1.5">
+                            <span className="text-emerald-600">•</span>
+                            <span>{k}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <Input

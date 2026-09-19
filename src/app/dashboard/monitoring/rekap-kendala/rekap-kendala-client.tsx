@@ -7,6 +7,7 @@ import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { ExportMenu } from "@/components/export-menu";
 
 interface KendalaWithDate {
   kendala: string;
@@ -85,6 +86,51 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
     if (filtered.length > 0) filteredKendalaData[divId] = filtered;
   });
 
+  // Detail data (datar) untuk ekspor rekap detail
+  const flatDetail: {
+    no: number;
+    divisi: string;
+    tanggal: string;
+    kendala: string;
+    solusi: string;
+  }[] = [];
+  Object.entries(filteredKendalaData).forEach(([divId, list]) => {
+    const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
+    list.forEach((ks) => {
+      flatDetail.push({
+        no: flatDetail.length + 1,
+        divisi: divName,
+        tanggal: ks.tanggal,
+        kendala: ks.kendala,
+        solusi: ks.solusi,
+      });
+    });
+  });
+
+  // Ringkasan / kesimpulan semua kendala (list unik + jumlah + divisi)
+  const summaryMap = new Map<
+    string,
+    { kendala: string; count: number; divisis: string[] }
+  >();
+  Object.entries(filteredKendalaData).forEach(([divId, list]) => {
+    const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
+    list.forEach((ks) => {
+      const key = ks.kendala.trim().toLowerCase();
+      if (!key) return;
+      const cur = summaryMap.get(key) ?? {
+        kendala: ks.kendala.trim(),
+        count: 0,
+        divisis: [],
+      };
+      cur.count += 1;
+      if (!cur.divisis.includes(divName)) cur.divisis.push(divName);
+      summaryMap.set(key, cur);
+    });
+  });
+  const summaryList = [...summaryMap.values()].sort(
+    (a, b) => b.count - a.count || a.kendala.localeCompare(b.kendala)
+  );
+
   if (loading) return <Spinner />;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
@@ -131,7 +177,26 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
 
       {/* Rekap Kendala & Solusi Bulanan */}
       <Card>
-        <CardHeader title="Rekap Kendala & Solusi Bulanan" subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`} />
+        <CardHeader
+          title="Rekap Kendala & Solusi Bulanan"
+          subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+          action={
+            <ExportMenu
+              title="Rekap Kendala & Solusi"
+              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - Seluruh Divisi`}
+              filename="rekap-kendala-solusi"
+              disabled={flatDetail.length === 0}
+              columns={[
+                { header: "No", key: "no", width: 6 },
+                { header: "Divisi", key: "divisi", width: 20 },
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Kendala", key: "kendala", width: 30 },
+                { header: "Solusi", key: "solusi", width: 30 },
+              ]}
+              rows={flatDetail}
+            />
+          }
+        />
         <CardContent>
           {/* Search filter for kendala */}
           <div className="mb-4">
@@ -174,6 +239,61 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
               <EmptyState title="Tidak ada kendala pada periode ini" />
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Ringkasan / Kesimpulan Kendala */}
+      <Card>
+        <CardHeader
+          title="Ringkasan Kendala (Kesimpulan)"
+          subtitle="Daftar kesimpulan semua kendala pada periode terpilih"
+          action={
+            <ExportMenu
+              title="Ringkasan Kendala"
+              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - Kesimpulan Seluruh Divisi`}
+              filename="ringkasan-kendala"
+              disabled={summaryList.length === 0}
+              columns={[
+                { header: "No", key: "no", width: 6 },
+                { header: "Kendala", key: "kendala", width: 50 },
+                { header: "Jumlah", key: "jumlah", width: 12, align: "right" },
+                { header: "Divisi", key: "divisi", width: 28 },
+              ]}
+              rows={summaryList.map((s, idx) => ({
+                no: idx + 1,
+                kendala: s.kendala,
+                jumlah: s.count,
+                divisi: s.divisis.join(", "),
+              }))}
+            />
+          }
+        />
+        <CardContent>
+          {summaryList.length === 0 ? (
+            <EmptyState title="Belum ada ringkasan" description="Tidak ada kendala yang tercatat pada periode ini." />
+          ) : (
+            <ol className="space-y-2">
+              {summaryList.map((s, idx) => (
+                <li
+                  key={idx}
+                  className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:flex-row sm:items-start sm:gap-3"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-slate-800">{s.kendala}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      Divisi: <span className="text-slate-500">{s.divisis.join(", ")}</span>
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                    {s.count} laporan
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
         </CardContent>
       </Card>
     </div>

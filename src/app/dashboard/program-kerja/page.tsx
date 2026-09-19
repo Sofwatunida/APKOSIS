@@ -1,6 +1,7 @@
 import { requireProfile, requireRole } from "@/lib/guard";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { ProgramKerjaClient } from "./program-kerja-client";
+import { ProgramKerjaBendaharaClient } from "./program-kerja-bendahara-client";
 import { ProgramKerjaReadOnly } from "./program-kerja-readonly";
 
 export default async function ProgramKerjaPage() {
@@ -10,6 +11,8 @@ export default async function ProgramKerjaPage() {
     <DashboardShell profile={profile}>
       {profile.role === "division_admin" ? (
         <ProgramKerjaClient profile={profile} />
+      ) : profile.role === "bendahara" ? (
+        <ProgramKerjaBendaharaClient profile={profile} />
       ) : (
         <ProgramKerjaReadOnly profile={profile} />
       )}

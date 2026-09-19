@@ -147,10 +147,10 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
       try {
         const path = `bukti/${profile.divisi_id}/${Date.now()}-${buktiFile.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
         const { error: upErr } = await supabase.storage
-          .from("program-kerja")
+          .from("bukti-struk")
           .upload(path, buktiFile, { contentType: buktiFile.type });
         if (!upErr) {
-          finalBuktiUrl = supabase.storage.from("program-kerja").getPublicUrl(path).data.publicUrl;
+          finalBuktiUrl = supabase.storage.from("bukti-struk").getPublicUrl(path).data.publicUrl;
         } else {
           finalBuktiUrl = await fileToDataUrl(buktiFile);
         }
