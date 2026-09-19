@@ -144,6 +144,7 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
 
   const keys = input.columns.map((c) => c.key);
   input.rows.forEach((r) => {
+    const isTotal = Boolean((r as Record<string, unknown>).__total);
     const row = ws.addRow(keys.map((k) => cellValue(r, k)));
     let maxLines = 1;
     row.eachCell((cell, col) => {
@@ -154,6 +155,10 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
         horizontal: cellAlign(input.columns[colIdx] ?? { header: "", key: "" }),
       };
       cell.border = bodyBorder;
+      if (isTotal) {
+        cell.font = { bold: true, color: { argb: "FF1E293B" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
+      }
       const width = ws.columns[colIdx]?.width ?? 20;
       const text = String(cell.value ?? "");
       let lines = 1;
@@ -194,6 +199,7 @@ function buildDocBlob(input: ExportInput): Blob {
 
   const bodyRows = input.rows
     .map((r) => {
+      const isTotal = Boolean((r as Record<string, unknown>).__total);
       const tds = input.columns
         .map((c, i) => {
           const html = cellValue(r, c.key)
@@ -205,7 +211,7 @@ function buildDocBlob(input: ExportInput): Blob {
           )};vertical-align:top;">${html ? html : "&nbsp;"}</td>`;
         })
         .join("");
-      return `<tr>${tds}</tr>`;
+      return `<tr${isTotal ? ' class="total"' : ""}>${tds}</tr>`;
     })
     .join("");
 
@@ -220,13 +226,14 @@ function buildDocBlob(input: ExportInput): Blob {
 <title>${escapeHtml(input.title)}</title>
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
 <style>
-  @page { size: 21cm 29.7cm; margin: 1.5cm; }
+  @page { size: 21cm 29.7cm; margin: 2cm; }
   body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #0f172a; }
   h1 { font-size: 16pt; text-align: center; margin: 0 0 4pt; }
   .subtitle { text-align: center; font-size: 10pt; color: #64748b; margin: 0 0 2pt; }
   .meta { text-align: center; font-size: 8.5pt; color: #94a3b8; margin: 0 0 12pt; }
   table { border-collapse: collapse; width: 100%; table-layout: fixed; mso-table-layout-alt: fixed; }
   td, th { mso-padding-alt: 0in 0in 0in 0in; }
+  tr.total td { font-weight: bold; background-color: #eef2ff; }
 </style>
 </head>
 <body>
@@ -248,10 +255,10 @@ ${subtitleHtml}
 
 /* ------------------------------------ pdf ------------------------------------ */
 
-const PAGE_W = 595.28; // A4
+const PAGE_W = 595.28; // A4 portrait
 const PAGE_H = 841.89;
-const MARGIN = 36;
-const BOTTOM = 36;
+const MARGIN = 60; // margin atas/kiri/kanan (±21 mm)
+const BOTTOM = 60; // margin bawah (±21 mm)
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
 type RGB = [number, number, number];
@@ -261,6 +268,7 @@ const COLOR_MUTED: RGB = [0.45, 0.47, 0.51];
 const COLOR_HEADER_BG: RGB = [0.31, 0.27, 0.9]; // #4f46e5 (sama dengan DOC/Excel)
 const COLOR_BORDER: RGB = [0.796, 0.835, 0.882]; // #cbd5e1
 const COLOR_HEADER_BORDER: RGB = [0.26, 0.22, 0.79]; // #4338ca
+const COLOR_TOTAL_BG: RGB = [0.94, 0.96, 1.0]; // #eef2ff
 
 function num(n: number): string {
   return n.toFixed(2).replace(/\.?0+$/, "").replace(/\.$/, "");
@@ -372,11 +380,11 @@ function buildPdfBlob(input: ExportInput): Blob {
 
   const pages: string[][] = [];
   let ops: string[] = [];
-  let topY = PAGE_H - MARGIN;
+  let topY = MARGIN;
 
   function beginPage() {
     ops = [];
-    topY = PAGE_H - MARGIN;
+    topY = MARGIN;
     pages.push(ops);
   }
   beginPage();
@@ -454,6 +462,7 @@ function buildPdfBlob(input: ExportInput): Blob {
   }
 
   input.rows.forEach((r) => {
+    const isTotal = Boolean((r as Record<string, unknown>).__total);
     const wrapped = input.columns.map((c) =>
       wrapText(rowValue(r, c), 9, widths[input.columns.indexOf(c)] - ROW_PAD_X * 2)
     );
@@ -464,13 +473,14 @@ function buildPdfBlob(input: ExportInput): Blob {
 
     input.columns.forEach((c, i) => {
       const x = MARGIN + widths.slice(0, i).reduce((a, b) => a + b, 0);
+      if (isTotal) fillRect(x, topY, widths[i], rowHeight, COLOR_TOTAL_BG);
       strokeRect(x, topY, widths[i], rowHeight);
       const lines = wrapped[i];
       lines.forEach((line, j) => {
         drawText(
           line,
           9,
-          false,
+          isTotal,
           x + ROW_PAD_X,
           topY + ROW_PAD_TOP + j * ROW_LINE_H,
           COLOR_TEXT,

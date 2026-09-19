@@ -501,7 +501,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   value={form.pelapor_id}
                   onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
                 >
-                  <option value="">Pilih Pelapor (Ketua / Wakil)...</option>
+                  <option value="">Pilih Pelapor</option>
                   {pelaporOptions.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.nama}
@@ -516,7 +516,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   value={form.penerima_laporan}
                   onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
                 >
-                  <option value="">Pilih penerima...</option>
+                  <option value="">Pilih penerima</option>
                   <option value="ketua_umum">Ketua Umum</option>
                   <option value="ketua_1">Ketua 1</option>
                   <option value="ketua_2 OSIS">Ketua 2</option>
@@ -536,7 +536,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                       : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
                   }
                 >
-                  ✏️ Tulis Manual
+                  Ketik Manual
                 </button>
                 <button
                   type="button"
@@ -547,7 +547,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                       : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
                   }
                 >
-                  📋 Pilih dari Daftar
+                  Pilih Kegiatan
                 </button>
               </div>
 

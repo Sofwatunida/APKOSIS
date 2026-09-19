@@ -243,12 +243,21 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                 { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
                 { header: "Saldo", key: "saldo", width: 20, align: "right" },
               ]}
-              rows={perDivisi.map((d) => ({
-                divisi: d.nama,
-                pemasukan: formatRupiah(d.masuk),
-                pengeluaran: formatRupiah(d.keluar),
-                saldo: formatRupiah(d.masuk - d.keluar),
-              }))}
+              rows={[
+                ...perDivisi.map((d) => ({
+                  divisi: d.nama,
+                  pemasukan: formatRupiah(d.masuk),
+                  pengeluaran: formatRupiah(d.keluar),
+                  saldo: formatRupiah(d.masuk - d.keluar),
+                })),
+                {
+                  divisi: "TOTAL",
+                  pemasukan: formatRupiah(totalMasuk),
+                  pengeluaran: formatRupiah(totalKeluar),
+                  saldo: formatRupiah(totalMasuk - totalKeluar),
+                  __total: true,
+                },
+              ]}
             />
           }
         />
