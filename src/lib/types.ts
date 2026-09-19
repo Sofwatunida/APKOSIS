@@ -21,6 +21,8 @@ export type LaporanHarian =
   Database["public"]["Tables"]["laporan_harian"]["Row"];
 export type KendalaSolusi =
   Database["public"]["Tables"]["kendala_solusi"]["Row"];
+export type OpsiKegiatan =
+  Database["public"]["Tables"]["opsi_kegiatan"]["Row"];
 export type Inventaris = Database["public"]["Tables"]["inventaris"]["Row"];
 export type Kebutuhan = Database["public"]["Tables"]["kebutuhan"]["Row"];
 export type TransaksiKeuangan =

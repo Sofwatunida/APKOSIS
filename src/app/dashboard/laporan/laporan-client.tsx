@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, LaporanHarian, KendalaSolusi } from "@/lib/types";
+import type { Profile, LaporanHarian, KendalaSolusi, OpsiKegiatan } from "@/lib/types";
 import { formatDate, todayISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,13 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   const [pelaporOptions, setPelaporOptions] = useState<{ id: string; nama: string }[]>([]);
   const [searchHistory, setSearchHistory] = useState("");
 
+  // dropdown kegiatan custom (dikelola ketua/wakil)
+  const [opsiKegiatan, setOpsiKegiatan] = useState<OpsiKegiatan[]>([]);
+  const [kegiatanMode, setKegiatanMode] = useState<"ketik" | "pilih">("ketik");
+  const [newOpsi, setNewOpsi] = useState("");
+  const [manageOpen, setManageOpen] = useState(false);
+  const [savingOpsi, setSavingOpsi] = useState(false);
+
   // form state - starts empty
   const [form, setForm] = useState(emptyForm);
   const [kendalaRows, setKendalaRows] = useState<KendalaRow[]>([]);
@@ -64,6 +71,14 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       .order("tanggal", { ascending: false })
       .limit(100);
     setHistory(reports ?? []);
+
+    // 1b. Fetch daftar kegiatan dropdown (dikelola ketua/wakil)
+    const { data: opsiData } = await supabase
+      .from("opsi_kegiatan")
+      .select("*")
+      .eq("divisi_id", profile.divisi_id)
+      .order("created_at", { ascending: true });
+    setOpsiKegiatan(opsiData ?? []);
 
     // 2. Fetch Divisi to get ONLY Ketua & Wakil (Requirement 2)
     const { data: divData } = await supabase
@@ -181,6 +196,56 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     return Object.keys(e).length === 0;
   }
 
+  async function handleAddOpsi() {
+    const trimmed = newOpsi.trim();
+    if (!profile.divisi_id || !trimmed) return;
+    if (
+      opsiKegiatan.some(
+        (o) => o.nama_kegiatan.toLowerCase() === trimmed.toLowerCase()
+      )
+    ) {
+      error("Kegiatan tersebut sudah ada di daftar.");
+      return;
+    }
+
+    setSavingOpsi(true);
+    const { data, error: insErr } = await supabase
+      .from("opsi_kegiatan")
+      .insert({ divisi_id: profile.divisi_id, nama_kegiatan: trimmed })
+      .select()
+      .single();
+
+    if (insErr) {
+      setSavingOpsi(false);
+      error("Gagal menambah daftar kegiatan: " + insErr.message);
+      return;
+    }
+
+    setOpsiKegiatan((prev) => [...prev, data]);
+    if (kegiatanMode === "pilih") {
+      setForm({ ...form, kegiatan_hari_ini: data.nama_kegiatan });
+    }
+    setNewOpsi("");
+    setSavingOpsi(false);
+    success("Kegiatan ditambahkan ke daftar.");
+  }
+
+  async function handleDeleteOpsi(id: string) {
+    const target = opsiKegiatan.find((o) => o.id === id);
+    if (!confirm(`Hapus "${target?.nama_kegiatan}" dari daftar kegiatan?`)) return;
+
+    const { error: delErr } = await supabase
+      .from("opsi_kegiatan")
+      .delete()
+      .eq("id", id);
+    if (delErr) {
+      error("Gagal menghapus daftar kegiatan: " + delErr.message);
+      return;
+    }
+    setOpsiKegiatan((prev) => prev.filter((o) => o.id !== id));
+    success("Kegiatan dihapus dari daftar.");
+  }
+
   async function handleSave() {
     if (!profile.divisi_id) return;
     if (!validate()) return;
@@ -257,6 +322,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
   async function handleEdit(report: LaporanHarian) {
     setEditingReport(report);
+    setKegiatanMode("ketik");
     setForm({
       tanggal: report.tanggal,
       pelapor_id: report.pelapor_id ?? "",
@@ -420,12 +486,91 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             </div>
 
             <Field label="Kegiatan yang Dilakukan" error={formErrors.kegiatan_hari_ini}>
-              <Textarea
-                rows={3}
-                value={form.kegiatan_hari_ini}
-                onChange={(e) => setForm({ ...form, kegiatan_hari_ini: e.target.value })}
-                placeholder="Tuliskan rincian kegiatan divisi untuk tanggal yang dipilih..."
-              />
+              <div className="mb-3 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setKegiatanMode("ketik")}
+                  className={
+                    kegiatanMode === "ketik"
+                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm"
+                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
+                  }
+                >
+                  ✏️ Tulis Manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKegiatanMode("pilih")}
+                  className={
+                    kegiatanMode === "pilih"
+                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm"
+                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
+                  }
+                >
+                  📋 Pilih dari Daftar
+                </button>
+              </div>
+
+              {kegiatanMode === "ketik" ? (
+                <Textarea
+                  rows={3}
+                  value={form.kegiatan_hari_ini}
+                  onChange={(e) => setForm({ ...form, kegiatan_hari_ini: e.target.value })}
+                  placeholder="Tuliskan rincian kegiatan divisi untuk tanggal yang dipilih..."
+                />
+              ) : (
+                <div className="space-y-2.5">
+                  <Select
+                    value={form.kegiatan_hari_ini}
+                    onChange={(e) =>
+                      setForm({ ...form, kegiatan_hari_ini: e.target.value })
+                    }
+                  >
+                    <option value="">Pilih kegiatan dari daftar...</option>
+                    {opsiKegiatan.map((o) => (
+                      <option key={o.id} value={o.nama_kegiatan}>
+                        {o.nama_kegiatan}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Tulis kegiatan baru untuk ditambahkan ke daftar..."
+                      value={newOpsi}
+                      onChange={(e) => setNewOpsi(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddOpsi();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleAddOpsi}
+                      loading={savingOpsi}
+                    >
+                      + Tambah
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-400">
+                      {opsiKegiatan.length} pilihan tersedia di daftar divisi ini.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setManageOpen(true)}
+                      className="text-xs font-semibold text-brand-600 hover:underline"
+                    >
+                      Kelola Daftar
+                    </button>
+                  </div>
+                </div>
+              )}
             </Field>
 
             <div>
@@ -707,6 +852,80 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal Kelola Daftar Kegiatan (custom dropdown oleh ketua/wakil) */}
+      <Modal
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        title="Kelola Daftar Kegiatan"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Daftar ini hanya tersimpan untuk divisi Anda dan bisa dipakai kembali saat mengisi
+            laporan. Anda juga bisa tetap mengetik kegiatan secara manual dengan memilih mode
+            &quot;Tulis Manual&quot;.
+          </p>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Tulis kegiatan baru..."
+              value={newOpsi}
+              onChange={(e) => setNewOpsi(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddOpsi();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleAddOpsi}
+              loading={savingOpsi}
+            >
+              + Tambah
+            </Button>
+          </div>
+
+          {opsiKegiatan.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+              Belum ada kegiatan di daftar. Tambahkan kegiatan yang sering dipakai agar mudah
+              dipilih saat laporan.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+              {opsiKegiatan.map((o) => (
+                <li
+                  key={o.id}
+                  className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-800">{o.nama_kegiatan}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOpsi(o.id)}
+                    className="shrink-0 rounded-lg border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition"
+                  >
+                    ✕ Hapus
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setManageOpen(false)}
+              className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -262,6 +262,37 @@ export interface Database {
           }
         ];
       };
+      opsi_kegiatan: {
+        Row: {
+          id: string;
+          divisi_id: string;
+          nama_kegiatan: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          divisi_id: string;
+          nama_kegiatan: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          divisi_id?: string;
+          nama_kegiatan?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "opsi_kegiatan_divisi_id_fkey";
+            columns: ["divisi_id"];
+            referencedRelation: "divisi";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       inventaris: {
         Row: {
           id: string;
