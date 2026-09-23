@@ -13,6 +13,19 @@ import { Field, Input, Textarea, Select, Label } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
+import {
+  ClipboardList,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Plus,
+  Calendar,
+  AlertCircle,
+  Sparkles,
+  X,
+  Check,
+} from "lucide-react";
 
 interface KendalaRow {
   kendala: string;
@@ -440,8 +453,8 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Laporan Harian</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Laporan Harian</h1>
+          <p className="text-xs text-slate-500">
             {reportToday
               ? `Status hari ini: Laporan tanggal ${formatDate(todayISO())} sudah tercatat.`
               : "Status hari ini: Belum ada laporan yang tercatat untuk hari ini."}
@@ -451,40 +464,43 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           <button
             type="button"
             onClick={() => handleOpenDetail(reportToday)}
-            className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
           >
-            👁️ Lihat Laporan Hari Ini
+            <Eye className="h-3.5 w-3.5 text-slate-400" />
+            <span>Lihat Laporan Hari Ini</span>
           </button>
         )}
       </div>
 
       {/* Form Input Card */}
       <Card>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">
-              {editingReport
-                ? `Edit Laporan — Tanggal ${formatDate(editingReport.tanggal)}`
-                : "Form Laporan Harian"}
-            </h2>
-            <p className="text-xs text-slate-500">
-              {editingReport
-                ? "Perbarui isi laporan, kegiatan, dan kendala/solusi."
-                : "Pilih tanggal kapan saja (hari ini, susulan/kemarin, atau rencana esok)."}
-            </p>
-          </div>
-          {editingReport && (
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
-            >
-              ✕ Batal Edit (Form Baru)
-            </button>
-          )}
-        </div>
+        <CardHeader
+          title={
+            editingReport
+              ? `Edit Laporan — Tanggal ${formatDate(editingReport.tanggal)}`
+              : "Form Laporan Harian"
+          }
+          subtitle={
+            editingReport
+              ? "Perbarui isi laporan, kegiatan, dan kendala/solusi."
+              : "Pilih tanggal kapan saja (hari ini, susulan/kemarin, atau rencana esok)."
+          }
+          icon={<ClipboardList className="h-5 w-5" />}
+          action={
+            editingReport && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition active:scale-[0.98]"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>Batal Edit</span>
+              </button>
+            )
+          }
+        />
 
-        <CardContent className="pt-5">
+        <CardContent className="p-6">
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field label="Tanggal Laporan" error={formErrors.tanggal}>
@@ -497,7 +513,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
               <Field label="Pelapor (Ketua / Wakil)" error={formErrors.pelapor_id}>
                 <select
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer"
                   value={form.pelapor_id}
                   onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
                 >
@@ -512,7 +528,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
               <Field label="Penerima Laporan" error={formErrors.penerima_laporan}>
                 <select
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer"
                   value={form.penerima_laporan}
                   onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
                 >
@@ -520,7 +536,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   <option value="ketua_umum">Ketua Umum</option>
                   <option value="ketua_1">Ketua 1</option>
                   <option value="ketua_2 OSIS">Ketua 2</option>
-             
                 </select>
               </Field>
             </div>
@@ -755,107 +770,113 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
       {/* Riwayat Laporan with Search & Action Buttons (Requirement 1, 5, 7) */}
       <Card>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Riwayat Laporan Divisi</h2>
-            <p className="text-xs text-slate-500">
-              Total {history.length} laporan tercatat
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {/* Search Input (Requirement 5) */}
-            <div className="w-full sm:w-72">
-              <Input
-                placeholder=" Cari riwayat kegiatan/tanggal..."
-                value={searchHistory}
-                onChange={(e) => setSearchHistory(e.target.value)}
+        <CardHeader
+          title="Riwayat Laporan Divisi"
+          subtitle={`Total ${history.length} laporan terdokumentasi dalam sistem`}
+          icon={<ClipboardList className="h-5 w-5" />}
+          action={
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {/* Search Input (Requirement 5) */}
+              <div className="relative w-full sm:w-64">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Search className="h-3.5 w-3.5" />
+                </div>
+                <Input
+                  placeholder="Cari kegiatan/tanggal..."
+                  value={searchHistory}
+                  onChange={(e) => setSearchHistory(e.target.value)}
+                  className="pl-9 h-9 text-xs"
+                />
+              </div>
+              <ExportMenu
+                title="Laporan Harian"
+                filename="laporan-harian"
+                disabled={filteredHistory.length === 0}
+                columns={[
+                  { header: "Tanggal", key: "tanggal", width: 14 },
+                  { header: "Kegiatan", key: "kegiatan", width: 45 },
+                  { header: "Penerima", key: "penerima", width: 18 },
+                  { header: "Status", key: "status", width: 12 },
+                  { header: "Informasi Lain", key: "informasi", width: 30 },
+                ]}
+                rows={filteredHistory.map((h) => ({
+                  tanggal: formatDate(h.tanggal),
+                  kegiatan: h.kegiatan_hari_ini,
+                  penerima: h.penerima_laporan ?? "-",
+                  status: h.tanggal === todayISO() ? "Hari Ini" : "Tersimpan",
+                  informasi: h.informasi_lain ?? "-",
+                }))}
               />
             </div>
-            <ExportMenu
-              title="Laporan Harian"
-              filename="laporan-harian"
-              disabled={filteredHistory.length === 0}
-              columns={[
-                { header: "Tanggal", key: "tanggal", width: 14 },
-                { header: "Kegiatan", key: "kegiatan", width: 45 },
-                { header: "Penerima", key: "penerima", width: 18 },
-                { header: "Status", key: "status", width: 12 },
-                { header: "Informasi Lain", key: "informasi", width: 30 },
-              ]}
-              rows={filteredHistory.map((h) => ({
-                tanggal: formatDate(h.tanggal),
-                kegiatan: h.kegiatan_hari_ini,
-                penerima: h.penerima_laporan ?? "-",
-                status: h.tanggal === todayISO() ? "Hari Ini" : "Tersimpan",
-                informasi: h.informasi_lain ?? "-",
-              }))}
-            />
-          </div>
-        </div>
+          }
+        />
 
-        <CardContent className="pt-3">
+        <CardContent className="p-0">
           {filteredHistory.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">
+            <div className="py-12 text-center text-xs text-slate-400">
               {searchHistory ? "Tidak ada laporan yang sesuai pencarian." : "Belum ada laporan."}
-            </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-3">Tanggal</th>
-                    <th className="px-3 py-3">Kegiatan</th>
-                    <th className="px-3 py-3">Penerima</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3 text-right">Aksi</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5 font-semibold">Tanggal</th>
+                    <th className="px-5 py-3.5 font-semibold">Kegiatan</th>
+                    <th className="px-5 py-3.5 font-semibold">Penerima</th>
+                    <th className="px-5 py-3.5 font-semibold">Status</th>
+                    <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredHistory.map((h) => (
-                    <tr key={h.id} className="hover:bg-slate-50/70 transition">
-                      <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-800">
+                    <tr key={h.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800">
                         {formatDate(h.tanggal)}
                         {h.tanggal === todayISO() && (
-                          <span className="ml-2 inline-block rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                          <span className="ml-2 inline-block rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                             Hari Ini
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3 max-w-xs md:max-w-md truncate text-slate-600">
+                      <td className="px-5 py-3.5 max-w-xs md:max-w-md truncate text-xs text-slate-600">
                         {h.kegiatan_hari_ini}
                       </td>
-                      <td className="px-3 py-3 text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
                         {h.penerima_laporan || "-"}
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <Badge color="green">Tersimpan</Badge>
                       </td>
-                      <td className="px-3 py-3 text-right whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
                         {/* Action buttons with border (Requirement 1, 7) */}
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(h)}
-                            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400"
+                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
                             title="Lihat rincian laporan beserta kendala dan solusi"
                           >
-                            Detail
+                            <Eye className="h-3 w-3 text-slate-400" />
+                            <span>Detail</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleEdit(h)}
-                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-2.5 py-1 text-xs font-medium text-blue-700 shadow-sm transition hover:bg-blue-100"
+                            className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98]"
                             title="Edit laporan ini"
                           >
-                            Edit
+                            <Pencil className="h-3 w-3" />
+                            <span>Edit</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(h)}
-                            className="rounded-lg border border-red-400 bg-red-50/70 px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm transition hover:bg-red-100"
+                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98]"
                             title="Hapus laporan ini"
                           >
-                            Hapus
+                            <Trash2 className="h-3 w-3" />
+                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
@@ -877,38 +898,44 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
         {detailReport && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <p className="text-xs text-slate-400 font-medium">Tanggal</p>
-                <p className="font-semibold text-slate-800">{formatDate(detailReport.tanggal)}</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tanggal</p>
+                <p className="mt-0.5 font-bold text-slate-900">{formatDate(detailReport.tanggal)}</p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <p className="text-xs text-slate-400 font-medium">Penerima Laporan</p>
-                <p className="font-semibold text-slate-800">{detailReport.penerima_laporan || "-"}</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Penerima Laporan</p>
+                <p className="mt-0.5 font-bold text-slate-900">{detailReport.penerima_laporan || "-"}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kegiatan</p>
-              <div className="mt-1.5 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Kegiatan</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs">
                 {detailReport.kegiatan_hari_ini}
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kendala & Solusi</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Kendala & Solusi</p>
               {loadingDetail ? (
                 <div className="py-4 text-center text-xs text-slate-400">Memuat kendala...</div>
               ) : detailKendala.length > 0 ? (
-                <div className="mt-1.5 space-y-2">
+                <div className="space-y-2.5">
                   {detailKendala.map((k) => (
-                    <div key={k.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm">
-                      <p className="font-semibold text-red-700">Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></p>
-                      <p className="mt-1 font-semibold text-emerald-700">Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></p>
+                    <div key={k.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs leading-relaxed space-y-1.5">
+                      <p className="font-semibold text-rose-700 flex items-start gap-1.5">
+                        <span className="shrink-0">⚠️</span>
+                        <span>Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></span>
+                      </p>
+                      <p className="font-semibold text-emerald-700 flex items-start gap-1.5">
+                        <span className="shrink-0">💡</span>
+                        <span>Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></span>
+                      </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+                <p className="rounded-2xl border border-slate-200/60 bg-slate-50/50 p-3.5 text-xs text-slate-500">
                   Tidak ada kendala yang dilaporkan pada tanggal ini.
                 </p>
               )}
@@ -916,32 +943,33 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
             {detailReport.informasi_lain && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Informasi Lain-lain</p>
-                <p className="mt-1 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Informasi Lain-lain</p>
+                <p className="rounded-2xl border border-slate-200/80 bg-white p-3.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs">
                   {detailReport.informasi_lain}
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => {
                   const target = detailReport;
                   setDetailReport(null);
                   handleEdit(target);
                 }}
-                className="rounded-lg border border-blue-400 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 shadow-sm"
               >
-                Edit Laporan Ini
-              </button>
-              <button
-                type="button"
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Edit Laporan Ini</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setDetailReport(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
               >
                 Tutup
-              </button>
+              </Button>
             </div>
           </div>
         )}

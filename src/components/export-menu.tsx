@@ -8,6 +8,14 @@ import {
   type ExportColumn,
   type ExportFormat,
 } from "@/lib/export-client";
+import {
+  Download,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
+  File,
+  Loader2,
+} from "lucide-react";
 
 interface ExportMenuProps {
   title: string;
@@ -19,10 +27,38 @@ interface ExportMenuProps {
   size?: "sm" | "md";
 }
 
-const FORMATS: { key: ExportFormat; label: string; hint: string }[] = [
-  { key: "pdf", label: "PDF", hint: "Dokumen PDF" },
-  { key: "doc", label: "DOC", hint: "Dokumen Word" },
-  { key: "excel", label: "Excel", hint: "File spreadsheet" },
+const FORMATS: {
+  key: ExportFormat;
+  label: string;
+  hint: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  bgColor: string;
+}[] = [
+  {
+    key: "pdf",
+    label: "PDF",
+    hint: "Dokumen cetak resmi",
+    icon: FileText,
+    iconColor: "text-rose-600",
+    bgColor: "bg-rose-50",
+  },
+  {
+    key: "doc",
+    label: "Word (DOC)",
+    hint: "Dapat diedit di MS Word",
+    icon: File,
+    iconColor: "text-blue-600",
+    bgColor: "bg-blue-50",
+  },
+  {
+    key: "excel",
+    label: "Excel (XLSX)",
+    hint: "Spreadsheet & formula",
+    icon: FileSpreadsheet,
+    iconColor: "text-emerald-600",
+    bgColor: "bg-emerald-50",
+  },
 ];
 
 export function ExportMenu({
@@ -52,7 +88,14 @@ export function ExportMenu({
     setBusy(format);
     setOpen(false);
     try {
-      await downloadExport({ format, title, subtitle, columns, rows, filename: filename ?? title });
+      await downloadExport({
+        format,
+        title,
+        subtitle,
+        columns,
+        rows,
+        filename: filename ?? title,
+      });
       success(`File ${format.toUpperCase()} "${title}" berhasil diunduh.`);
     } catch {
       error("Gagal membuat file export.");
@@ -69,64 +112,54 @@ export function ExportMenu({
         size={size}
         disabled={disabled || Boolean(busy)}
         onClick={() => setOpen((o) => !o)}
-        className="whitespace-nowrap"
+        className="gap-2 font-medium"
       >
         {busy ? (
           <>
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-400 border-t-slate-700" />
-            {busy.toUpperCase()}
+            <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+            <span>Mengekspor {busy.toUpperCase()}...</span>
           </>
         ) : (
           <>
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
-              />
-            </svg>
-            Export
-            <svg
-              className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <Download className="h-4 w-4 text-slate-500" />
+            <span>Ekspor</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+                open ? "rotate-180" : ""
+              }`}
+            />
           </>
         )}
       </Button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-          <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Pilih Format
+        <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-elevated backdrop-blur-md animate-slide-up">
+          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            Pilih Format Ekspor
           </p>
-          {FORMATS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => handleExport(f.key)}
-              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-brand-50 hover:text-brand-700"
-            >
-              <span className="font-medium">{f.label}</span>
-              <span className="text-[11px] text-slate-400">{f.hint}</span>
-            </button>
-          ))}
+          <div className="space-y-0.5">
+            {FORMATS.map((f) => {
+              const IconComp = f.icon;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => handleExport(f.key)}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs transition hover:bg-slate-50 active:scale-[0.98]"
+                >
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${f.bgColor} ${f.iconColor}`}
+                  >
+                    <IconComp className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">{f.label}</p>
+                    <p className="text-[11px] text-slate-400">{f.hint}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

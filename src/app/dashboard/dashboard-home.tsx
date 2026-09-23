@@ -13,6 +13,23 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/feedback";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import {
+  Users,
+  ClipboardCheck,
+  FileText,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  Sparkles,
+  Layers,
+  CheckCircle2,
+  Clock,
+  Plus,
+  ArrowRight,
+  Eye,
+  AlertCircle,
+  Check,
+} from "lucide-react";
 
 export function DashboardHome({ profile }: { profile: Profile }) {
   const role = profile.role;
@@ -29,29 +46,69 @@ function StatCard({
   value,
   sub,
   color = "brand",
+  icon: IconComponent,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: "brand" | "green" | "red" | "amber" | "indigo";
+  icon?: React.ComponentType<{ className?: string }>;
 }) {
-  const colors: Record<string, string> = {
-    brand: "text-brand-600",
-    green: "text-emerald-600",
-    red: "text-red-600",
-    amber: "text-amber-600",
-    indigo: "text-indigo-600",
+  const configs: Record<string, { text: string; bg: string; iconColor: string; ring: string }> = {
+    brand: {
+      text: "text-brand-600",
+      bg: "bg-brand-50/80",
+      iconColor: "text-brand-600",
+      ring: "ring-brand-500/10",
+    },
+    green: {
+      text: "text-emerald-600",
+      bg: "bg-emerald-50/80",
+      iconColor: "text-emerald-600",
+      ring: "ring-emerald-500/10",
+    },
+    red: {
+      text: "text-rose-600",
+      bg: "bg-rose-50/80",
+      iconColor: "text-rose-600",
+      ring: "ring-rose-500/10",
+    },
+    amber: {
+      text: "text-amber-600",
+      bg: "bg-amber-50/80",
+      iconColor: "text-amber-600",
+      ring: "ring-amber-500/10",
+    },
+    indigo: {
+      text: "text-indigo-600",
+      bg: "bg-indigo-50/80",
+      iconColor: "text-indigo-600",
+      ring: "ring-indigo-500/10",
+    },
   };
+
+  const current = configs[color] || configs.brand;
+
   return (
-    <Card>
-      <CardContent>
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className={`mt-1 text-2xl font-bold ${colors[color]}`}>{value}</p>
-        {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+    <Card className="hover:shadow-elevated transition-all duration-200">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          {IconComponent && (
+            <div
+              className={`flex h-9 w-9 items-center justify-center rounded-xl ${current.bg} ${current.iconColor} ring-1 ${current.ring}`}
+            >
+              <IconComponent className="h-4.5 w-4.5" />
+            </div>
+          )}
+        </div>
+        <p className={`mt-2 text-2xl font-bold tracking-tight ${current.text}`}>{value}</p>
+        {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
       </CardContent>
     </Card>
   );
 }
+
 
 /* ============ DIVISION ADMIN ============ */
 function DivisionDashboard({ profile }: { profile: Profile }) {
@@ -180,54 +237,108 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          {divisi?.nama_divisi ?? "Dashboard"}
-        </h1>
-        <p className="text-sm text-slate-500">
-          {divisi?.periode} {divisi?.ketua_divisi && `• Ketua: ${divisi.ketua_divisi}`}
-        </p>
+      {/* 2026 Modern Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white shadow-elevated border border-slate-800/80">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-brand-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 right-1/3 h-32 w-32 rounded-full bg-indigo-500/15 blur-2xl" />
+
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-brand-200 backdrop-blur-md mb-3 border border-white/10">
+              <Sparkles className="h-3.5 w-3.5 text-brand-400" />
+              <span>Divisi OSIS • Periode {divisi?.periode || "2025/2026"}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              {divisi?.nama_divisi ?? "Dashboard Divisi"}
+            </h1>
+            <p className="mt-1 text-xs text-slate-300">
+              {divisi?.ketua_divisi ? `Ketua Divisi: ${divisi.ketua_divisi}` : "Ketua belum ditentukan"}
+              {divisi?.wakil_divisi ? ` • Wakil: ${divisi.wakil_divisi}` : ""}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/dashboard/laporan"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4 text-brand-600" />
+              <span>{laporanToday ? "Buka Laporan Hari Ini" : "Buat Laporan Hari Ini"}</span>
+            </Link>
+          </div>
+        </div>
       </div>
 
+      {/* Main Metric Cards Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Anggota Aktif" value={String(anggotaCount)} color="indigo" />
+        <StatCard
+          label="Anggota Aktif"
+          value={String(anggotaCount)}
+          color="indigo"
+          icon={Users}
+          sub="Anggota terdaftar divisi"
+        />
         <StatCard
           label="Laporan Hari Ini"
-          value={laporanToday ? "Sudah" : "Belum"}
+          value={laporanToday ? "Sudah Terisi" : "Belum Terisi"}
           color={laporanToday ? "green" : "red"}
+          icon={ClipboardCheck}
+          sub={laporanToday ? "Tercatat untuk hari ini" : "Perlu diisi sebelum akhir hari"}
         />
-        <StatCard label="Total Laporan" value={String(jumlahLaporan)} color="brand" />
         <StatCard
-          label="Saldo"
+          label="Total Laporan"
+          value={String(jumlahLaporan)}
+          color="brand"
+          icon={FileText}
+          sub="Akumulasi seluruh laporan"
+        />
+        <StatCard
+          label="Saldo Divisi"
           value={formatRupiah(pemasukan - pengeluaran)}
           color={pemasukan - pengeluaran >= 0 ? "green" : "red"}
+          icon={Wallet}
+          sub="Pemasukan - Pengeluaran"
         />
       </div>
 
+      {/* Financial Breakdown Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard label="Pemasukan" value={formatRupiah(pemasukan)} color="green" />
-        <StatCard label="Pengeluaran" value={formatRupiah(pengeluaran)} color="red" />
+        <StatCard
+          label="Total Pemasukan Kas Divisi"
+          value={formatRupiah(pemasukan)}
+          color="green"
+          icon={TrendingUp}
+        />
+        <StatCard
+          label="Total Pengeluaran Kas Divisi"
+          value={formatRupiah(pengeluaran)}
+          color="red"
+          icon={TrendingDown}
+        />
       </div>
 
+      {/* Recent Report Card */}
       <Card>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Laporan Terakhir</h2>
-            <p className="text-xs text-slate-500">Ringkasan status pelaporan divisi</p>
-          </div>
-          <Link
-            href="/dashboard/laporan"
-            className="inline-flex items-center rounded-lg bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
-          >
-            {laporanToday ? "Buka Laporan Harian" : "+ Isi Laporan Hari Ini"}
-          </Link>
-        </div>
-        <CardContent className="pt-4">
+        <CardHeader
+          title="Laporan Terakhir Divisi"
+          subtitle="Ringkasan pelaporan aktivitas harian terbaru"
+          icon={<ClipboardCheck className="h-5 w-5" />}
+          action={
+            <Link
+              href="/dashboard/laporan"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+            >
+              <span>{laporanToday ? "Buka Halaman Laporan" : "+ Isi Laporan"}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+        <CardContent className="p-6">
           {lastReport ? (
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-slate-800">
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-base font-bold text-slate-900">
                     {formatDate(lastReport.tanggal)}
                   </span>
                   {lastReport.tanggal === todayISO() ? (
@@ -236,8 +347,8 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                     <Badge color="blue">Terakhir</Badge>
                   )}
                   {lastReport.penerima_laporan && (
-                    <span className="text-xs text-slate-400">
-                      • Penerima: {lastReport.penerima_laporan}
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 font-medium">
+                      Penerima: {lastReport.penerima_laporan}
                     </span>
                   )}
                 </div>
@@ -245,35 +356,41 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                   <button
                     type="button"
                     onClick={() => handleOpenDetail(lastReport)}
-                    className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
                   >
-                    Detail
+                    <Eye className="h-3.5 w-3.5 text-slate-400" />
+                    <span>Detail</span>
                   </button>
                   <Link
                     href={`/dashboard/laporan?edit=${lastReport.id}`}
-                    className="inline-flex items-center rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98]"
                   >
-                    Edit Laporan Hari Ini
+                    <span>Edit Laporan</span>
                   </Link>
                 </div>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Kegiatan
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Kegiatan Terlaksana
                 </p>
-                <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                   {lastReport.kegiatan_hari_ini}
-                </p>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="py-6 text-center">
-              <p className="text-sm text-slate-500">Belum ada laporan yang tercatat.</p>
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <FileText className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <p className="text-sm font-semibold text-slate-800">Belum ada laporan yang tercatat.</p>
+              <p className="mt-1 text-xs text-slate-500">Mulai buat laporan untuk mendokumentasikan kegiatan harian divisi.</p>
               <Link
                 href="/dashboard/laporan"
-                className="mt-3 inline-flex items-center rounded-lg border border-brand-500 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition"
               >
-                + Mulai Buat Laporan Hari Ini
+                <Plus className="h-4 w-4" />
+                <span>Mulai Buat Laporan Hari Ini</span>
               </Link>
             </div>
           )}
@@ -393,41 +510,72 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard Monitoring</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Monitoring</h1>
+        <p className="text-xs text-slate-500">Pantau progres pelaporan harian seluruh divisi OSIS secara real-time</p>
+      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Divisi" value={String(counts.total)} color="brand" />
-        <StatCard label="Sudah Mengisi" value={String(counts.sudah)} color="green" />
-        <StatCard label="Belum Mengisi" value={String(counts.belum)} color="red" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Total Divisi Terdaftar"
+          value={String(counts.total)}
+          color="brand"
+          icon={Layers}
+          sub="Seluruh divisi di OSIS"
+        />
+        <StatCard
+          label="Sudah Mengisi Laporan Hari Ini"
+          value={String(counts.sudah)}
+          color="green"
+          icon={CheckCircle2}
+          sub="Divisi aktif melapor"
+        />
+        <StatCard
+          label="Belum Mengisi Hari Ini"
+          value={String(counts.belum)}
+          color="red"
+          icon={Clock}
+          sub="Perlu konfirmasi lanjutan"
+        />
       </div>
 
       <FinanceSummary />
 
       <Card>
         <CardHeader
-          title="Status Laporan Hari Ini"
+          title="Status Laporan Divisi Hari Ini"
+          subtitle="Daftar divisi beserta pimpinan dan kelengkapan laporan"
+          icon={<Layers className="h-5 w-5" />}
           action={
             <Link
               href="/dashboard/monitoring/divisi"
-              className="text-sm font-medium text-brand-600 hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-600 shadow-xs transition hover:bg-brand-50 hover:border-brand-300"
             >
-              Lihat semua
+              <span>Lihat Semua Divisi</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           }
         />
-        <CardContent>
+        <CardContent className="p-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {divisiList.map((d) => {
               return (
                 <Link
                   key={d.id}
-                  href={`/dashboard/monitoring/divisi`}
-                  className="rounded-lg border border-slate-200 p-4 transition hover:border-brand-300 hover:bg-brand-50/30"
+                  href="/dashboard/monitoring/divisi"
+                  className="group rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-xs transition-all duration-150 hover:border-brand-400 hover:shadow-card hover:-translate-y-0.5"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-800">{d.nama_divisi}</span>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                      {d.nama_divisi}
+                    </span>
+                    <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                      Div #{d.nomor_divisi}
+                    </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">{d.ketua_divisi || "-"}</p>
+                  <p className="mt-1.5 text-xs text-slate-500 truncate">
+                    Ketua: <span className="text-slate-700 font-medium">{d.ketua_divisi || "Belum diset"}</span>
+                  </p>
                 </Link>
               );
             })}
@@ -464,14 +612,37 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">
-        Dashboard {profile.role === "sekretaris" ? "Sekretaris" : ""}
-      </h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Divisi" value={String(stats.divisi)} color="brand" />
-        <StatCard label="Total Laporan" value={String(stats.laporan)} color="indigo" />
-        <StatCard label="Total Anggota" value={String(stats.anggota)} color="amber" />
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Dashboard {profile.role === "sekretaris" ? "Sekretaris OSIS" : "Staff"}
+        </h1>
+        <p className="text-xs text-slate-500">Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi</p>
       </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Total Divisi"
+          value={String(stats.divisi)}
+          color="brand"
+          icon={Layers}
+          sub="Divisi binaan OSIS"
+        />
+        <StatCard
+          label="Total Laporan Terarsip"
+          value={String(stats.laporan)}
+          color="indigo"
+          icon={FileText}
+          sub="Akumulasi seluruh laporan harian"
+        />
+        <StatCard
+          label="Total Anggota Terdata"
+          value={String(stats.anggota)}
+          color="amber"
+          icon={Users}
+          sub="Data keanggotaan seluruh divisi"
+        />
+      </div>
+
       <FinanceSummary />
     </div>
   );
@@ -519,12 +690,18 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard Bendahara</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Bendahara OSIS</h1>
+        <p className="text-xs text-slate-500">Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi</p>
+      </div>
+
       <FinanceSummary />
 
       <Card>
         <CardHeader
-          title="Transaksi Terbaru"
+          title="Transaksi Keuangan Terbaru"
+          subtitle="10 riwayat mutasi dana masuk & keluar terakhir"
+          icon={<Wallet className="h-5 w-5" />}
           action={
             <ExportMenu
               title="Transaksi Keuangan Terbaru"
@@ -550,49 +727,52 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
             />
           }
         />
-        <CardContent>
+        <CardContent className="p-0">
           {recent.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Belum ada transaksi.</p>
+            <div className="py-12 text-center text-xs text-slate-400">Belum ada transaksi tercatat.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="px-3 py-2">Tanggal</th>
-                    <th className="px-3 py-2">Divisi</th>
-                    <th className="px-3 py-2">Jenis</th>
-                    <th className="px-3 py-2">Keterangan</th>
-                    <th className="px-3 py-2">Bukti</th>
-                    <th className="px-3 py-2 text-right">Nominal</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5 font-semibold">Tanggal</th>
+                    <th className="px-5 py-3.5 font-semibold">Divisi</th>
+                    <th className="px-5 py-3.5 font-semibold">Jenis</th>
+                    <th className="px-5 py-3.5 font-semibold">Keterangan</th>
+                    <th className="px-5 py-3.5 font-semibold">Bukti</th>
+                    <th className="px-5 py-3.5 text-right font-semibold">Nominal</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {recent.map((t) => {
                     const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
                     return (
-                      <tr key={t.id} className="border-b border-slate-50">
-                        <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
-                        <td className="px-3 py-2 font-medium">{t.divisi?.nama_divisi ?? "-"}</td>
-                        <td className="px-3 py-2">
+                      <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-800">
+                          {formatDate(t.tanggal)}
+                        </td>
+                        <td className="px-5 py-3.5 font-medium text-slate-900">{t.divisi?.nama_divisi ?? "-"}</td>
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                            {t.jenis_transaksi}
+                            {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2">{cleanKeterangan}</td>
-                        <td className="px-3 py-2">
+                        <td className="px-5 py-3.5 text-slate-600 max-w-xs truncate">{cleanKeterangan}</td>
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           {buktiUrl ? (
                             <button
                               type="button"
                               onClick={() => setViewBuktiUrl(buktiUrl)}
-                              className="rounded-lg border border-emerald-400 bg-emerald-50/70 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100"
+                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-xs transition hover:bg-emerald-100"
                             >
-                              Lihat Bukti
+                              <Eye className="h-3 w-3" />
+                              <span>Lihat Bukti</span>
                             </button>
                           ) : (
                             <span className="text-xs text-slate-300">-</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-right font-medium">
+                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
                           {formatRupiah(t.nominal)}
                         </td>
                       </tr>
@@ -608,21 +788,21 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
       <Modal open={Boolean(viewBuktiUrl)} onClose={() => setViewBuktiUrl(null)} title="Bukti Transaksi">
         {viewBuktiUrl && (
           <div className="space-y-4">
-            <div className="max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
+            <div className="max-h-[65vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-center">
               <img
                 src={viewBuktiUrl}
                 alt="Bukti Transaksi"
-                className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-sm"
+                className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-card"
               />
             </div>
             <div className="flex justify-end">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setViewBuktiUrl(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Tutup
-              </button>
+              </Button>
             </div>
           </div>
         )}

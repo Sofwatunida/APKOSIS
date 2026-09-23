@@ -13,6 +13,19 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
+import {
+  TrendingUp,
+  TrendingDown,
+  Coins,
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Wallet,
+  ImageIcon,
+  Upload,
+} from "lucide-react";
 
 interface FormState {
   tanggal: string;
@@ -234,178 +247,214 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Keuangan Divisi</h1>
-          <p className="text-sm text-slate-500">Kelola dan pantau arus kas masuk, keluar, dan bukti struk</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Keuangan Divisi</h1>
+          <p className="text-xs text-slate-500">Kelola dan pantau arus kas masuk, keluar, dan bukti struk transaksi</p>
         </div>
-        <Button onClick={openAdd}>+ Tambah Transaksi</Button>
+        <Button onClick={openAdd} className="gap-2">
+          <Plus className="h-4 w-4" />
+          <span>Tambah Transaksi</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Total Pemasukan</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">{formatRupiah(pemasukan)}</p>
+        <Card className="hover:shadow-elevated transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Pemasukan</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-500/10">
+                <TrendingUp className="h-4.5 w-4.5" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600">{formatRupiah(pemasukan)}</p>
+            <p className="mt-1 text-[11px] text-slate-400">Total dana kas masuk</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Total Pengeluaran</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{formatRupiah(pengeluaran)}</p>
+
+        <Card className="hover:shadow-elevated transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Pengeluaran</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-500/10">
+                <TrendingDown className="h-4.5 w-4.5" />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-rose-600">{formatRupiah(pengeluaran)}</p>
+            <p className="mt-1 text-[11px] text-slate-400">Total belanja & pembiayaan</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500">Saldo Akhir</p>
-            <p className={`mt-1 text-2xl font-bold ${saldo >= 0 ? "text-brand-600" : "text-red-600"}`}>
+
+        <Card className="hover:shadow-elevated transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Saldo Akhir Divisi</p>
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${
+                  saldo >= 0
+                    ? "bg-brand-50 text-brand-600 ring-brand-500/10"
+                    : "bg-rose-50 text-rose-600 ring-rose-500/10"
+                }`}
+              >
+                <Coins className="h-4.5 w-4.5" />
+              </div>
+            </div>
+            <p className={`mt-2 text-2xl font-bold tracking-tight ${saldo >= 0 ? "text-brand-600" : "text-rose-600"}`}>
               {formatRupiah(saldo)}
             </p>
+            <p className="mt-1 text-[11px] text-slate-400">Sisa saldo kas saat ini</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Riwayat Transaksi with Search & Filter Tabs (Requirement 5) */}
       <Card>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Riwayat Transaksi</h2>
-            <p className="text-xs text-slate-500">Total {transaksi.length} transaksi tercatat</p>
-          </div>
+        <CardHeader
+          title="Riwayat Transaksi"
+          subtitle={`Total ${transaksi.length} transaksi tercatat`}
+          icon={<Wallet className="h-5 w-5" />}
+          action={
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Export data sesuai filter */}
+              <ExportMenu
+                title="Keuangan Divisi"
+                filename="keuangan-divisi"
+                disabled={filteredTransaksi.length === 0}
+                columns={[
+                  { header: "Tanggal", key: "tanggal", width: 14 },
+                  { header: "Jenis", key: "jenis", width: 14 },
+                  { header: "Keterangan", key: "keterangan", width: 40 },
+                  { header: "Nominal", key: "nominal", width: 20, align: "right" },
+                ]}
+                rows={filteredTransaksi.map((t) => {
+                  const { cleanKeterangan } = extractBukti(t.keterangan);
+                  return {
+                    tanggal: formatDate(t.tanggal),
+                    jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                    keterangan: cleanKeterangan,
+                    nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
+                  };
+                })}
+              />
+              {/* Filter Jenis Tabs */}
+              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600">
+                <button
+                  type="button"
+                  onClick={() => setFilterJenis("all")}
+                  className={`rounded-lg px-3 py-1 transition ${
+                    filterJenis === "all" ? "bg-white text-slate-900 shadow-xs font-semibold" : "hover:text-slate-900"
+                  }`}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterJenis("pemasukan")}
+                  className={`rounded-lg px-3 py-1 transition ${
+                    filterJenis === "pemasukan" ? "bg-emerald-50 text-emerald-700 shadow-xs font-semibold" : "hover:text-emerald-700"
+                  }`}
+                >
+                  Pemasukan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterJenis("pengeluaran")}
+                  className={`rounded-lg px-3 py-1 transition ${
+                    filterJenis === "pengeluaran" ? "bg-rose-50 text-rose-700 shadow-xs font-semibold" : "hover:text-rose-700"
+                  }`}
+                >
+                  Pengeluaran
+                </button>
+              </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            {/* Export data sesuai filter */}
-            <ExportMenu
-              title="Keuangan Divisi"
-              filename="keuangan-divisi"
-              disabled={filteredTransaksi.length === 0}
-              columns={[
-                { header: "Tanggal", key: "tanggal", width: 14 },
-                { header: "Jenis", key: "jenis", width: 14 },
-                { header: "Keterangan", key: "keterangan", width: 40 },
-                { header: "Nominal", key: "nominal", width: 20, align: "right" },
-              ]}
-              rows={filteredTransaksi.map((t) => {
-                const { cleanKeterangan } = extractBukti(t.keterangan);
-                return {
-                  tanggal: formatDate(t.tanggal),
-                  jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
-                  keterangan: cleanKeterangan,
-                  nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
-                };
-              })}
-            />
-            {/* Filter Jenis Tabs */}
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium text-slate-600">
-              <button
-                type="button"
-                onClick={() => setFilterJenis("all")}
-                className={`rounded-md px-2.5 py-1 transition ${
-                  filterJenis === "all" ? "bg-white text-slate-900 shadow-sm font-semibold" : "hover:text-slate-900"
-                }`}
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterJenis("pemasukan")}
-                className={`rounded-md px-2.5 py-1 transition ${
-                  filterJenis === "pemasukan" ? "bg-emerald-50 text-emerald-700 shadow-sm font-semibold" : "hover:text-emerald-700"
-                }`}
-              >
-                Pemasukan
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterJenis("pengeluaran")}
-                className={`rounded-md px-2.5 py-1 transition ${
-                  filterJenis === "pengeluaran" ? "bg-red-50 text-red-700 shadow-sm font-semibold" : "hover:text-red-700"
-                }`}
-              >
-                Pengeluaran
-              </button>
+              {/* Search Bar (Requirement 5) */}
+              <div className="relative w-full sm:w-60">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Search className="h-3.5 w-3.5" />
+                </div>
+                <Input
+                  placeholder="Cari transaksi/nominal..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-xs"
+                />
+              </div>
             </div>
+          }
+        />
 
-            {/* Search Bar (Requirement 5) */}
-            <div className="w-full sm:w-64">
-              <Input
-                placeholder="Cari transaksi/nominal..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+        <CardContent className="p-0">
+          {filteredTransaksi.length === 0 ? (
+            <div className="py-12">
+              <EmptyState
+                title={searchQuery ? "Transaksi tidak ditemukan" : "Belum ada transaksi"}
+                description={searchQuery ? "Coba kata kunci pencarian yang lain." : "Tambahkan transaksi keuangan divisi."}
               />
             </div>
-          </div>
-        </div>
-
-        <CardContent className="pt-3">
-          {filteredTransaksi.length === 0 ? (
-            <EmptyState
-              title={searchQuery ? "Transaksi tidak ditemukan" : "Belum ada transaksi"}
-              description={searchQuery ? "Coba kata kunci pencarian yang lain." : "Tambahkan transaksi keuangan divisi."}
-            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-3">Tanggal</th>
-                    <th className="px-3 py-3">Jenis</th>
-                    <th className="px-3 py-3">Keterangan</th>
-                    <th className="px-3 py-3">Bukti Struk</th>
-                    <th className="px-3 py-3 text-right">Nominal</th>
-                    <th className="px-3 py-3 text-right">Aksi</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5 font-semibold">Tanggal</th>
+                    <th className="px-5 py-3.5 font-semibold">Jenis</th>
+                    <th className="px-5 py-3.5 font-semibold">Keterangan</th>
+                    <th className="px-5 py-3.5 font-semibold">Bukti Struk</th>
+                    <th className="px-5 py-3.5 text-right font-semibold">Nominal</th>
+                    <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTransaksi.map((t) => {
                     const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
                     return (
-                      <tr key={t.id} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-800">
+                      <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800">
                           {formatDate(t.tanggal)}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
                             {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
                           </Badge>
                         </td>
-                        <td className="px-3 py-3 text-slate-700 max-w-xs md:max-w-md truncate">
+                        <td className="px-5 py-3.5 text-xs text-slate-700 max-w-xs md:max-w-md truncate">
                           {cleanKeterangan}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          {/* Requirement 8: View receipt image */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           {buktiUrl ? (
                             <button
                               type="button"
                               onClick={() => setViewBuktiUrl(buktiUrl)}
-                              className="rounded-lg border border-emerald-400 bg-emerald-50/70 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 inline-flex items-center gap-1"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-xs transition hover:bg-emerald-100"
                             >
-                               Lihat Bukti
+                              <Eye className="h-3 w-3" />
+                              <span>Lihat Bukti</span>
                             </button>
                           ) : (
                             <span className="text-xs text-slate-300">-</span>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-right font-bold whitespace-nowrap">
-                          <span className={t.jenis_transaksi === "pemasukan" ? "text-emerald-600" : "text-red-600"}>
+                        <td className="px-5 py-3.5 text-right font-bold whitespace-nowrap">
+                          <span className={t.jenis_transaksi === "pemasukan" ? "text-emerald-600" : "text-rose-600"}>
                             {t.jenis_transaksi === "pemasukan" ? "+ " : "- "}
                             {formatRupiah(t.nominal)}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          {/* Requirement 7: Action buttons with border */}
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => openEdit(t)}
-                              className="rounded-lg border border-blue-400 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                              className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98]"
                             >
-                              Edit
+                              <Pencil className="h-3 w-3" />
+                              <span>Edit</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(t)}
-                              className="rounded-lg border border-red-400 bg-red-50/70 px-2.5 py-1 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+                              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98]"
                             >
-                              Hapus
+                              <Trash2 className="h-3 w-3" />
+                              <span>Hapus</span>
                             </button>
                           </div>
                         </td>

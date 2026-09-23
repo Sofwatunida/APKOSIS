@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { X } from "lucide-react";
 
 export function Modal({
   open,
@@ -34,39 +35,28 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden
       />
       <div
-        className={`relative w-full ${sizes[size]} max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl`}
+        className={`relative w-full ${sizes[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-elevated border border-slate-200/80 animate-slide-up`}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-          <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100/90 bg-white/95 px-6 py-4.5 backdrop-blur-sm">
+          <h3 className="text-base font-semibold tracking-tight text-slate-900">{title}</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
             aria-label="Tutup"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 }
+

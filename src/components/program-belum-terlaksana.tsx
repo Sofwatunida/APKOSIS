@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { ExportMenu } from "@/components/export-menu";
+
+import { Search, Eye, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 
 interface DivisiNote {
   id: string;
@@ -72,7 +75,8 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
     <Card>
       <CardHeader
         title="Catatan Program Belum Terlaksana"
-        subtitle="Program kerja yang belum dilaksanakan per divisi"
+        subtitle="Daftar rekapitulasi program kerja yang belum dilaksanakan per divisi"
+        icon={<AlertCircle className="h-5 w-5 text-amber-500" />}
         action={
           profile.role === "sekretaris" ? (
             <ExportMenu
@@ -93,12 +97,16 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
           ) : undefined
         }
       />
-      <CardContent>
-        <div className="mb-4 w-full sm:w-80">
+      <CardContent className="p-6">
+        <div className="mb-4 relative w-full sm:w-80">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+            <Search className="h-4 w-4" />
+          </div>
           <Input
-            placeholder="Cari berdasarkan nama divisi..."
+            placeholder="Cari nama divisi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
           />
         </div>
         {filtered.length === 0 ? (
@@ -107,27 +115,28 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
             description={search ? "Coba kata kunci pencarian yang lain." : "Data divisi belum tersedia."}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                  <th className="px-3 py-2">No</th>
-                  <th className="px-3 py-2">Divisi</th>
-                  <th className="px-3 py-2 text-right">Aksi</th>
+                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-left text-xs uppercase tracking-wider text-slate-500">
+                  <th className="px-5 py-3.5 font-semibold">No</th>
+                  <th className="px-5 py-3.5 font-semibold">Divisi</th>
+                  <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {filtered.map((d, idx) => (
-                  <tr key={d.id} className="border-b border-slate-50">
-                    <td className="px-3 py-2 text-slate-400">{idx + 1}</td>
-                    <td className="px-3 py-2 font-medium">{d.nama_divisi}</td>
-                    <td className="px-3 py-2 text-right">
+                  <tr key={d.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3.5 text-slate-400 font-medium">{idx + 1}</td>
+                    <td className="px-5 py-3.5 font-semibold text-slate-900">{d.nama_divisi}</td>
+                    <td className="px-5 py-3.5 text-right">
                       <button
                         type="button"
                         onClick={() => setView(d)}
-                        className="rounded-lg border border-brand-500 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-100"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
                       >
-                        Lihat
+                        <Eye className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Lihat Catatan</span>
                       </button>
                     </td>
                   </tr>
@@ -176,14 +185,14 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
                 </p>
               )}
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setView(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
               >
                 Tutup
-              </button>
+              </Button>
             </div>
           </div>
         )}

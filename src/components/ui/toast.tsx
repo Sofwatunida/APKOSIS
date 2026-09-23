@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
 type ToastType = "success" | "error" | "info";
 
@@ -48,19 +49,33 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, success, error }}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+      <div className="pointer-events-none fixed bottom-5 right-5 z-[100] flex flex-col gap-2.5 max-w-sm w-full">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto w-80 rounded-lg border px-4 py-3 text-sm shadow-lg ${
-              t.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : t.type === "error"
-                ? "border-red-200 bg-red-50 text-red-800"
-                : "border-slate-200 bg-white text-slate-800"
-            }`}
+            className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-elevated backdrop-blur-md animate-slide-up"
           >
-            {t.message}
+            <div className="shrink-0 mt-0.5">
+              {t.type === "success" && (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              )}
+              {t.type === "error" && (
+                <AlertCircle className="h-5 w-5 text-rose-600" />
+              )}
+              {t.type === "info" && (
+                <Info className="h-5 w-5 text-brand-600" />
+              )}
+            </div>
+            <p className="flex-1 text-xs font-medium leading-relaxed text-slate-800">
+              {t.message}
+            </p>
+            <button
+              onClick={() => remove(t.id)}
+              className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              aria-label="Tutup notifikasi"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         ))}
       </div>
@@ -73,3 +88,4 @@ export function useToast() {
   if (!ctx) throw new Error("useToast must be used within ToastProvider");
   return ctx;
 }
+

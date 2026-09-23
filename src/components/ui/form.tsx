@@ -7,7 +7,7 @@ import type {
 
 export function Label({ children }: { children: ReactNode }) {
   return (
-    <label className="mb-1 block text-sm font-medium text-slate-700">
+    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
       {children}
     </label>
   );
@@ -26,13 +26,17 @@ export function Field({ label, error, hint, children }: FieldWrapperProps) {
       {label && <Label>{label}</Label>}
       {children}
       {hint && !error && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && (
+        <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+          <span>⚠️</span> {error}
+        </p>
+      )}
     </div>
   );
 }
 
 const baseInput =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100";
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
 
 export function Input({
   className = "",
@@ -47,7 +51,7 @@ export function Textarea({
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className={`${baseInput} min-h-[80px] resize-y ${className}`}
+      className={`${baseInput} min-h-[90px] resize-y ${className}`}
       {...props}
     />
   );
@@ -59,8 +63,9 @@ export function Select({
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={`${baseInput} ${className}`} {...props}>
+    <select className={`${baseInput} cursor-pointer ${className}`} {...props}>
       {children}
     </select>
   );
 }
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, AnggotaDivisi } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,6 +12,16 @@ import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { sortByJabatan } from "@/lib/jabatan";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  UserPlus,
+  Pencil,
+  Trash2,
+  Search,
+  Briefcase,
+} from "lucide-react";
 
 interface FormState {
   nama: string;
@@ -41,6 +51,8 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"semua" | "aktif" | "nonaktif">("semua");
 
   async function load() {
     if (!profile.divisi_id) {
@@ -153,16 +165,40 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
   const aktif = sortByJabatan(anggota.filter((a) => a.status === "aktif"));
   const nonaktif = sortByJabatan(anggota.filter((a) => a.status === "nonaktif"));
 
+  const filtered = (
+    statusFilter === "aktif"
+      ? aktif
+      : statusFilter === "nonaktif"
+      ? nonaktif
+      : [...aktif, ...nonaktif]
+  ).filter((a) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      a.nama.toLowerCase().includes(q) ||
+      (a.jabatan && a.jabatan.toLowerCase().includes(q)) ||
+      (a.keterangan && a.keterangan.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Anggota Divisi</h1>
-          <p className="text-sm text-slate-500">
-            {aktif.length} anggota aktif, {nonaktif.length} nonaktif
-          </p>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-500/10">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Anggota Divisi</h1>
+              <p className="text-sm text-slate-500">
+                Kelola daftar personil dan pembagian peran divisi OSIS
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           <ExportMenu
             title="Anggota Divisi"
             filename="anggota-divisi"
@@ -184,53 +220,168 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
               keterangan: a.keterangan ?? "-",
             }))}
           />
-          <Button onClick={openAdd}>+ Tambah Anggota</Button>
+          <Button onClick={openAdd} className="shadow-sm">
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            Tambah Anggota
+          </Button>
         </div>
       </div>
 
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <Users className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Total Personil</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900">{anggota.length}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <UserCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Anggota Aktif</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900">{aktif.length}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+            <UserX className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Nonaktif / Demisioner</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900">{nonaktif.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main List Card */}
       <Card>
-        <CardContent>
+        <CardHeader
+          title="Daftar Pengurus & Anggota"
+          subtitle="Seluruh anggota yang terdaftar dalam divisi Anda"
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cari nama atau jabatan..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 w-48 rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 sm:w-64"
+                />
+              </div>
+              <div className="flex rounded-xl border border-slate-200/80 bg-slate-100/80 p-0.5 text-xs">
+                {(["semua", "aktif", "nonaktif"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setStatusFilter(tab)}
+                    className={`rounded-lg px-2.5 py-1 font-medium capitalize transition ${
+                      statusFilter === tab
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+          }
+        />
+        <CardContent className="p-0">
           {anggota.length === 0 ? (
-            <EmptyState title="Belum ada anggota" description="Tambahkan anggota divisi Anda." />
+            <div className="p-6">
+              <EmptyState title="Belum ada anggota" description="Tambahkan personil divisi Anda menggunakan tombol Tambah Anggota di atas." />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-6">
+              <EmptyState title="Tidak ada hasil" description={`Tidak ditemukan anggota dengan kata kunci "${search}".`} />
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="px-3 py-2">Nama</th>
-                    <th className="px-3 py-2">Jabatan</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2 text-right">Aksi</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/60 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5">Nama & Profil</th>
+                    <th className="px-5 py-3.5">Jabatan</th>
+                    <th className="px-5 py-3.5">Status</th>
+                    <th className="px-5 py-3.5">Keterangan</th>
+                    <th className="px-5 py-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {[...aktif, ...nonaktif].map((a) => (
-                    <tr key={a.id} className="border-b border-slate-50">
-                      <td className="px-3 py-2 font-medium">{a.nama}</td>
-                      <td className="px-3 py-2">{a.jabatan || "-"}</td>
-                      <td className="px-3 py-2">
-                        <Badge color={a.status === "aktif" ? "green" : "red"}>
-                          {a.status === "aktif" ? "Aktif" : "Nonaktif"}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openEdit(a)}
-                            className="rounded-md border border-blue-400 bg-white px-2.5 py-1 text-xs font-medium text-blue-700 shadow-sm transition hover:bg-blue-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(a)}
-                            className="rounded-md border border-red-400 bg-white px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm transition hover:bg-red-50"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map((a) => {
+                    const initials = a.nama
+                      .split(" ")
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase();
+                    return (
+                      <tr key={a.id} className="transition-colors hover:bg-slate-50/70">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-indigo-100 text-xs font-bold text-brand-700 ring-1 ring-brand-500/20">
+                              {initials}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900">{a.nama}</p>
+                              {a.tanggal_masuk && (
+                                <p className="text-xs text-slate-400">
+                                  Masuk: {a.tanggal_masuk}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {a.jabatan ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                              <Briefcase className="h-3 w-3 text-slate-400" />
+                              {a.jabatan}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge color={a.status === "aktif" ? "green" : "slate"} dot>
+                            {a.status === "aktif" ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </td>
+                        <td className="max-w-xs truncate px-5 py-3.5 text-xs text-slate-500">
+                          {a.keterangan || "-"}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEdit(a)}
+                              className="h-8 px-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-600"
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(a)}
+                              className="h-8 px-2.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Hapus
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
