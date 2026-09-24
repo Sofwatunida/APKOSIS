@@ -138,14 +138,18 @@ export function InventarisClient({ profile }: { profile: Profile }) {
   if (loading) return <Spinner />;
 
   const kondisiColor = (k: string) =>
-    k === "baik" ? "text-emerald-600" : k === "hilang" ? "text-red-600" : "text-amber-600";
+    k === "baik"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : k === "hilang"
+      ? "text-red-600 dark:text-red-400"
+      : "text-amber-600 dark:text-amber-400";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Inventaris Divisi</h1>
-          <p className="text-sm text-slate-500">Kelola barang inventaris divisi</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inventaris Divisi</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola barang inventaris divisi</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ExportMenu
@@ -178,7 +182,7 @@ export function InventarisClient({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
                     <th className="px-3 py-2">Nama Barang</th>
                     <th className="px-3 py-2">Jumlah</th>
                     <th className="px-3 py-2">Kondisi</th>
@@ -188,7 +192,7 @@ export function InventarisClient({ profile }: { profile: Profile }) {
                 </thead>
                 <tbody>
                   {items.map((i) => (
-                    <tr key={i.id} className="border-b border-slate-50">
+                    <tr key={i.id} className="border-b border-slate-50 dark:border-slate-800">
                       <td className="px-3 py-2 font-medium">{i.nama_barang}</td>
                       <td className="px-3 py-2">{i.jumlah ?? "-"}</td>
                       <td className="px-3 py-2">
@@ -201,13 +205,13 @@ export function InventarisClient({ profile }: { profile: Profile }) {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => openEdit(i)}
-                            className="rounded-md border border-blue-400 bg-white px-2.5 py-1 text-xs font-medium text-blue-700 shadow-sm transition hover:bg-blue-50"
+                            className="rounded-md border border-blue-400 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 shadow-sm transition hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(i)}
-                            className="rounded-md border border-red-400 bg-white px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm transition hover:bg-red-50"
+                            className="rounded-md border border-red-400 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 shadow-sm transition hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             Hapus
                           </button>

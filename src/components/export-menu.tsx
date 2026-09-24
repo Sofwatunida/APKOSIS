@@ -40,24 +40,24 @@ const FORMATS: {
     label: "PDF",
     hint: "Dokumen cetak resmi",
     icon: FileText,
-    iconColor: "text-rose-600",
-    bgColor: "bg-rose-50",
+    iconColor: "text-rose-600 dark:text-rose-400",
+    bgColor: "bg-rose-50 dark:bg-rose-900/20",
   },
   {
     key: "doc",
     label: "Word (DOC)",
     hint: "Dapat diedit di MS Word",
     icon: File,
-    iconColor: "text-blue-600",
-    bgColor: "bg-blue-50",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-50 dark:bg-blue-900/20",
   },
   {
     key: "excel",
     label: "Excel (XLSX)",
     hint: "Spreadsheet & formula",
     icon: FileSpreadsheet,
-    iconColor: "text-emerald-600",
-    bgColor: "bg-emerald-50",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
   },
 ];
 
@@ -116,7 +116,7 @@ export function ExportMenu({
       >
         {busy ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+            <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-400" />
             <span>Mengekspor {busy.toUpperCase()}...</span>
           </>
         ) : (
@@ -133,7 +133,7 @@ export function ExportMenu({
       </Button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-elevated backdrop-blur-md animate-slide-up">
+        <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-elevated backdrop-blur-md animate-slide-up dark:border-slate-800/80 dark:bg-slate-900/95">
           <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Pilih Format Ekspor
           </p>
@@ -145,7 +145,7 @@ export function ExportMenu({
                   key={f.key}
                   type="button"
                   onClick={() => handleExport(f.key)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs transition hover:bg-slate-50 active:scale-[0.98]"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs transition hover:bg-slate-50 active:scale-[0.98] dark:hover:bg-slate-800"
                 >
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${f.bgColor} ${f.iconColor}`}
@@ -153,8 +153,8 @@ export function ExportMenu({
                     <IconComp className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800">{f.label}</p>
-                    <p className="text-[11px] text-slate-400">{f.hint}</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">{f.label}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">{f.hint}</p>
                   </div>
                 </button>
               );

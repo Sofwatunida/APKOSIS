@@ -161,7 +161,7 @@ export function LaporanListView({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800 dark:text-slate-500">
                     <th className="px-3 py-2">Divisi</th>
                     <th className="px-3 py-2">Tanggal</th>
                     <th className="px-3 py-2">Kegiatan</th>
@@ -171,13 +171,13 @@ export function LaporanListView({
                 </thead>
                 <tbody>
                   {laporan.map((l) => (
-                    <tr key={l.id} className="border-b border-slate-50">
+                    <tr key={l.id} className="border-b border-slate-50 dark:border-slate-900">
                       <td className="px-3 py-2 font-medium">{l.divisi?.nama_divisi ?? "-"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDate(l.tanggal)}</td>
                       <td className="px-3 py-2 max-w-md truncate">{l.kegiatan_hari_ini}</td>
                       <td className="px-3 py-2">{l.penerima_laporan || "-"}</td>
                       <td className="px-3 py-2 text-right">
-                        <button onClick={() => openDetail(l)} className="text-brand-600 hover:underline">
+                        <button onClick={() => openDetail(l)} className="text-brand-600 hover:underline dark:text-brand-400">
                           Lihat
                         </button>
                       </td>
@@ -220,7 +220,7 @@ export function LaporanListView({
                 <p className="mb-1 text-xs font-medium text-slate-400">Kendala & Solusi</p>
                 <div className="space-y-2">
                   {kendalaDetail.map((k) => (
-                    <div key={k.id} className="rounded-lg border border-slate-200 p-3 text-sm">
+                    <div key={k.id} className="rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700">
                       <p><span className="font-medium">Kendala:</span> {k.kendala}</p>
                       <p className="mt-1"><span className="font-medium">Solusi:</span> {k.solusi}</p>
                     </div>

@@ -442,7 +442,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   if (!profile.divisi_id) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-sm text-slate-500">
+        <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
           Anda belum terhubung ke divisi. Hubungi administrator.
         </CardContent>
       </Card>
@@ -453,8 +453,8 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Laporan Harian</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Laporan Harian</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {reportToday
               ? `Status hari ini: Laporan tanggal ${formatDate(todayISO())} sudah tercatat.`
               : "Status hari ini: Belum ada laporan yang tercatat untuk hari ini."}
@@ -464,7 +464,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           <button
             type="button"
             onClick={() => handleOpenDetail(reportToday)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <Eye className="h-3.5 w-3.5 text-slate-400" />
             <span>Lihat Laporan Hari Ini</span>
@@ -491,7 +491,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition active:scale-[0.98]"
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
               >
                 <X className="h-3.5 w-3.5" />
                 <span>Batal Edit</span>
@@ -513,7 +513,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
               <Field label="Pelapor (Ketua / Wakil)" error={formErrors.pelapor_id}>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600"
                   value={form.pelapor_id}
                   onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
                 >
@@ -528,7 +528,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
               <Field label="Penerima Laporan" error={formErrors.penerima_laporan}>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600"
                   value={form.penerima_laporan}
                   onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
                 >
@@ -541,14 +541,14 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             </div>
 
             <Field label="Kegiatan yang Dilakukan" error={formErrors.kegiatan_hari_ini}>
-              <div className="mb-3 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-sm">
+              <div className="mb-3 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                 <button
                   type="button"
                   onClick={() => setKegiatanMode("ketik")}
                   className={
                     kegiatanMode === "ketik"
-                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm"
-                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
+                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
+                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                   }
                 >
                   Ketik Manual
@@ -558,8 +558,8 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   onClick={() => switchToPilihMode()}
                   className={
                     kegiatanMode === "pilih"
-                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm"
-                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700"
+                      ? "rounded-md bg-white px-3 py-1.5 font-semibold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
+                      : "rounded-md px-3 py-1.5 font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                   }
                 >
                   Pilih Kegiatan
@@ -576,21 +576,21 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               ) : (
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-slate-500">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       Centang satu atau lebih kegiatan:
                     </p>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={selectAllKegiatan}
-                        className="text-xs font-semibold text-brand-600 hover:underline"
+                        className="text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
                       >
                         Pilih Semua
                       </button>
                       <button
                         type="button"
                         onClick={clearKegiatan}
-                        className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline"
+                        className="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-300"
                       >
                         Bersihkan
                       </button>
@@ -598,26 +598,26 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   </div>
 
                   {opsiKegiatan.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+                    <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400 dark:border-slate-700">
                       Belum ada kegiatan di daftar. Tambahkan lewat kotak di bawah atau tombol
                       &quot;Kelola Daftar&quot;.
                     </p>
                   ) : (
-                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5">
+                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 dark:border-slate-700 dark:bg-slate-900">
                       {opsiKegiatan.map((o) => {
                         const checked = selectedKegiatan.includes(o.nama_kegiatan);
                         return (
                           <label
                             key={o.id}
-                            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50"
+                            className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => toggleKegiatan(o.nama_kegiatan)}
-                              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:text-brand-400"
                             />
-                            <span className={checked ? "font-semibold text-slate-900" : "text-slate-700"}>
+                            <span className={checked ? "font-semibold text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}>
                               {o.nama_kegiatan}
                             </span>
                           </label>
@@ -627,14 +627,14 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   )}
 
                   {selectedKegiatan.length > 0 && (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-sm">
-                      <p className="text-xs font-semibold text-emerald-700">
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-sm dark:bg-emerald-900/20">
+                      <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                         Kegiatan terpilih ({selectedKegiatan.length}):
                       </p>
-                      <ul className="mt-1 space-y-0.5 text-slate-800">
+                      <ul className="mt-1 space-y-0.5 text-slate-800 dark:text-slate-200">
                         {selectedKegiatan.map((k, i) => (
                           <li key={i} className="flex gap-1.5">
-                            <span className="text-emerald-600">•</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">•</span>
                             <span>{k}</span>
                           </li>
                         ))}
@@ -672,7 +672,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                     <button
                       type="button"
                       onClick={() => setManageOpen(true)}
-                      className="text-xs font-semibold text-brand-600 hover:underline"
+                      className="text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
                     >
                       Kelola Daftar
                     </button>
@@ -695,12 +695,12 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               </div>
               <div className="space-y-2">
                 {kendalaRows.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+                  <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400 dark:border-slate-700">
                     Tidak ada kendala. Klik &quot;+ Tambah Kendala&quot; jika ada kendala dan solusi yang ingin dicatat.
                   </p>
                 ) : (
                   kendalaRows.map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3 sm:grid-cols-2">
+                    <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3 sm:grid-cols-2 dark:border-slate-700 dark:bg-slate-900/60">
                       <Input
                         placeholder="Uraikan kendala yang dihadapi..."
                         value={row.kendala}
@@ -725,7 +725,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                           onClick={() =>
                             setKendalaRows(kendalaRows.filter((_, i) => i !== idx))
                           }
-                          className="shrink-0 rounded-lg border border-slate-300 px-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition"
+                          className="shrink-0 rounded-lg border border-slate-300 px-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition dark:border-slate-600 dark:text-slate-400"
                           title="Hapus baris kendala"
                         >
                           ✕
@@ -758,7 +758,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   Batal
                 </button>
@@ -820,7 +820,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                     <th className="px-5 py-3.5 font-semibold">Tanggal</th>
                     <th className="px-5 py-3.5 font-semibold">Kegiatan</th>
                     <th className="px-5 py-3.5 font-semibold">Penerima</th>
@@ -828,21 +828,21 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                     <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredHistory.map((h) => (
-                    <tr key={h.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-5 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800">
+                    <tr key={h.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {formatDate(h.tanggal)}
                         {h.tanggal === todayISO() && (
-                          <span className="ml-2 inline-block rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                          <span className="ml-2 inline-block rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400">
                             Hari Ini
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 max-w-xs md:max-w-md truncate text-xs text-slate-600">
+                      <td className="px-5 py-3.5 max-w-xs md:max-w-md truncate text-xs text-slate-600 dark:text-slate-400">
                         {h.kegiatan_hari_ini}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap dark:text-slate-400">
                         {h.penerima_laporan || "-"}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
@@ -854,7 +854,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(h)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
+                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                             title="Lihat rincian laporan beserta kendala dan solusi"
                           >
                             <Eye className="h-3 w-3 text-slate-400" />
@@ -863,7 +863,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => handleEdit(h)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98]"
+                            className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98] dark:bg-blue-900/20 dark:text-blue-400"
                             title="Edit laporan ini"
                           >
                             <Pencil className="h-3 w-3" />
@@ -872,7 +872,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => handleDelete(h)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98]"
+                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:bg-rose-900/20 dark:text-rose-400"
                             title="Hapus laporan ini"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -898,44 +898,44 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
         {detailReport && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-slate-700 dark:bg-slate-900/60">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tanggal</p>
-                <p className="mt-0.5 font-bold text-slate-900">{formatDate(detailReport.tanggal)}</p>
+                <p className="mt-0.5 font-bold text-slate-900 dark:text-white">{formatDate(detailReport.tanggal)}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-slate-700 dark:bg-slate-900/60">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Penerima Laporan</p>
-                <p className="mt-0.5 font-bold text-slate-900">{detailReport.penerima_laporan || "-"}</p>
+                <p className="mt-0.5 font-bold text-slate-900 dark:text-white">{detailReport.penerima_laporan || "-"}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Kegiatan</p>
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 dark:text-slate-400">Kegiatan</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {detailReport.kegiatan_hari_ini}
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Kendala & Solusi</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 dark:text-slate-400">Kendala & Solusi</p>
               {loadingDetail ? (
                 <div className="py-4 text-center text-xs text-slate-400">Memuat kendala...</div>
               ) : detailKendala.length > 0 ? (
                 <div className="space-y-2.5">
                   {detailKendala.map((k) => (
-                    <div key={k.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs leading-relaxed space-y-1.5">
-                      <p className="font-semibold text-rose-700 flex items-start gap-1.5">
+                    <div key={k.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs leading-relaxed space-y-1.5 dark:border-slate-700 dark:bg-slate-900/60">
+                      <p className="font-semibold text-rose-700 flex items-start gap-1.5 dark:text-rose-400">
                         <span className="shrink-0">⚠️</span>
-                        <span>Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></span>
+                        <span>Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></span>
                       </p>
-                      <p className="font-semibold text-emerald-700 flex items-start gap-1.5">
+                      <p className="font-semibold text-emerald-700 flex items-start gap-1.5 dark:text-emerald-400">
                         <span className="shrink-0">💡</span>
-                        <span>Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></span>
+                        <span>Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></span>
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="rounded-2xl border border-slate-200/60 bg-slate-50/50 p-3.5 text-xs text-slate-500">
+                <p className="rounded-2xl border border-slate-200/60 bg-slate-50/50 p-3.5 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
                   Tidak ada kendala yang dilaporkan pada tanggal ini.
                 </p>
               )}
@@ -943,14 +943,14 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
             {detailReport.informasi_lain && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Informasi Lain-lain</p>
-                <p className="rounded-2xl border border-slate-200/80 bg-white p-3.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 dark:text-slate-400">Informasi Lain-lain</p>
+                <p className="rounded-2xl border border-slate-200/80 bg-white p-3.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {detailReport.informasi_lain}
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="secondary"
                 size="sm"
@@ -983,7 +983,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Daftar ini hanya tersimpan untuk divisi Anda dan bisa dipakai kembali saat mengisi
             laporan. Anda juga bisa tetap mengetik kegiatan secara manual dengan memilih mode
             &quot;Tulis Manual&quot;.
@@ -1013,18 +1013,18 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           </div>
 
           {opsiKegiatan.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+            <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400 dark:border-slate-700">
               Belum ada kegiatan di daftar. Tambahkan kegiatan yang sering dipakai agar mudah
               dipilih saat laporan.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-700">
               {opsiKegiatan.map((o) => (
                 <li
                   key={o.id}
                   className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
                 >
-                  <span className="text-slate-800">{o.nama_kegiatan}</span>
+                  <span className="text-slate-800 dark:text-slate-200">{o.nama_kegiatan}</span>
                   <button
                     type="button"
                     onClick={() => handleDeleteOpsi(o.id)}
@@ -1037,11 +1037,11 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             </ul>
           )}
 
-          <div className="flex justify-end pt-2 border-t border-slate-100">
+          <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setManageOpen(false)}
-              className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+              className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Tutup
             </button>

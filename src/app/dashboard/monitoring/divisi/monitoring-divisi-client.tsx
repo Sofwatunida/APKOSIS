@@ -100,8 +100,8 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Semua Divisi</h1>
-          <p className="text-sm text-slate-500">Pantau 20 divisi OSIS</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Semua Divisi</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Pantau 20 divisi OSIS</p>
         </div>
         <ExportMenu
           title="Data Divisi"
@@ -133,7 +133,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400">
+            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700">
               <th className="px-3 py-3">Divisi</th>
               <th className="px-3 py-3">Ketua</th>
               <th className="px-3 py-3">Wakil</th>
@@ -146,8 +146,8 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
           </thead>
           <tbody>
             {divisiList.map((d) => (
-              <tr key={d.id} className="border-b border-slate-100">
-                <td className="px-3 py-3 font-medium text-slate-900">{d.nama_divisi}</td>
+              <tr key={d.id} className="border-b border-slate-100 dark:border-slate-800">
+                <td className="px-3 py-3 font-medium text-slate-900 dark:text-white">{d.nama_divisi}</td>
                 <td className="px-3 py-3">{d.ketua_divisi || "-"}</td>
                 <td className="px-3 py-3">{d.wakil_divisi || "-"}</td>
                 <td className="px-3 py-3">{d.anggota}</td>

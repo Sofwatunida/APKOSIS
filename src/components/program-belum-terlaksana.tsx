@@ -115,25 +115,25 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
             description={search ? "Coba kata kunci pencarian yang lain." : "Data divisi belum tersedia."}
           />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-slate-800/80 dark:bg-slate-800/60 dark:text-slate-400">
                   <th className="px-5 py-3.5 font-semibold">No</th>
                   <th className="px-5 py-3.5 font-semibold">Divisi</th>
                   <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.map((d, idx) => (
-                  <tr key={d.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-3.5 text-slate-400 font-medium">{idx + 1}</td>
-                    <td className="px-5 py-3.5 font-semibold text-slate-900">{d.nama_divisi}</td>
+                  <tr key={d.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                    <td className="px-5 py-3.5 font-medium text-slate-400 dark:text-slate-500">{idx + 1}</td>
+                    <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{d.nama_divisi}</td>
                     <td className="px-5 py-3.5 text-right">
                       <button
                         type="button"
                         onClick={() => setView(d)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         <Eye className="h-3.5 w-3.5 text-slate-400" />
                         <span>Lihat Catatan</span>
@@ -155,13 +155,13 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
         {view && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <p className="text-xs text-slate-400">Nomor Divisi</p>
-                <p className="font-semibold text-slate-800">{view.nomor_divisi}</p>
+              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                <p className="text-xs text-slate-400 dark:text-slate-500">Nomor Divisi</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-100">{view.nomor_divisi}</p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <p className="text-xs text-slate-400">Nama Divisi</p>
-                <p className="font-semibold text-slate-800">{view.nama_divisi}</p>
+              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                <p className="text-xs text-slate-400 dark:text-slate-500">Nama Divisi</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-100">{view.nama_divisi}</p>
               </div>
             </div>
             <div>
@@ -171,8 +171,8 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
               {parseNoteList(view.catatan).length > 0 ? (
                 <ul className="mt-1.5 space-y-1.5">
                   {parseNoteList(view.catatan).map((p, i) => (
-                    <li key={i} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-700">
-                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                    <li key={i} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         {i + 1}
                       </span>
                       <span>{p}</span>
@@ -180,12 +180,12 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1.5 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-400">
+                <p className="mt-1.5 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-400 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-500">
                   {EMPTY_NOTE}
                 </p>
               )}
             </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"

@@ -133,7 +133,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Transaksi Keuangan</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Transaksi Keuangan</h1>
 
       <Card>
         <CardHeader title="Filter" />
@@ -192,8 +192,8 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
           {!editingSaldo ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-500">Saldo Awal Tersimpan</p>
-                <p className="mt-1 text-2xl font-bold text-brand-600">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Saldo Awal Tersimpan</p>
+                <p className="mt-1 text-2xl font-bold text-brand-600 dark:text-brand-400">
                   {formatRupiah(saldoAwal)}
                 </p>
                 <p className="mt-1 text-xs text-slate-400">
@@ -234,7 +234,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                 <button
                   type="button"
                   onClick={() => setEditingSaldo(false)}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   Batal
                 </button>
@@ -247,26 +247,26 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Total Pemasukan</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">{formatRupiah(pemasukan)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Total Pemasukan</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatRupiah(pemasukan)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Total Pengeluaran</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{formatRupiah(pengeluaran)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Total Pengeluaran</p>
+            <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">{formatRupiah(pengeluaran)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Saldo Awal</p>
-            <p className="mt-1 text-2xl font-bold text-indigo-600">{formatRupiah(saldoAwal)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Saldo Awal</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{formatRupiah(saldoAwal)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Saldo (Saldo Awal + Masuk - Keluar)</p>
-            <p className={`mt-1 text-2xl font-bold ${saldoAwal + pemasukan - pengeluaran >= 0 ? "text-brand-600" : "text-red-600"}`}>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Saldo (Saldo Awal + Masuk - Keluar)</p>
+            <p className={`mt-1 text-2xl font-bold ${saldoAwal + pemasukan - pengeluaran >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600 dark:text-red-400"}`}>
               {formatRupiah(saldoAwal + pemasukan - pengeluaran)}
             </p>
           </CardContent>
@@ -307,7 +307,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
                     <th className="px-3 py-2">Tanggal</th>
                     <th className="px-3 py-2">Divisi</th>
                     <th className="px-3 py-2">Jenis</th>
@@ -317,7 +317,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                 </thead>
                 <tbody>
                   {rows.map((t) => (
-                    <tr key={t.id} className="border-b border-slate-50">
+                    <tr key={t.id} className="border-b border-slate-50 dark:border-slate-800">
                       <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
                       <td className="px-3 py-2 font-medium">{t.divisi?.nama_divisi ?? "-"}</td>
                       <td className="px-3 py-2">

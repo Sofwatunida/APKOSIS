@@ -56,33 +56,33 @@ function StatCard({
 }) {
   const configs: Record<string, { text: string; bg: string; iconColor: string; ring: string }> = {
     brand: {
-      text: "text-brand-600",
-      bg: "bg-brand-50/80",
-      iconColor: "text-brand-600",
+      text: "text-brand-600 dark:text-brand-400",
+      bg: "bg-brand-50/80 dark:bg-brand-900/20",
+      iconColor: "text-brand-600 dark:text-brand-400",
       ring: "ring-brand-500/10",
     },
     green: {
-      text: "text-emerald-600",
-      bg: "bg-emerald-50/80",
-      iconColor: "text-emerald-600",
+      text: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-50/80 dark:bg-emerald-900/20",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       ring: "ring-emerald-500/10",
     },
     red: {
-      text: "text-rose-600",
-      bg: "bg-rose-50/80",
-      iconColor: "text-rose-600",
+      text: "text-rose-600 dark:text-rose-400",
+      bg: "bg-rose-50/80 dark:bg-rose-900/20",
+      iconColor: "text-rose-600 dark:text-rose-400",
       ring: "ring-rose-500/10",
     },
     amber: {
-      text: "text-amber-600",
-      bg: "bg-amber-50/80",
-      iconColor: "text-amber-600",
+      text: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-50/80 dark:bg-amber-900/20",
+      iconColor: "text-amber-600 dark:text-amber-400",
       ring: "ring-amber-500/10",
     },
     indigo: {
-      text: "text-indigo-600",
-      bg: "bg-indigo-50/80",
-      iconColor: "text-indigo-600",
+      text: "text-indigo-600 dark:text-indigo-400",
+      bg: "bg-indigo-50/80 dark:bg-indigo-900/20",
+      iconColor: "text-indigo-600 dark:text-indigo-400",
       ring: "ring-indigo-500/10",
     },
   };
@@ -93,7 +93,7 @@ function StatCard({
     <Card className="hover:shadow-elevated transition-all duration-200">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
           {IconComponent && (
             <div
               className={`flex h-9 w-9 items-center justify-center rounded-xl ${current.bg} ${current.iconColor} ring-1 ${current.ring}`}
@@ -204,10 +204,10 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             Lengkapi data divisi Anda terlebih dahulu
           </h2>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Isi ketua, wakil, periode, anggota, dan program kerja agar dapat
             membuat laporan harian.
           </p>
@@ -336,9 +336,9 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         <CardContent className="p-6">
           {lastReport ? (
             <div className="space-y-4">
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-base font-bold text-slate-900">
+                  <span className="text-base font-bold text-slate-900 dark:text-white">
                     {formatDate(lastReport.tanggal)}
                   </span>
                   {lastReport.tanggal === todayISO() ? (
@@ -347,7 +347,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                     <Badge color="blue">Terakhir</Badge>
                   )}
                   {lastReport.penerima_laporan && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 font-medium">
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
                       Penerima: {lastReport.penerima_laporan}
                     </span>
                   )}
@@ -356,35 +356,35 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                   <button
                     type="button"
                     onClick={() => handleOpenDetail(lastReport)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-xs transition hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98]"
                   >
                     <Eye className="h-3.5 w-3.5 text-slate-400" />
                     <span>Detail</span>
                   </button>
                   <Link
                     href={`/dashboard/laporan?edit=${lastReport.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 dark:bg-blue-900/20 px-3.5 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-400 shadow-xs transition hover:bg-blue-100 dark:hover:bg-blue-900/20 active:scale-[0.98]"
                   >
                     <span>Edit Laporan</span>
                   </Link>
                 </div>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                   Kegiatan Terlaksana
                 </p>
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 p-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                   {lastReport.kegiatan_hari_ini}
                 </div>
               </div>
             </div>
           ) : (
             <div className="py-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400">
                 <FileText className="h-6 w-6 stroke-[1.5]" />
               </div>
-              <p className="text-sm font-semibold text-slate-800">Belum ada laporan yang tercatat.</p>
-              <p className="mt-1 text-xs text-slate-500">Mulai buat laporan untuk mendokumentasikan kegiatan harian divisi.</p>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Belum ada laporan yang tercatat.</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mulai buat laporan untuk mendokumentasikan kegiatan harian divisi.</p>
               <Link
                 href="/dashboard/laporan"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition"
@@ -405,19 +405,19 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         {detailReport && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3">
+              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900/60">
                 <p className="text-xs text-slate-400">Tanggal Laporan</p>
-                <p className="font-semibold text-slate-800">{formatDate(detailReport.tanggal)}</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(detailReport.tanggal)}</p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-3">
+              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900/60">
                 <p className="text-xs text-slate-400">Penerima Laporan</p>
-                <p className="font-semibold text-slate-800">{detailReport.penerima_laporan || "-"}</p>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{detailReport.penerima_laporan || "-"}</p>
               </div>
             </div>
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Kegiatan Hari Ini</p>
-              <div className="mt-1.5 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+              <div className="mt-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                 {detailReport.kegiatan_hari_ini}
               </div>
             </div>
@@ -429,14 +429,14 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
               ) : detailKendala.length > 0 ? (
                 <div className="mt-1.5 space-y-2">
                   {detailKendala.map((k) => (
-                    <div key={k.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm">
-                      <p className="text-red-700 font-medium">⚠️ Kendala: <span className="font-normal text-slate-800">{k.kendala}</span></p>
-                      <p className="mt-1 text-emerald-700 font-medium">💡 Solusi: <span className="font-normal text-slate-800">{k.solusi}</span></p>
+                    <div key={k.id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/60 p-3 text-sm">
+                      <p className="text-red-700 dark:text-red-400 font-medium">⚠️ Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></p>
+                      <p className="mt-1 text-emerald-700 dark:text-emerald-400 font-medium">💡 Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+                <p className="mt-1 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 p-3 dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400">
                   Tidak ada kendala yang dilaporkan.
                 </p>
               )}
@@ -445,23 +445,23 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
             {detailReport.informasi_lain && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Informasi Lain-lain</p>
-                <p className="mt-1 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                <p className="mt-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                   {detailReport.informasi_lain}
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Link
                 href={`/dashboard/laporan?edit=${detailReport.id}`}
-                className="rounded-lg border border-blue-400 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 shadow-sm"
+                className="rounded-lg border border-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3.5 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 shadow-sm"
               >
                 Edit Laporan
               </Link>
               <button
                 type="button"
                 onClick={() => setDetailReport(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm"
+                className="rounded-lg border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
               >
                 Tutup
               </button>
@@ -511,8 +511,8 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Monitoring</h1>
-        <p className="text-xs text-slate-500">Pantau progres pelaporan harian seluruh divisi OSIS secara real-time</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Monitoring</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Pantau progres pelaporan harian seluruh divisi OSIS secara real-time</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -549,7 +549,7 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
           action={
             <Link
               href="/dashboard/monitoring/divisi"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-600 shadow-xs transition hover:bg-brand-50 hover:border-brand-300"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 shadow-xs transition hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:border-brand-300"
             >
               <span>Lihat Semua Divisi</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -563,18 +563,18 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
                 <Link
                   key={d.id}
                   href="/dashboard/monitoring/divisi"
-                  className="group rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-xs transition-all duration-150 hover:border-brand-400 hover:shadow-card hover:-translate-y-0.5"
+                  className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4.5 shadow-xs transition-all duration-150 hover:border-brand-400 hover:shadow-card hover:-translate-y-0.5"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition-colors">
                       {d.nama_divisi}
                     </span>
-                    <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                    <span className="shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                       Div #{d.nomor_divisi}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-500 truncate">
-                    Ketua: <span className="text-slate-700 font-medium">{d.ketua_divisi || "Belum diset"}</span>
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+                    Ketua: <span className="text-slate-700 dark:text-slate-300 font-medium">{d.ketua_divisi || "Belum diset"}</span>
                   </p>
                 </Link>
               );
@@ -613,10 +613,10 @@ function StaffDashboard({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Dashboard {profile.role === "sekretaris" ? "Sekretaris OSIS" : "Staff"}
         </h1>
-        <p className="text-xs text-slate-500">Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -691,8 +691,8 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Bendahara OSIS</h1>
-        <p className="text-xs text-slate-500">Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Bendahara OSIS</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi</p>
       </div>
 
       <FinanceSummary />
@@ -734,7 +734,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <th className="px-5 py-3.5 font-semibold">Tanggal</th>
                     <th className="px-5 py-3.5 font-semibold">Divisi</th>
                     <th className="px-5 py-3.5 font-semibold">Jenis</th>
@@ -743,27 +743,27 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                     <th className="px-5 py-3.5 text-right font-semibold">Nominal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {recent.map((t) => {
                     const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
                     return (
-                      <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-800">
+                      <tr key={t.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-800 dark:text-slate-200">
                           {formatDate(t.tanggal)}
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-slate-900">{t.divisi?.nama_divisi ?? "-"}</td>
+                        <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-white">{t.divisi?.nama_divisi ?? "-"}</td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
                             {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
                           </Badge>
                         </td>
-                        <td className="px-5 py-3.5 text-slate-600 max-w-xs truncate">{cleanKeterangan}</td>
+                        <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400 max-w-xs truncate">{cleanKeterangan}</td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           {buktiUrl ? (
                             <button
                               type="button"
                               onClick={() => setViewBuktiUrl(buktiUrl)}
-                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-xs transition hover:bg-emerald-100"
+                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shadow-xs transition hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
                             >
                               <Eye className="h-3 w-3" />
                               <span>Lihat Bukti</span>
@@ -772,7 +772,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                             <span className="text-xs text-slate-300">-</span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           {formatRupiah(t.nominal)}
                         </td>
                       </tr>
@@ -788,7 +788,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
       <Modal open={Boolean(viewBuktiUrl)} onClose={() => setViewBuktiUrl(null)} title="Bukti Transaksi">
         {viewBuktiUrl && (
           <div className="space-y-4">
-            <div className="max-h-[65vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-center">
+            <div className="max-h-[65vh] overflow-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 p-3 dark:bg-slate-900/60 flex items-center justify-center">
               <img
                 src={viewBuktiUrl}
                 alt="Bukti Transaksi"

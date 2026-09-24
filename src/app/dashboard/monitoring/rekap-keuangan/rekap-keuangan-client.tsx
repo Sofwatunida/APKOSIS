@@ -96,7 +96,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Rekap Keuangan</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rekap Keuangan</h1>
 
       <Card>
         <CardHeader title="Filter" />
@@ -146,20 +146,20 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
               .map((d) => {
                 const saldo = d.masuk - d.keluar;
                 return (
-                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h4 className="font-semibold text-slate-800">{d.nama}</h4>
+                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">{d.nama}</h4>
                     <div className="mt-2 space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Pemasukan</span>
-                        <span className="font-medium text-emerald-600">{formatRupiah(d.masuk)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Pemasukan</span>
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatRupiah(d.masuk)}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Pengeluaran</span>
+                        <span className="text-slate-500 dark:text-slate-400">Pengeluaran</span>
                         <span className="font-medium text-red-600">{formatRupiah(d.keluar)}</span>
                       </div>
-                      <div className="border-t border-slate-100 pt-1 flex justify-between text-xs">
-                        <span className="text-slate-500">Saldo</span>
-                        <span className={`font-bold ${saldo >= 0 ? "text-brand-600" : "text-red-600"}`}>{formatRupiah(saldo)}</span>
+                      <div className="border-t border-slate-100 pt-1 flex justify-between text-xs dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400">Saldo</span>
+                        <span className={`font-bold ${saldo >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600"}`}>{formatRupiah(saldo)}</span>
                       </div>
                     </div>
                   </div>
@@ -179,15 +179,15 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
               .map((d) => {
                 const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
                 return (
-                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h4 className="font-semibold text-slate-800">{d.nama}</h4>
+                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">{d.nama}</h4>
                     <div className="mt-2 space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Pemasukan</span>
-                        <span className="font-medium text-emerald-600">{formatRupiah(f.masuk)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Pemasukan</span>
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatRupiah(f.masuk)}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Pengeluaran</span>
+                        <span className="text-slate-500 dark:text-slate-400">Pengeluaran</span>
                         <span className="font-medium text-red-600">{formatRupiah(f.keluar)}</span>
                       </div>
                     </div>
@@ -201,13 +201,13 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Pemasukan {MONTH_NAMES_ID[filterMonth - 1]}</p>
-            <p className="text-2xl font-bold text-emerald-600">{formatRupiah(financeMonthly.masuk)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Pemasukan {MONTH_NAMES_ID[filterMonth - 1]}</p>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatRupiah(financeMonthly.masuk)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-slate-500">Pengeluaran {MONTH_NAMES_ID[filterMonth - 1]}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Pengeluaran {MONTH_NAMES_ID[filterMonth - 1]}</p>
             <p className="text-2xl font-bold text-red-600">{formatRupiah(financeMonthly.keluar)}</p>
           </CardContent>
         </Card>
@@ -215,10 +215,10 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
       {/* Rekap Keuangan per Divisi + Export Button */}
       <Card>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Rekap Keuangan per Divisi</h2>
-            <p className="text-xs text-slate-500">{MONTH_NAMES_ID[filterMonth - 1]} {filterYear}</p>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Rekap Keuangan per Divisi</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{MONTH_NAMES_ID[filterMonth - 1]} {filterYear}</p>
           </div>
           {profile.role === "sekretaris" && (
             <ExportMenu
@@ -250,7 +250,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
                   <th className="px-3 py-2">Divisi</th>
                   <th className="px-3 py-2 text-right">Pemasukan</th>
                   <th className="px-3 py-2 text-right">Pengeluaran</th>
@@ -268,7 +268,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                         <td className="px-3 py-2 font-medium">{d.nama}</td>
                         <td className="px-3 py-2 text-right">{formatRupiah(f.masuk)}</td>
                         <td className="px-3 py-2 text-right">{formatRupiah(f.keluar)}</td>
-                        <td className={`px-3 py-2 text-right font-medium ${saldo >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        <td className={`px-3 py-2 text-right font-medium ${saldo >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"}`}>
                           {formatRupiah(saldo)}
                         </td>
                       </tr>

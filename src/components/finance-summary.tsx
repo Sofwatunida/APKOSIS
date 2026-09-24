@@ -25,32 +25,32 @@ function MetricCard({
 }: MetricCardProps) {
   const styles = {
     emerald: {
-      text: "text-emerald-600",
-      bg: "bg-emerald-50/80",
-      border: "border-emerald-100",
+      text: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-50/80 dark:bg-emerald-900/20",
+      border: "border-emerald-100 dark:border-emerald-900/50",
       ring: "ring-emerald-500/10",
-      iconColor: "text-emerald-600",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
     },
     rose: {
-      text: "text-rose-600",
-      bg: "bg-rose-50/80",
-      border: "border-rose-100",
+      text: "text-rose-600 dark:text-rose-400",
+      bg: "bg-rose-50/80 dark:bg-rose-900/20",
+      border: "border-rose-100 dark:border-rose-900/50",
       ring: "ring-rose-500/10",
-      iconColor: "text-rose-600",
+      iconColor: "text-rose-600 dark:text-rose-400",
     },
     indigo: {
-      text: "text-indigo-600",
-      bg: "bg-indigo-50/80",
-      border: "border-indigo-100",
+      text: "text-indigo-600 dark:text-indigo-400",
+      bg: "bg-indigo-50/80 dark:bg-indigo-900/20",
+      border: "border-indigo-100 dark:border-indigo-900/50",
       ring: "ring-indigo-500/10",
-      iconColor: "text-indigo-600",
+      iconColor: "text-indigo-600 dark:text-indigo-400",
     },
     brand: {
-      text: "text-brand-600",
-      bg: "bg-brand-50/80",
-      border: "border-brand-100",
+      text: "text-brand-600 dark:text-brand-400",
+      bg: "bg-brand-50/80 dark:bg-brand-900/20",
+      border: "border-brand-100 dark:border-brand-900/50",
       ring: "ring-brand-500/10",
-      iconColor: "text-brand-600",
+      iconColor: "text-brand-600 dark:text-brand-400",
     },
   }[variant];
 
@@ -58,7 +58,7 @@ function MetricCard({
     <Card className="hover:shadow-elevated transition-all duration-200">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
           <div
             className={`flex h-9 w-9 items-center justify-center rounded-xl ${styles.bg} ${styles.iconColor} ring-1 ${styles.ring}`}
           >
@@ -105,7 +105,7 @@ export function FinanceSummary({ title = "Ringkasan Keuangan OSIS" }: { title?: 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold tracking-tight text-slate-900">{title}</h2>
+        <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
         <span className="text-xs font-medium text-slate-400">Akumulasi Real-Time</span>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -137,7 +137,7 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Rekap Kendala</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rekap Kendala</h1>
 
       <Card>
         <CardHeader title="Filter" />
@@ -212,12 +212,12 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
                 const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
                 return (
                   <div key={divId}>
-                    <h3 className="mb-2 font-semibold text-slate-800">{divName}</h3>
+                    <h3 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">{divName}</h3>
                     <div className="space-y-2">
                       {list.map((ks, i) => (
-                        <div key={i} className="rounded-lg border border-slate-200 p-3">
+                        <div key={i} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{ks.tanggal}</span>
+                            <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded px-1.5 py-0.5 dark:bg-slate-800">{ks.tanggal}</span>
                           </div>
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <div>
@@ -276,15 +276,15 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
               {summaryList.map((s, idx) => (
                 <li
                   key={idx}
-                  className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:flex-row sm:items-start sm:gap-3"
+                  className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:flex-row sm:items-start sm:gap-3 dark:border-slate-700 dark:bg-slate-900/60"
                 >
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                     {idx + 1}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-800">{s.kendala}</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-200">{s.kendala}</p>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      Divisi: <span className="text-slate-500">{s.divisis.join(", ")}</span>
+                      Divisi: <span className="text-slate-500 dark:text-slate-400">{s.divisis.join(", ")}</span>
                     </p>
                   </div>
                   <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">

@@ -194,7 +194,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
   if (!divisi) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-sm text-slate-500">
+        <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
           Anda belum terhubung ke divisi.
         </CardContent>
       </Card>
@@ -205,14 +205,14 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Profil Divisi</h1>
-          <p className="text-sm text-slate-500">Identitas dan kepengurusan divisi</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Profil Divisi</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Identitas dan kepengurusan divisi</p>
         </div>
         {!isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="rounded-lg border border-blue-400 bg-blue-50/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+            className="rounded-lg border border-blue-400 bg-blue-50/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
           >
             Edit Profil
           </button>
@@ -220,12 +220,12 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
       </div>
 
       <Card>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
               {isEditing ? "Form Edit Profil Divisi" : "Informasi Profil Divisi"}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {isEditing
                 ? "Ubah data nama divisi, periode, dan deskripsi."
                 : "Profil divisi yang tersimpan saat ini."}
@@ -243,31 +243,31 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
             /* Read-Only View when saved */
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Nama Divisi
                   </p>
-                  <p className="mt-1 text-lg font-bold text-slate-800">{divisi.nama_divisi}</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200">{divisi.nama_divisi}</p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Periode
                   </p>
-                  <p className="mt-1 text-lg font-bold text-slate-800">{divisi.periode || "-"}</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200">{divisi.periode || "-"}</p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Ketua Divisi
                   </p>
-                  <p className="mt-1 text-base font-semibold text-slate-800">
+                  <p className="mt-1 text-base font-semibold text-slate-800 dark:text-slate-200">
                     {ketua?.nama || <span className="text-slate-400 font-normal">Belum diisi</span>}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Wakil Divisi
                   </p>
-                  <p className="mt-1 text-base font-semibold text-slate-800">
+                  <p className="mt-1 text-base font-semibold text-slate-800 dark:text-slate-200">
                     {wakil?.nama || <span className="text-slate-400 font-normal">Belum diisi</span>}
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Deskripsi / Tugas Pokok Divisi
                 </p>
-                <div className="mt-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                <div className="mt-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {divisi.deskripsi || (
                     <span className="text-slate-400 italic">Belum ada deskripsi divisi.</span>
                   )}
@@ -288,7 +288,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="rounded-lg border border-blue-400 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                  className="rounded-lg border border-blue-400 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
                 >
                   Edit Profil
                 </button>
@@ -353,7 +353,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                       });
                       setIsEditing(false);
                     }}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Batal
                   </button>

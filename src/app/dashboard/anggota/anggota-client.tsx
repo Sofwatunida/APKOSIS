@@ -187,12 +187,12 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-500/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 ring-1 ring-brand-500/10">
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Anggota Divisi</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Anggota Divisi</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Kelola daftar personil dan pembagian peran divisi OSIS
               </p>
             </div>
@@ -229,31 +229,31 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400">
             <Users className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Total Personil</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900">{anggota.length}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Personil</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{anggota.length}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
             <UserCheck className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Anggota Aktif</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900">{aktif.length}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Anggota Aktif</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{aktif.length}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
             <UserX className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Nonaktif / Demisioner</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900">{nonaktif.length}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Nonaktif / Demisioner</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{nonaktif.length}</p>
           </div>
         </div>
       </div>
@@ -272,18 +272,18 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                   placeholder="Cari nama atau jabatan..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-9 w-48 rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 sm:w-64"
+                  className="h-9 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pl-9 pr-3 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-brand-500/10 sm:w-64"
                 />
               </div>
-              <div className="flex rounded-xl border border-slate-200/80 bg-slate-100/80 p-0.5 text-xs">
+              <div className="flex rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800 p-0.5 text-xs">
                 {(["semua", "aktif", "nonaktif"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setStatusFilter(tab)}
                     className={`rounded-lg px-2.5 py-1 font-medium capitalize transition ${
                       statusFilter === tab
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500 hover:text-slate-900"
+                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     {tab}
@@ -306,7 +306,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <th className="px-5 py-3.5">Nama & Profil</th>
                     <th className="px-5 py-3.5">Jabatan</th>
                     <th className="px-5 py-3.5">Status</th>
@@ -314,7 +314,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                     <th className="px-5 py-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filtered.map((a) => {
                     const initials = a.nama
                       .split(" ")
@@ -323,14 +323,14 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                       .join("")
                       .toUpperCase();
                     return (
-                      <tr key={a.id} className="transition-colors hover:bg-slate-50/70">
+                      <tr key={a.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-indigo-100 text-xs font-bold text-brand-700 ring-1 ring-brand-500/20">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 dark:from-brand-900/30 to-indigo-100 dark:to-indigo-900/30 text-xs font-bold text-brand-700 dark:text-brand-400 ring-1 ring-brand-500/20">
                               {initials}
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-900">{a.nama}</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{a.nama}</p>
                               {a.tanggal_masuk && (
                                 <p className="text-xs text-slate-400">
                                   Masuk: {a.tanggal_masuk}
@@ -341,7 +341,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                         </td>
                         <td className="px-5 py-3.5">
                           {a.jabatan ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                               <Briefcase className="h-3 w-3 text-slate-400" />
                               {a.jabatan}
                             </span>
@@ -354,7 +354,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                             {a.status === "aktif" ? "Aktif" : "Nonaktif"}
                           </Badge>
                         </td>
-                        <td className="max-w-xs truncate px-5 py-3.5 text-xs text-slate-500">
+                        <td className="max-w-xs truncate px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                           {a.keterangan || "-"}
                         </td>
                         <td className="px-5 py-3.5 text-right">
@@ -363,7 +363,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => openEdit(a)}
-                              className="h-8 px-2.5 text-slate-600 hover:bg-brand-50 hover:text-brand-600"
+                              className="h-8 px-2.5 text-slate-600 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-600 dark:hover:text-brand-400"
                             >
                               <Pencil className="mr-1 h-3.5 w-3.5" />
                               Edit
@@ -372,7 +372,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(a)}
-                              className="h-8 px-2.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                              className="h-8 px-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-700 dark:hover:text-rose-400"
                             >
                               <Trash2 className="mr-1 h-3.5 w-3.5" />
                               Hapus

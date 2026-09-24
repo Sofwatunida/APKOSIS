@@ -365,8 +365,8 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Program Kerja</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Program Kerja</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)
         </p>
       </div>
@@ -396,10 +396,10 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 {selectedDivisi?.nama_divisi ?? "Divisi"}
               </h2>
-              <p className="text-sm text-slate-500">Kelola dan monitor program kerja divisi</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Kelola dan monitor program kerja divisi</p>
             </div>
             <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
           </div>
@@ -425,15 +425,15 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                   {unggulanItems.map((p) => {
                     const cleanDesc = p.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") ?? "";
                     return (
-                      <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-slate-900">{p.nama_program}</h3>
-                          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+                          <h3 className="font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
+                          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:bg-brand-900/20 dark:text-brand-400">
                             Unggulan
                           </span>
                         </div>
                         {cleanDesc && (
-                          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{cleanDesc}</p>
+                          <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{cleanDesc}</p>
                         )}
                         {p.file_name && (
                           <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
@@ -441,12 +441,12 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                             <span className="truncate max-w-[220px]">{p.file_name}</span>
                           </p>
                         )}
-                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                           {p.file_path && (
                             <button
                               type="button"
                               onClick={() => handleDownloadFile(p)}
-                              className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1"
+                              className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1 dark:bg-slate-900 dark:text-brand-400"
                             >
                               Download File
                             </button>
@@ -454,7 +454,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => openEditUnggulan(p)}
-                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
                           >
                             Edit
                           </button>
@@ -494,19 +494,19 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                   {items.map((p) => {
                     const cleanDesc = p.deskripsi || "";
                     return (
-                      <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-slate-900">{p.nama_program}</h3>
+                          <h3 className="font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
                         </div>
                         {cleanDesc && (
-                          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{cleanDesc}</p>
+                          <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{cleanDesc}</p>
                         )}
-                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                           {p.file_path && (
                             <button
                               type="button"
                               onClick={() => handleDownloadFile(p)}
-                              className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1"
+                              className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 inline-flex items-center gap-1 dark:bg-slate-900 dark:text-brand-400"
                             >
                               Download File
                             </button>
@@ -514,7 +514,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => openEdit(p)}
-                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
                           >
                             Edit
                           </button>
@@ -551,7 +551,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
               subtitle="Tambahkan program kerja yang belum dapat dilaksanakan satu per satu agar rapi"
             />
             <CardContent>
-              <p className="mb-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+              <p className="mb-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                 Daftar ini akan dilihat dan diekspor oleh Sekretaris menjadi rekap program yang belum
                 terlaksana seluruh divisi.
               </p>
@@ -573,7 +573,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
               </div>
 
               {notesList.length === 0 ? (
-                <p className="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400">
+                <p className="mt-3 rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400 dark:border-slate-700">
                   Belum ada program yang dicatat. Klik &quot;+ Tambah&quot; untuk menambahkan program
                   yang belum terlaksana.
                 </p>
@@ -582,10 +582,10 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                   {notesList.map((n, idx) => (
                     <li
                       key={idx}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
                     >
-                      <span className="text-slate-800">
-                        <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                      <span className="text-slate-800 dark:text-slate-200">
+                        <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                           {idx + 1}
                         </span>
                         {n}
@@ -637,7 +637,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                   type="file"
                   accept=".pdf,.doc,.docx,.xls,.xlsx"
                   onChange={(e) => setForm({ ...form, file: e.target.files?.[0] ?? null })}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
                 />
               </Field>
               <div className="flex justify-end gap-2 pt-2">
@@ -686,7 +686,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                   type="file"
                   accept=".pdf,.doc,.docx,.xls,.xlsx"
                   onChange={(e) => setUnggulanForm({ ...unggulanForm, file: e.target.files?.[0] ?? null })}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
                 />
               </Field>
               <div className="flex justify-end gap-2 pt-2">

@@ -15,16 +15,16 @@ export function NotConfigured() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">
-        <h1 className="text-xl font-bold text-slate-900">Akun belum dikonfigurasi</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-500">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-slate-950 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center shadow-lg">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Akun belum dikonfigurasi</h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
           Akun Anda telah terhubung, tetapi belum memiliki peran (<code>role</code>) dan divisi (
           <code>divisi_id</code>).
         </p>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Hubungi admin untuk menetapkan peran Anda di tabel{" "}
-          <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">profiles</code>, lalu muat
+          <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5 text-xs">profiles</code>, lalu muat
           ulang halaman ini.
         </p>
         <div className="mt-6 flex flex-col gap-3">
@@ -36,7 +36,7 @@ export function NotConfigured() {
           </button>
           <Link
             href="/"
-            className="text-sm font-medium text-brand-600 hover:underline"
+            className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
           >
             Kembali ke beranda
           </Link>

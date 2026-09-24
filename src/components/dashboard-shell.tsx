@@ -8,6 +8,7 @@ import { NAV_STRUCTURE } from "@/lib/nav";
 import type { Profile } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/role";
 import { ToastProvider, useToast } from "@/components/ui/toast";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -181,7 +182,7 @@ function ShellInner({
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-800 bg-slate-950 lg:block shadow-elevated">
         {sidebarContent}
@@ -210,31 +211,33 @@ function ShellInner({
       {/* Main Content Area */}
       <div className="lg:pl-64">
         {/* Sticky Modern Top Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-md lg:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/80">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 transition lg:hidden"
+              className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label="Buka menu navigasi"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="hidden items-center gap-2 text-xs text-slate-500 sm:flex">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <div className="hidden items-center gap-2 text-xs text-slate-500 sm:flex dark:text-slate-400">
+              <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               <span>{formattedDate}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-xs text-slate-600 shadow-xs">
+            <ThemeToggle />
+
+            <div className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-xs text-slate-600 shadow-xs sm:flex dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-400">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-slate-800">{ROLE_LABELS[role]}</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{ROLE_LABELS[role]}</span>
             </div>
 
             <div className="lg:hidden">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 <span>Logout</span>

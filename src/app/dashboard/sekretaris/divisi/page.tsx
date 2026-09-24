@@ -9,8 +9,8 @@ export default async function SekretarisDivisiPage() {
     <DashboardShell profile={profile}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Semua Divisi</h1>
-          <p className="text-sm text-slate-500">Tampilan Sekretaris - seluruh divisi OSIS</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Semua Divisi</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Tampilan Sekretaris - seluruh divisi OSIS</p>
         </div>
         <MonitoringDivisiClient profile={profile} />
       </div>

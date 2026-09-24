@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ToastProvider } from "@/components/ui/toast";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,6 +42,10 @@ export default function LoginPage() {
     <ToastProvider>
       <div className="relative min-h-screen flex items-center justify-center p-4 md:p-8 bg-slate-50 dark:bg-slate-950 overflow-hidden selection:bg-brand-500 selection:text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-indigo-500/5 dark:from-brand-500/10 dark:via-transparent dark:to-indigo-500/10" />
+
+        <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+          <ThemeToggle />
+        </div>
 
         <div className="relative w-full max-w-sm animate-fade-in">
           {/* Brand Header */}

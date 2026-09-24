@@ -34,7 +34,7 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard Bendahara</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard Bendahara</h1>
       <FinanceSummary />
 
       <Card>
@@ -67,7 +67,7 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
                     <th className="px-3 py-2">Tanggal</th>
                     <th className="px-3 py-2">Jenis</th>
                     <th className="px-3 py-2">Keterangan</th>
@@ -76,7 +76,7 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
                 </thead>
                 <tbody>
                   {recent.map((t) => (
-                    <tr key={t.id} className="border-b border-slate-50">
+                    <tr key={t.id} className="border-b border-slate-50 dark:border-slate-800">
                       <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
                       <td className="px-3 py-2">
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>

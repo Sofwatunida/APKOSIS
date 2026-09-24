@@ -42,13 +42,13 @@ export function Modal({
         aria-hidden
       />
       <div
-        className={`relative w-full ${sizes[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-elevated border border-slate-200/80 animate-slide-up`}
+        className={`relative w-full ${sizes[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-elevated border border-slate-200/80 animate-slide-up dark:bg-slate-900 dark:border-slate-800/80 dark:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.4)]`}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100/90 bg-white/95 px-6 py-4.5 backdrop-blur-sm">
-          <h3 className="text-base font-semibold tracking-tight text-slate-900">{title}</h3>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100/90 bg-white/95 px-6 py-4.5 backdrop-blur-sm dark:border-slate-800/90 dark:bg-slate-900/95">
+          <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h3>
           <button
             onClick={onClose}
-            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+            className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             aria-label="Tutup"
           >
             <X className="h-5 w-5" />

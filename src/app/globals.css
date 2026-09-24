@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 @layer base {
@@ -32,6 +32,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     --background: 13 17 23;
     --foreground: 248 250 252;
     --card: 22 27 34;
