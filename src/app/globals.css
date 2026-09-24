@@ -3,12 +3,101 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+@layer base {
+  :root {
+    --background: 248 250 252;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --card-border: 226 232 240;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --border: 226 232 240;
+    --input: 255 255 255;
+    --input-border: 203 213 225;
+    --ring: 99 102 241;
+    --primary: 79 70 229;
+    --primary-foreground: 255 255 255;
+    --secondary: 241 245 249;
+    --secondary-foreground: 15 23 42;
+    --accent: 241 245 249;
+    --accent-foreground: 15 23 42;
+    --destructive: 225 29 72;
+    --destructive-foreground: 255 255 255;
+    --success: 16 185 129;
+    --success-foreground: 255 255 255;
+  }
+
+  .dark {
+    --background: 13 17 23;
+    --foreground: 248 250 252;
+    --card: 22 27 34;
+    --card-foreground: 248 250 252;
+    --card-border: 41 50 63;
+    --muted: 22 27 34;
+    --muted-foreground: 148 163 184;
+    --border: 41 50 63;
+    --input: 22 27 34;
+    --input-border: 51 65 85;
+    --ring: 129 140 248;
+    --primary: 99 102 241;
+    --primary-foreground: 255 255 255;
+    --secondary: 30 41 59;
+    --secondary-foreground: 248 250 252;
+    --accent: 30 41 59;
+    --accent-foreground: 248 250 252;
+    --destructive: 251 113 133;
+    --destructive-foreground: 255 255 255;
+    --success: 34 197 94;
+    --success-foreground: 255 255 255;
+  }
+
+  * {
+    @apply border-slate-200 dark:border-slate-800;
+  }
+
+  body {
+    @apply bg-[rgb(var(--background))] text-[rgb(var(--foreground))] antialiased selection:bg-brand-500 selection:text-white;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/60 dark:border-slate-800/60 shadow-card;
+  }
+
+  .glass-dropdown {
+    @apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-elevated;
+  }
+
+  .input-base {
+    @apply w-full rounded-xl border bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs transition-all duration-150
+    hover:border-slate-300 dark:hover:border-slate-700
+    focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10
+    disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed;
+  }
+
+  .label-base {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none disabled:active:scale-100
+    bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-sm shadow-brand-600/25 border border-brand-500/30 focus-visible:ring-brand-500/30;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none disabled:active:scale-100
+    bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700/80 focus-visible:ring-slate-300 dark:focus-visible:ring-slate-600;
+  }
+
+  .card-base {
+    @apply rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-card dark:shadow-elevated transition-shadow duration-200;
+  }
 }
 
 /* 2026 Sleek modern scrollbars */
@@ -22,15 +111,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
 }
 
-/* Glassmorphism utility */
-.glass-panel {
-  @apply bg-white/80 backdrop-blur-md border border-white/60 shadow-card;
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-950;
 }
 
-.glass-dropdown {
-  @apply bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-elevated;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
-

@@ -1,0 +1,185 @@
+Saya ingin kamu memperbaiki UI/UX website APKOSIS berdasarkan tampilan login saat ini.
+
+TUJUAN UTAMA:
+Buat tampilan APKOSIS terlihat lebih modern, rapi, profesional, dan mengikuti tren desain website tahun 2026, tetapi tetap sederhana dan cocok untuk aplikasi administrasi/laporan harian OSIS.
+
+PENTING:
+- Jangan mengubah fungsi, alur aplikasi, database, authentication, API, route, atau logic yang sudah berjalan.
+- Fokus pada UI/UX, layout, spacing, typography, responsive design, dan visual consistency.
+- Sebelum mengedit, inspect struktur project dan komponen UI yang sudah ada.
+- Gunakan komponen/style yang sudah tersedia jika memungkinkan, jangan membuat struktur baru yang tidak diperlukan.
+- Jangan menghapus fitur yang sudah ada.
+
+PERBAIKAN LOGIN PAGE:
+
+1. HILANGKAN ICON LOGO
+- Hapus icon/simbol/logo grafis yang berada di bagian paling atas halaman login.
+- Logo resmi APKOSIS adalah teks "APKOSIS".
+- Jadikan "APKOSIS" sebagai wordmark utama.
+- Jangan membuat logo berupa icon baru.
+- Jangan menambahkan simbol tambahan di samping APKOSIS.
+
+2. PERBAIKI SPACING DAN LAYOUT
+Saat ini beberapa elemen terlihat terlalu dekat/nempel.
+Perbaiki:
+- jarak antara badge dan judul
+- jarak judul dengan subtitle
+- jarak subtitle dengan card login
+- padding di dalam card
+- jarak label dengan input
+- jarak antar input
+- jarak password dengan tombol
+- jarak tombol dengan informasi keamanan
+- margin antar section
+
+Gunakan spacing yang konsisten dan proporsional.
+Tidak boleh ada teks, border, input, button, atau card yang terlihat bertabrakan atau terlalu menempel.
+
+3. LOGIN CARD
+Buat card login lebih modern:
+- ukuran tidak terlalu besar
+- tetap nyaman di desktop
+- responsive di tablet dan mobile
+- gunakan border-radius modern
+- border tipis dan subtle
+- shadow/glow sangat halus
+- padding internal lebih lega
+- jangan membuat card terlihat terlalu berat
+
+4. DARK MODE
+Tambahkan dark mode yang benar-benar konsisten ke seluruh UI.
+
+Dark mode harus:
+- bukan sekadar membalik warna
+- memiliki hierarchy warna yang jelas
+- background utama gelap
+- card sedikit lebih terang daripada background
+- input memiliki contrast yang nyaman
+- text utama terang
+- text sekunder menggunakan warna muted
+- border tetap terlihat tetapi tidak terlalu terang
+- button tetap memiliki visual hierarchy
+- fokus/hover state tetap jelas
+
+Jika project sudah memiliki sistem theme/dark mode, gunakan sistem tersebut daripada membuat sistem baru.
+
+Pastikan tidak ada:
+- teks hitam di background gelap
+- border yang hilang
+- input terlalu gelap sampai sulit dibedakan
+- warna yang terlalu menyilaukan
+
+5. TREN UI WEBSITE 2026
+Gunakan prinsip desain modern 2026:
+- clean
+- minimal
+- spacious
+- modern typography
+- subtle glass/soft surface effect jika cocok
+- rounded corners yang proporsional
+- subtle gradient boleh digunakan secukupnya
+- micro-interactions sederhana
+- hover state
+- focus state
+- smooth transition
+- visual hierarchy yang jelas
+
+Jangan membuat:
+- desain terlalu ramai
+- terlalu banyak gradient
+- terlalu banyak glow
+- glassmorphism berlebihan
+- animasi berlebihan
+- dekorasi yang tidak memiliki fungsi
+
+APKOSIS harus terlihat seperti aplikasi administrasi modern, bukan landing page gaming.
+
+6. TYPOGRAPHY
+Perbaiki hierarchy:
+APKOSIS
+→ paling menonjol sebagai wordmark.
+
+"Portal OSIS / Sistem Laporan Harian OSIS"
+→ sebagai informasi pendukung.
+
+"Masuk ke Akun Anda"
+→ heading card.
+
+Deskripsi
+→ secondary text.
+
+Label input
+→ jelas tetapi tidak terlalu besar.
+
+Gunakan font yang modern dan konsisten dengan project.
+
+7. FORM INPUT
+Perbaiki input email dan password:
+- tinggi input konsisten
+- padding kiri/kanan cukup
+- icon tidak terlalu dekat dengan teks
+- placeholder tidak terlalu terang
+- focus state jelas
+- border berubah secara smooth saat focus
+- password visibility button tetap tersedia
+- jangan mengubah fungsi input
+
+8. BUTTON
+Button "Masuk ke Dashboard":
+- lebih proporsional
+- memiliki tinggi yang nyaman
+- border-radius konsisten
+- hover state
+- active state
+- disabled/loading state jika sudah tersedia
+- icon panah tetap boleh digunakan
+- teks tetap mudah dibaca
+
+9. RESPONSIVE
+Pastikan UI bagus pada:
+- desktop
+- laptop
+- tablet
+- mobile
+
+Jangan hanya memperbaiki tampilan desktop.
+Pada mobile:
+- card tidak boleh keluar layar
+- padding horizontal cukup
+- heading tidak terlalu besar
+- semua input dan button harus full width secara proporsional
+- tidak boleh ada horizontal overflow.
+
+10. ACCESSIBILITY
+Pastikan:
+- contrast cukup
+- focus state terlihat
+- label input jelas
+- button mudah dikenali
+- ukuran clickable area nyaman
+- jangan hanya mengandalkan warna untuk menunjukkan status.
+
+11. JANGAN MERUSAK PROJECT
+Sebelum selesai:
+- cek semua perubahan
+- pastikan tidak ada error TypeScript
+- pastikan tidak ada error lint
+- pastikan route login tetap berjalan
+- pastikan authentication tetap bekerja
+- pastikan dark mode tidak merusak halaman lain
+- pastikan responsive tidak menyebabkan overflow
+
+Jika project menggunakan Next.js + Tailwind, prioritaskan utility class Tailwind yang sudah digunakan project daripada menambahkan CSS global yang tidak perlu.
+
+HASIL YANG SAYA INGINKAN:
+UI APKOSIS harus terasa seperti dashboard SaaS/admin modern tahun 2026:
+clean, professional, spacious, responsive, dark-mode ready, dan tidak terlalu banyak dekorasi.
+
+Jangan hanya memberikan saran.
+Lakukan perubahan langsung pada source code project.
+
+Setelah selesai:
+1. tampilkan file yang diubah
+2. jelaskan perubahan utama secara singkat
+3. jalankan pengecekan lint/typecheck jika tersedia
+4. laporkan jika ada error yang belum terselesaikan.

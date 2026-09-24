@@ -7,7 +7,7 @@ import type {
 
 export function Label({ children }: { children: ReactNode }) {
   return (
-    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
+    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
       {children}
     </label>
   );
@@ -25,9 +25,9 @@ export function Field({ label, error, hint, children }: FieldWrapperProps) {
     <div>
       {label && <Label>{label}</Label>}
       {children}
-      {hint && !error && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{hint}</p>}
       {error && (
-        <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+        <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400">
           <span>⚠️</span> {error}
         </p>
       )}
@@ -36,7 +36,7 @@ export function Field({ label, error, hint, children }: FieldWrapperProps) {
 }
 
 const baseInput =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-brand-500 dark:focus:ring-brand-500/10 dark:disabled:bg-slate-800 dark:disabled:text-slate-500";
 
 export function Input({
   className = "",
@@ -68,4 +68,3 @@ export function Select({
     </select>
   );
 }
-
