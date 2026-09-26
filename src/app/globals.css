@@ -63,6 +63,12 @@
   body {
     @apply bg-[rgb(var(--background))] text-[rgb(var(--foreground))] antialiased selection:bg-brand-500 selection:text-white;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-wrap: break-word;
+  }
+
+  /* Cegah URL panjang / string tanpa spasi merusak layout di seluruh aplikasi */
+  p, span, td, th, li, dd, dt, label, h1, h2, h3, h4 {
+    overflow-wrap: anywhere;
   }
 }
 
@@ -98,6 +104,71 @@
 
   .card-base {
     @apply rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-card dark:shadow-elevated transition-shadow duration-200;
+  }
+
+  /* Sidebar / navigation rail - mengikuti theme, tidak ada background gelap
+     yang tertinggal di Light Mode. */
+  .sidebar-surface {
+    @apply bg-white text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800;
+  }
+
+  .sidebar-brand-text {
+    @apply text-slate-900 dark:text-white;
+  }
+
+  .sidebar-subtle {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  .sidebar-section-title {
+    @apply text-slate-400 dark:text-slate-500;
+  }
+
+  .sidebar-link {
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100;
+  }
+
+  .sidebar-link-active {
+    @apply bg-brand-50 text-brand-700 border-l-2 border-brand-500 dark:bg-brand-500/15 dark:text-white dark:border-brand-400;
+  }
+
+  .sidebar-user-card {
+    @apply bg-slate-50 border-slate-200 dark:bg-slate-800/60 dark:border-slate-800;
+  }
+
+  /* Tabel seragam untuk semua role */
+  .table-shell {
+    @apply w-full text-sm;
+  }
+
+  .table-head {
+    @apply border-b border-slate-200/80 bg-slate-50/70 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400;
+  }
+
+  .table-head-cell {
+    @apply px-4 py-3 font-semibold sm:px-5;
+  }
+
+  .table-row {
+    @apply border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/70 dark:border-slate-800/70 dark:hover:bg-slate-800/40;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 align-middle sm:px-5;
+  }
+
+  /* Baris list compact (Rekap Kendala, dll) */
+  .list-row {
+    @apply flex flex-col gap-1.5 border-b border-slate-100 px-4 py-3 transition-colors last:border-0 hover:bg-slate-50/70 sm:flex-row sm:items-center sm:gap-4 dark:border-slate-800/70 dark:hover:bg-slate-800/40;
+  }
+
+  /* Teks panjang (URL, keterangan) tidak boleh merusak layout */
+  .safe-text {
+    @apply break-words;
+  }
+
+  .truncate-cell {
+    @apply block max-w-[16rem] truncate sm:max-w-[22rem];
   }
 }
 

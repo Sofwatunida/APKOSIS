@@ -5,12 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { formatDate, todayISO } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { BUKTI_BUCKET, parseBukti, stripBukti } from "@/lib/bukti";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import {
@@ -19,12 +23,11 @@ import {
   Coins,
   Plus,
   Search,
-  Eye,
   Pencil,
   Trash2,
   Wallet,
-  ImageIcon,
   Upload,
+  X,
 } from "lucide-react";
 
 interface FormState {
@@ -42,18 +45,6 @@ const emptyForm: FormState = {
   nominal: "",
   bukti_url: null,
 };
-
-export function extractBukti(raw: string): { cleanKeterangan: string; buktiUrl: string | null } {
-  if (!raw) return { cleanKeterangan: "", buktiUrl: null };
-  const match = raw.match(/\[BUKTI:([^\]]+)\]/);
-  if (match) {
-    return {
-      cleanKeterangan: raw.replace(/\[BUKTI:[^\]]+\]/, "").trim(),
-      buktiUrl: match[1],
-    };
-  }
-  return { cleanKeterangan: raw, buktiUrl: null };
-}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -127,16 +118,16 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
 
   function openEdit(t: TransaksiKeuangan) {
     setEditing(t);
-    const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
+    const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
     setForm({
       tanggal: t.tanggal,
       jenis_transaksi: t.jenis_transaksi,
       keterangan: cleanKeterangan,
       nominal: String(Number(t.nominal)),
-      bukti_url: buktiUrl,
+      bukti_url: buktiRef,
     });
     setBuktiFile(null);
-    setBuktiPreview(buktiUrl);
+    setBuktiPreview(buktiRef);
     setErrors({});
     setOpen(true);
   }
@@ -160,10 +151,10 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
       try {
         const path = `bukti/${profile.divisi_id}/${Date.now()}-${buktiFile.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
         const { error: upErr } = await supabase.storage
-          .from("bukti-struk")
+          .from(BUKTI_BUCKET)
           .upload(path, buktiFile, { contentType: buktiFile.type });
         if (!upErr) {
-          finalBuktiUrl = supabase.storage.from("bukti-struk").getPublicUrl(path).data.publicUrl;
+          finalBuktiUrl = supabase.storage.from(BUKTI_BUCKET).getPublicUrl(path).data.publicUrl;
         } else {
           finalBuktiUrl = await fileToDataUrl(buktiFile);
         }
@@ -231,7 +222,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
   const saldo = pemasukan - pengeluaran;
 
   const filteredTransaksi = transaksi.filter((t) => {
-    const { cleanKeterangan } = extractBukti(t.keterangan);
+    const { cleanKeterangan } = parseBukti(t.keterangan);
     if (filterJenis !== "all" && t.jenis_transaksi !== filterJenis) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -245,64 +236,39 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Keuangan Divisi</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Kelola dan pantau arus kas masuk, keluar, dan bukti struk transaksi</p>
-        </div>
-        <Button onClick={openAdd} className="gap-2">
-          <Plus className="h-4 w-4" />
-          <span>Tambah Transaksi</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Keuangan Divisi"
+        description="Kelola dan pantau arus kas masuk, keluar, dan bukti struk transaksi."
+        action={
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            <span>Tambah Transaksi</span>
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="hover:shadow-elevated transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Pemasukan</p>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-500/10 dark:bg-emerald-900/20 dark:text-emerald-400">
-                <TrendingUp className="h-4.5 w-4.5" />
-              </div>
-            </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{formatRupiah(pemasukan)}</p>
-            <p className="mt-1 text-[11px] text-slate-400">Total dana kas masuk</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-elevated transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Pengeluaran</p>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-500/10 dark:bg-rose-900/20 dark:text-rose-400">
-                <TrendingDown className="h-4.5 w-4.5" />
-              </div>
-            </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{formatRupiah(pengeluaran)}</p>
-            <p className="mt-1 text-[11px] text-slate-400">Total belanja & pembiayaan</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-elevated transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Saldo Akhir Divisi</p>
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${
-                  saldo >= 0
-                    ? "bg-brand-50 text-brand-600 ring-brand-500/10 dark:bg-brand-900/20 dark:text-brand-400"
-                    : "bg-rose-50 text-rose-600 ring-rose-500/10 dark:bg-rose-900/20 dark:text-rose-400"
-                }`}
-              >
-                <Coins className="h-4.5 w-4.5" />
-              </div>
-            </div>
-            <p className={`mt-2 text-2xl font-bold tracking-tight ${saldo >= 0 ? "text-brand-600 dark:text-brand-400" : "text-rose-600 dark:text-rose-400"}`}>
-              {formatRupiah(saldo)}
-            </p>
-            <p className="mt-1 text-[11px] text-slate-400">Sisa saldo kas saat ini</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Total Pemasukan"
+          value={formatRupiah(pemasukan)}
+          tone="green"
+          icon={<TrendingUp className="h-4.5 w-4.5" />}
+          sub="Total dana kas masuk"
+        />
+        <StatCard
+          label="Total Pengeluaran"
+          value={formatRupiah(pengeluaran)}
+          tone="red"
+          icon={<TrendingDown className="h-4.5 w-4.5" />}
+          sub="Total belanja & pembiayaan"
+        />
+        <StatCard
+          label="Saldo Akhir Divisi"
+          value={formatRupiah(saldo)}
+          tone={saldo >= 0 ? "brand" : "red"}
+          icon={<Coins className="h-4.5 w-4.5" />}
+          sub="Sisa saldo kas saat ini"
+        />
       </div>
 
       {/* Riwayat Transaksi with Search & Filter Tabs (Requirement 5) */}
@@ -325,7 +291,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                   { header: "Nominal", key: "nominal", width: 20, align: "right" },
                 ]}
                 rows={filteredTransaksi.map((t) => {
-                  const { cleanKeterangan } = extractBukti(t.keterangan);
+                  const { cleanKeterangan } = parseBukti(t.keterangan);
                   return {
                     tanggal: formatDate(t.tanggal),
                     jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
@@ -383,87 +349,74 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
 
         <CardContent className="p-0">
           {filteredTransaksi.length === 0 ? (
-            <div className="py-12">
+            <div className="p-5 sm:p-6">
               <EmptyState
                 title={searchQuery ? "Transaksi tidak ditemukan" : "Belum ada transaksi"}
                 description={searchQuery ? "Coba kata kunci pencarian yang lain." : "Tambahkan transaksi keuangan divisi."}
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
-                    <th className="px-5 py-3.5 font-semibold">Tanggal</th>
-                    <th className="px-5 py-3.5 font-semibold">Jenis</th>
-                    <th className="px-5 py-3.5 font-semibold">Keterangan</th>
-                    <th className="px-5 py-3.5 font-semibold">Bukti Struk</th>
-                    <th className="px-5 py-3.5 text-right font-semibold">Nominal</th>
-                    <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredTransaksi.map((t) => {
-                    const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
-                    return (
-                      <tr key={t.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors">
-                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
-                          {formatDate(t.tanggal)}
-                        </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                            {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
-                          </Badge>
-                        </td>
-                        <td className="px-5 py-3.5 text-xs text-slate-700 dark:text-slate-300 max-w-xs md:max-w-md truncate">
-                          {cleanKeterangan}
-                        </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          {buktiUrl ? (
-                            <button
-                              type="button"
-                              onClick={() => setViewBuktiUrl(buktiUrl)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-xs transition hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
-                            >
-                              <Eye className="h-3 w-3" />
-                              <span>Lihat Bukti</span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-300">-</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-right font-bold whitespace-nowrap">
-                          <span className={t.jenis_transaksi === "pemasukan" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
-                            {t.jenis_transaksi === "pemasukan" ? "+ " : "- "}
-                            {formatRupiah(t.nominal)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openEdit(t)}
-                              className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98] dark:bg-blue-900/20 dark:text-blue-400"
-                            >
-                              <Pencil className="h-3 w-3" />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(t)}
-                              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:bg-rose-900/20 dark:text-rose-400"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              <span>Hapus</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <TableWrap minWidth={860}>
+              <THead>
+                <tr>
+                  <TH>Tanggal</TH>
+                  <TH>Jenis</TH>
+                  <TH>Keterangan</TH>
+                  <TH>Bukti Struk</TH>
+                  <TH align="right">Nominal</TH>
+                  <TH align="right">Aksi</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {filteredTransaksi.map((t) => {
+                  const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
+                  return (
+                    <TR key={t.id}>
+                      <TD className="whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        {formatDate(t.tanggal)}
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
+                          {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
+                        </Badge>
+                      </TD>
+                      <TD className="max-w-[18rem] text-xs text-slate-700 dark:text-slate-300">
+                        <span className="safe-text block">{cleanKeterangan || "-"}</span>
+                      </TD>
+                      <TD>
+                        <BuktiButton buktiRef={buktiRef} onOpen={setViewBuktiUrl} />
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap font-bold">
+                        <span className={t.jenis_transaksi === "pemasukan" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+                          {t.jenis_transaksi === "pemasukan" ? "+ " : "- "}
+                          {formatRupiah(t.nominal)}
+                        </span>
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(t)}
+                            className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98] dark:bg-blue-900/20 dark:text-blue-400"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(t)}
+                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/70 px-2.5 py-1.5 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:bg-rose-900/20 dark:text-rose-400"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>

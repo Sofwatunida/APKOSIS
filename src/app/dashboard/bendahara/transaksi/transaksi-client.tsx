@@ -5,10 +5,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { formatDate, MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { stripBukti, parseBukti } from "@/lib/bukti";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 
@@ -32,6 +37,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [pemasukan, setPemasukan] = useState(0);
   const [pengeluaran, setPengeluaran] = useState(0);
+  const [viewBukti, setViewBukti] = useState<string | null>(null);
 
   const [saldoAwal, setSaldoAwal] = useState(0);
   const [editingSaldo, setEditingSaldo] = useState(false);
@@ -133,7 +139,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Transaksi Keuangan</h1>
+      <PageHeader
+        title="Transaksi Keuangan"
+        description="Seluruh mutasi kas masuk dan keluar OSIS beserta bukti struk transaksi."
+      />
 
       <Card>
         <CardHeader title="Filter" />
@@ -206,13 +215,13 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                   setSaldoInput(saldoAwal === 0 ? "" : String(saldoAwal));
                   setEditingSaldo(true);
                 }}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-brand-600/25 transition hover:from-brand-500 hover:to-indigo-500 active:scale-[0.98]"
               >
                 Edit Saldo Awal
               </button>
             </div>
           ) : (
-            <div className="max-w-sm space-y-3">
+            <div className="max-w-sm space-y-4">
               <Field label="Nominal Saldo Awal (Rp)">
                 <Input
                   type="number"
@@ -222,22 +231,18 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                   placeholder="Ketik nominal saldo awal..."
                 />
               </Field>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveSaldoAwal}
-                  disabled={savingSaldo}
-                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-                >
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleSaveSaldoAwal} loading={savingSaldo} size="sm">
                   {savingSaldo ? "Menyimpan..." : "Simpan Saldo Awal"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setEditingSaldo(false)}
-                  className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   Batal
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -245,32 +250,15 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Total Pemasukan</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatRupiah(pemasukan)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Total Pengeluaran</p>
-            <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">{formatRupiah(pengeluaran)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Saldo Awal</p>
-            <p className="mt-1 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{formatRupiah(saldoAwal)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Saldo (Saldo Awal + Masuk - Keluar)</p>
-            <p className={`mt-1 text-2xl font-bold ${saldoAwal + pemasukan - pengeluaran >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600 dark:text-red-400"}`}>
-              {formatRupiah(saldoAwal + pemasukan - pengeluaran)}
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard label="Total Pemasukan" value={formatRupiah(pemasukan)} tone="green" />
+        <StatCard label="Total Pengeluaran" value={formatRupiah(pengeluaran)} tone="red" />
+        <StatCard label="Saldo Awal" value={formatRupiah(saldoAwal)} tone="indigo" />
+        <StatCard
+          label="Saldo"
+          sub="Saldo Awal + Masuk - Keluar"
+          value={formatRupiah(saldoAwal + pemasukan - pengeluaran)}
+          tone={saldoAwal + pemasukan - pengeluaran >= 0 ? "brand" : "red"}
+        />
       </div>
 
       <Card>
@@ -292,7 +280,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                 tanggal: formatDate(t.tanggal),
                 divisi: t.divisi?.nama_divisi ?? "-",
                 jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
-                keterangan: t.keterangan?.replace(/\[BUKTI:[^\]]+\]/, "").trim() ?? "-",
+                keterangan: stripBukti(t.keterangan) || "-",
                 nominal: formatRupiah(t.nominal),
               }))}
             />
@@ -304,37 +292,55 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
           ) : rows.length === 0 ? (
             <EmptyState title="Tidak ada transaksi" description="Atur filter untuk melihat transaksi." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="px-3 py-2">Tanggal</th>
-                    <th className="px-3 py-2">Divisi</th>
-                    <th className="px-3 py-2">Jenis</th>
-                    <th className="px-3 py-2">Keterangan</th>
-                    <th className="px-3 py-2 text-right">Nominal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((t) => (
-                    <tr key={t.id} className="border-b border-slate-50 dark:border-slate-800">
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
-                      <td className="px-3 py-2 font-medium">{t.divisi?.nama_divisi ?? "-"}</td>
-                      <td className="px-3 py-2">
+            <TableWrap minWidth={720}>
+              <THead>
+                <tr>
+                  <TH>Tanggal</TH>
+                  <TH>Divisi</TH>
+                  <TH>Jenis</TH>
+                  <TH>Keterangan</TH>
+                  <TH>Bukti</TH>
+                  <TH align="right">Nominal</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {rows.map((t) => {
+                  const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
+                  return (
+                    <TR key={t.id}>
+                      <TD className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {formatDate(t.tanggal)}
+                      </TD>
+                      <TD className="font-medium text-slate-900 dark:text-white">
+                        {t.divisi?.nama_divisi ?? "-"}
+                      </TD>
+                      <TD>
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                          {t.jenis_transaksi}
+                          {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-2">{t.keterangan}</td>
-                      <td className="px-3 py-2 text-right font-medium">{formatRupiah(t.nominal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </TD>
+                      <TD className="max-w-[18rem] text-xs text-slate-600 dark:text-slate-400">
+                        <span className="safe-text block">{cleanKeterangan || "-"}</span>
+                      </TD>
+                      <TD>
+                        <BuktiButton buktiRef={buktiRef} onOpen={setViewBukti} />
+                      </TD>
+                      <TD
+                        align="right"
+                        className="whitespace-nowrap font-semibold text-slate-900 dark:text-white"
+                      >
+                        {formatRupiah(t.nominal)}
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>
+
+      <BuktiPreviewModal buktiRef={viewBukti} onClose={() => setViewBukti(null)} />
     </div>
   );
 }
