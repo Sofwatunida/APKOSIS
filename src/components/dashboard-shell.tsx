@@ -27,10 +27,12 @@ import {
   Menu,
   X,
   Calendar,
+  HandCoins,
 } from "lucide-react";
 
 function getNavIcon(href: string) {
   if (href === "/dashboard") return LayoutDashboard;
+  if (href.includes("pengajuan-dana")) return HandCoins;
   if (href.includes("laporan")) return ClipboardList;
   if (href.includes("anggota")) return Users;
   if (href.includes("program-kerja")) return CalendarRange;

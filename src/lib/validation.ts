@@ -23,10 +23,15 @@ export const KONDISI_INVENTARIS = [
   "hilang",
 ] as const;
 
-export const STATUS_PEMBELIAN = [
-  "belum_dibeli",
-  "sudah_dibeli",
-  "tidak_dibeli",
+/**
+ * Status kebutuhan divisi.
+ * Hanya Bendahara yang boleh mengubahnya (dijaga RLS + trigger database).
+ */
+export const STATUS_KEBUTUHAN = [
+  "belum",
+  "disetujui",
+  "ditolak",
+  "sudah_dipenuhi",
 ] as const;
 
 export const JENIS_TRANSAKSI = ["pemasukan", "pengeluaran"] as const;
@@ -57,5 +62,47 @@ export function validateTransaksi(input: {
   if (!required(input.keterangan))
     errors.keterangan = "Keterangan wajib diisi.";
   if (!isValidNominal(input.nominal)) errors.nominal = "Nominal harus >= 0.";
+  return errors;
+}
+
+/** Baris kebutuhan pada form laporan harian divisi. */
+export function validateKebutuhanRows(
+  rows: { nama_kebutuhan: string; jumlah: string }[]
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const adaIsi = rows.some(
+    (r) => r.nama_kebutuhan.trim() || r.jumlah.trim() !== ""
+  );
+  if (!adaIsi) return errors;
+
+  rows.forEach((r, i) => {
+    if (!r.nama_kebutuhan.trim()) {
+      errors[`kebutuhan_${i}`] = "Nama kebutuhan wajib diisi.";
+      return;
+    }
+    if (r.jumlah !== "" && (isNaN(parseInt(r.jumlah)) || parseInt(r.jumlah) < 0)) {
+      errors[`kebutuhan_${i}`] = "Jumlah harus >= 0.";
+    }
+  });
+  return errors;
+}
+
+/** Form pengajuan dana (Admin Divisi / Bendahara). */
+export function validatePengajuanDana(input: {
+  divisi_id: string;
+  tanggal_pengajuan: string;
+  nominal: number | null;
+  keperluan: string;
+}): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!required(input.divisi_id)) errors.divisi_id = "Divisi wajib dipilih.";
+  if (!required(input.tanggal_pengajuan))
+    errors.tanggal_pengajuan = "Tanggal pengajuan wajib diisi.";
+  else if (!isValidDate(input.tanggal_pengajuan))
+    errors.tanggal_pengajuan = "Tanggal pengajuan tidak valid.";
+  if (input.nominal === null || isNaN(input.nominal))
+    errors.nominal = "Nominal harus berupa angka.";
+  else if (input.nominal <= 0) errors.nominal = "Nominal harus lebih dari 0.";
+  if (!required(input.keperluan)) errors.keperluan = "Keperluan wajib diisi.";
   return errors;
 }

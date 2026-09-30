@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -9,7 +10,9 @@ import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
+import { Eye } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -262,30 +265,53 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           }
         />
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
-                  <th className="px-3 py-2">Divisi</th>
-                  <th className="px-3 py-2 text-right">Pemasukan</th>
-                  <th className="px-3 py-2 text-right">Pengeluaran</th>
-                  <th className="px-3 py-2 text-right">Saldo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {perDivisi.map((d) => (
-                  <tr key={d.id} className="border-b border-slate-50 dark:border-slate-800">
-                    <td className="px-3 py-2 font-medium">{d.nama}</td>
-                    <td className="px-3 py-2 text-right">{formatRupiah(d.masuk)}</td>
-                    <td className="px-3 py-2 text-right">{formatRupiah(d.keluar)}</td>
-                    <td className={`px-3 py-2 text-right font-medium ${d.masuk - d.keluar >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                      {formatRupiah(d.masuk - d.keluar)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TableWrap minWidth={620}>
+            <THead>
+              <tr>
+                <TH>Divisi</TH>
+                <TH align="right">Pemasukan</TH>
+                <TH align="right">Pengeluaran</TH>
+                <TH align="right">Saldo</TH>
+                <TH align="right">Detail</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {perDivisi.map((d) => (
+                <TR key={d.id}>
+                  <TD className="min-w-[9rem] whitespace-nowrap font-medium">
+                    {d.nama}
+                  </TD>
+                  <TD align="right" className="whitespace-nowrap">
+                    {formatRupiah(d.masuk)}
+                  </TD>
+                  <TD align="right" className="whitespace-nowrap">
+                    {formatRupiah(d.keluar)}
+                  </TD>
+                  <TD
+                    align="right"
+                    className={`whitespace-nowrap font-medium ${
+                      d.masuk - d.keluar >= 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {formatRupiah(d.masuk - d.keluar)}
+                  </TD>
+                  <TD align="right" className="whitespace-nowrap">
+                    <Link
+                      href={`/dashboard/detail-keuangan?divisi=${encodeURIComponent(
+                        d.id
+                      )}&periode=bulanan`}
+                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Eye className="h-3 w-3 text-slate-400" />
+                      <span>Lihat Detail</span>
+                    </Link>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </TableWrap>
         </CardContent>
       </Card>
     </div>

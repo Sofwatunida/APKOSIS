@@ -1,5 +1,18 @@
 export type Role = "division_admin" | "monitoring" | "sekretaris" | "bendahara";
 
+/** Status kebutuhan divisi - ditentukan oleh Bendahara. */
+export type KebutuhanStatus =
+  | "belum"
+  | "disetujui"
+  | "ditolak"
+  | "sudah_dipenuhi";
+
+/** Status persetujuan pengajuan dana - hanya diubah Bendahara. */
+export type StatusPersetujuan = "belum" | "disetujui";
+
+/** Status pengambilan uang pengajuan dana - hanya diubah Bendahara. */
+export type StatusPengambilan = "belum" | "sudah_diambil";
+
 export type Json =
   | string
   | number
@@ -341,7 +354,9 @@ export interface Database {
           nama_kebutuhan: string;
           jumlah: number | null;
           keterangan: string | null;
-          status_pembelian: string;
+          status: KebutuhanStatus;
+          tanggal: string;
+          created_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -352,7 +367,9 @@ export interface Database {
           nama_kebutuhan: string;
           jumlah?: number | null;
           keterangan?: string | null;
-          status_pembelian?: string;
+          status?: KebutuhanStatus;
+          tanggal?: string | null;
+          created_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -363,7 +380,9 @@ export interface Database {
           nama_kebutuhan?: string;
           jumlah?: number | null;
           keterangan?: string | null;
-          status_pembelian?: string;
+          status?: KebutuhanStatus;
+          tanggal?: string | null;
+          created_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -378,6 +397,73 @@ export interface Database {
             foreignKeyName: "kebutuhan_laporan_id_fkey";
             columns: ["laporan_id"];
             referencedRelation: "laporan_harian";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      pengajuan_dana: {
+        Row: {
+          id: string;
+          divisi_id: string;
+          user_id: string;
+          kebutuhan_id: string | null;
+          tanggal_pengajuan: string;
+          nominal: number;
+          keperluan: string;
+          status_persetujuan: StatusPersetujuan;
+          status_pengambilan: StatusPengambilan;
+          approved_by: string | null;
+          approved_at: string | null;
+          taken_by: string | null;
+          taken_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          divisi_id: string;
+          user_id: string;
+          kebutuhan_id?: string | null;
+          tanggal_pengajuan: string;
+          nominal: number;
+          keperluan: string;
+          status_persetujuan?: StatusPersetujuan;
+          status_pengambilan?: StatusPengambilan;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          taken_by?: string | null;
+          taken_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          divisi_id?: string;
+          user_id?: string;
+          kebutuhan_id?: string | null;
+          tanggal_pengajuan?: string;
+          nominal?: number;
+          keperluan?: string;
+          status_persetujuan?: StatusPersetujuan;
+          status_pengambilan?: StatusPengambilan;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          taken_by?: string | null;
+          taken_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pengajuan_dana_divisi_id_fkey";
+            columns: ["divisi_id"];
+            referencedRelation: "divisi";
+            referencedColumns: ["id"],
+          },
+          {
+            foreignKeyName: "pengajuan_dana_kebutuhan_id_fkey";
+            columns: ["kebutuhan_id"];
+            referencedRelation: "kebutuhan";
             referencedColumns: ["id"];
           }
         ];
@@ -417,6 +503,8 @@ export interface Database {
           laporan_id: string | null;
           tanggal: string;
           jenis_transaksi: "pemasukan" | "pengeluaran";
+          sumber_pemasukan: string | null;
+          digunakan_untuk: string | null;
           keterangan: string;
           nominal: number;
           created_by: string | null;
@@ -429,6 +517,8 @@ export interface Database {
           laporan_id?: string | null;
           tanggal: string;
           jenis_transaksi: "pemasukan" | "pengeluaran";
+          sumber_pemasukan?: string | null;
+          digunakan_untuk?: string | null;
           keterangan: string;
           nominal: number;
           created_by?: string | null;
@@ -441,6 +531,8 @@ export interface Database {
           laporan_id?: string | null;
           tanggal?: string;
           jenis_transaksi?: "pemasukan" | "pengeluaran";
+          sumber_pemasukan?: string | null;
+          digunakan_untuk?: string | null;
           keterangan?: string;
           nominal?: number;
           created_by?: string | null;

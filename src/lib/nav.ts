@@ -24,6 +24,7 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Program Kerja", href: "/dashboard/program-kerja", roles: ["division_admin", "monitoring", "sekretaris", "bendahara"] },
       { label: "Inventaris", href: "/dashboard/inventaris", roles: ["division_admin"] },
       { label: "Kebutuhan", href: "/dashboard/kebutuhan", roles: ["division_admin"] },
+      { label: "Pengajuan Dana", href: "/dashboard/pengajuan-dana", roles: ["division_admin"] },
       { label: "Keuangan", href: "/dashboard/keuangan", roles: ["division_admin"] },
       { label: "Profil Divisi", href: "/dashboard/profil-divisi", roles: ["division_admin"] },
     ],
@@ -50,6 +51,8 @@ export const NAV_STRUCTURE: NavSection[] = [
     title: "Keuangan Pusat",
     items: [
       { label: "Transaksi", href: "/dashboard/bendahara/transaksi", roles: ["bendahara"] },
+      { label: "Kebutuhan Divisi", href: "/dashboard/bendahara/kebutuhan-divisi", roles: ["bendahara"] },
+      { label: "Pengajuan Dana", href: "/dashboard/bendahara/pengajuan-dana", roles: ["bendahara"] },
       { label: "Rekap Bulanan", href: "/dashboard/bendahara/rekap-bulanan", roles: ["bendahara"] },
       { label: "Rekap Tahunan", href: "/dashboard/bendahara/rekap-tahunan", roles: ["bendahara"] },
     ],

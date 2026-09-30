@@ -33,6 +33,8 @@ import {
 interface FormState {
   tanggal: string;
   jenis_transaksi: "pemasukan" | "pengeluaran";
+  sumber_pemasukan: string;
+  digunakan_untuk: string;
   keterangan: string;
   nominal: string;
   bukti_url: string | null;
@@ -41,10 +43,35 @@ interface FormState {
 const emptyForm: FormState = {
   tanggal: todayISO(),
   jenis_transaksi: "pemasukan",
+  sumber_pemasukan: "",
+  digunakan_untuk: "",
   keterangan: "",
   nominal: "",
   bukti_url: null,
 };
+
+/** Pilihan cepat sumber pemasukan (bisa juga diketik bebas). */
+const OPSI_SUMBER_PEMASUKAN = [
+  "Iuran Anggota",
+  "Kas Divisi",
+  "Dana Pusat",
+  "Donasi",
+  "Sponsor",
+  "Penjualan",
+  "Lainnya",
+];
+
+/** Pilihan cepat penggunaan dana pengeluaran (bisa juga diketik bebas). */
+const OPSI_DIGUNAKAN_UNTUK = [
+  "ATK",
+  "Perlengkapan Kegiatan",
+  "Konsumsi",
+  "Sewa Tempat",
+  "Transportasi",
+  "Cetak & Dokumentasi",
+  "Reward",
+  "Operasional Lainnya",
+];
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -109,7 +136,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
 
   function openAdd() {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, tanggal: todayISO() });
     setBuktiFile(null);
     setBuktiPreview(null);
     setErrors({});
@@ -122,6 +149,8 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
     setForm({
       tanggal: t.tanggal,
       jenis_transaksi: t.jenis_transaksi,
+      sumber_pemasukan: t.sumber_pemasukan ?? "",
+      digunakan_untuk: t.digunakan_untuk ?? "",
       keterangan: cleanKeterangan,
       nominal: String(Number(t.nominal)),
       bukti_url: buktiRef,
@@ -171,6 +200,12 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
       divisi_id: profile.divisi_id,
       tanggal: form.tanggal,
       jenis_transaksi: form.jenis_transaksi,
+      // Rincian ini dipakai halaman "Detail Keuangan" per divisi.
+      // Data lama yang belum punya rincian tetap null (ditampilkan sebagai "-").
+      sumber_pemasukan:
+        form.jenis_transaksi === "pemasukan" ? form.sumber_pemasukan.trim() || null : null,
+      digunakan_untuk:
+        form.jenis_transaksi === "pengeluaran" ? form.digunakan_untuk.trim() || null : null,
       keterangan: finalKeterangan,
       nominal: parseFloat(form.nominal),
     };
@@ -285,16 +320,21 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 filename="keuangan-divisi"
                 disabled={filteredTransaksi.length === 0}
                 columns={[
-                  { header: "Tanggal", key: "tanggal", width: 14 },
-                  { header: "Jenis", key: "jenis", width: 14 },
-                  { header: "Keterangan", key: "keterangan", width: 40 },
-                  { header: "Nominal", key: "nominal", width: 20, align: "right" },
+                  { header: "Tanggal", key: "tanggal", width: 13 },
+                  { header: "Jenis", key: "jenis", width: 13 },
+                  { header: "Rincian", key: "rincian", width: 20 },
+                  { header: "Keterangan", key: "keterangan", width: 32 },
+                  { header: "Nominal", key: "nominal", width: 18, align: "right" },
                 ]}
                 rows={filteredTransaksi.map((t) => {
                   const { cleanKeterangan } = parseBukti(t.keterangan);
                   return {
                     tanggal: formatDate(t.tanggal),
                     jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                    rincian:
+                      (t.jenis_transaksi === "pemasukan"
+                        ? t.sumber_pemasukan
+                        : t.digunakan_untuk) ?? "-",
                     keterangan: cleanKeterangan,
                     nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
                   };
@@ -361,6 +401,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 <tr>
                   <TH>Tanggal</TH>
                   <TH>Jenis</TH>
+                  <TH>Rincian</TH>
                   <TH>Keterangan</TH>
                   <TH>Bukti Struk</TH>
                   <TH align="right">Nominal</TH>
@@ -382,6 +423,11 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                       </TD>
                       <TD className="max-w-[18rem] text-xs text-slate-700 dark:text-slate-300">
                         <span className="safe-text block">{cleanKeterangan || "-"}</span>
+                      </TD>
+                      <TD className="max-w-[10rem] text-xs text-slate-500 dark:text-slate-400">
+                        <span className="safe-text block">
+                          {t.sumber_pemasukan || t.digunakan_untuk || "-"}
+                        </span>
                       </TD>
                       <TD>
                         <BuktiButton buktiRef={buktiRef} onOpen={setViewBuktiUrl} />
@@ -451,6 +497,69 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
               placeholder="Contoh: Pembelian spanduk, Kas mingguan, Dana konsumsi..."
             />
           </Field>
+
+          {/* Rincian per jenis transaksi: sumber pemasukan / digunakan untuk.
+              Dipakai untuk halaman "Detail Keuangan" per divisi. */}
+          {form.jenis_transaksi === "pemasukan" ? (
+            <Field
+              label="Sumber Pemasukan"
+              hint="Misal: Iuran Anggota, Kas Divisi, Donasi, Sponsor..."
+            >
+              <div className="flex flex-wrap gap-1.5 pb-2">
+                {OPSI_SUMBER_PEMASUKAN.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setForm({ ...form, sumber_pemasukan: s })}
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                      form.sumber_pemasukan === s
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                        : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <Input
+                value={form.sumber_pemasukan}
+                onChange={(e) =>
+                  setForm({ ...form, sumber_pemasukan: e.target.value })
+                }
+                placeholder="Sumber pemasukan (boleh diketi bebas)"
+              />
+            </Field>
+          ) : (
+            <Field
+              label="Digunakan Untuk"
+              hint="Misal: ATK, Konsumsi, Sewa Tempat, Transportasi..."
+            >
+              <div className="flex flex-wrap gap-1.5 pb-2">
+                {OPSI_DIGUNAKAN_UNTUK.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setForm({ ...form, digunakan_untuk: s })}
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                      form.digunakan_untuk === s
+                        ? "border-rose-400 bg-rose-50 text-rose-700 dark:border-rose-600 dark:bg-rose-900/20 dark:text-rose-400"
+                        : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <Input
+                value={form.digunakan_untuk}
+                onChange={(e) =>
+                  setForm({ ...form, digunakan_untuk: e.target.value })
+                }
+                placeholder="Penggunaan dana (boleh diketik bebas)"
+              />
+            </Field>
+          )}
+
           <Field label="Nominal (Rp)" error={errors.nominal}>
             <Input
               type="number"

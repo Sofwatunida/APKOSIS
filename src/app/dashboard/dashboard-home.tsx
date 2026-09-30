@@ -11,6 +11,7 @@ import { formatDate, todayISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
 import {
@@ -731,56 +732,62 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
           {recent.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400">Belum ada transaksi tercatat.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    <th className="px-5 py-3.5 font-semibold">Tanggal</th>
-                    <th className="px-5 py-3.5 font-semibold">Divisi</th>
-                    <th className="px-5 py-3.5 font-semibold">Jenis</th>
-                    <th className="px-5 py-3.5 font-semibold">Keterangan</th>
-                    <th className="px-5 py-3.5 font-semibold">Bukti</th>
-                    <th className="px-5 py-3.5 text-right font-semibold">Nominal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {recent.map((t) => {
-                    const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
-                    return (
-                      <tr key={t.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors">
-                        <td className="px-5 py-3.5 whitespace-nowrap text-xs font-medium text-slate-800 dark:text-slate-200">
-                          {formatDate(t.tanggal)}
-                        </td>
-                        <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-white">{t.divisi?.nama_divisi ?? "-"}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                            {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
-                          </Badge>
-                        </td>
-                        <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400 max-w-xs truncate">{cleanKeterangan}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          {buktiUrl ? (
-                            <button
-                              type="button"
-                              onClick={() => setViewBuktiUrl(buktiUrl)}
-                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shadow-xs transition hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
-                            >
-                              <Eye className="h-3 w-3" />
-                              <span>Lihat Bukti</span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-300">-</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                          {formatRupiah(t.nominal)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            /* minWidth + horizontal scroll: nama divisi tidak lagi turun
+               satu huruf per baris, dan semua kolom tetap terbaca. */
+            <TableWrap minWidth={960}>
+              <THead>
+                <tr>
+                  <TH>Tanggal</TH>
+                  <TH>Divisi</TH>
+                  <TH>Jenis</TH>
+                  <TH>Keterangan</TH>
+                  <TH>Bukti</TH>
+                  <TH align="right">Nominal</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {recent.map((t) => {
+                  const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
+                  return (
+                    <TR key={t.id}>
+                      <TD className="whitespace-nowrap text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {formatDate(t.tanggal)}
+                      </TD>
+                      <TD className="min-w-[9rem] whitespace-nowrap text-xs font-semibold text-slate-900 dark:text-white">
+                        {t.divisi?.nama_divisi ?? "-"}
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
+                          {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
+                        </Badge>
+                      </TD>
+                      <TD className="max-w-xs">
+                        <span className="safe-text block truncate text-xs text-slate-600 dark:text-slate-400">
+                          {cleanKeterangan}
+                        </span>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        {buktiUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewBuktiUrl(buktiUrl)}
+                            className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shadow-xs transition hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
+                          >
+                            <Eye className="h-3 w-3" />
+                            <span>Lihat Bukti</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-300">-</span>
+                        )}
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                        {formatRupiah(t.nominal)}
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>

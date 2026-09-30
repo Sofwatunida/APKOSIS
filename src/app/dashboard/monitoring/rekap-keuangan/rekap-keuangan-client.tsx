@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -8,8 +9,11 @@ import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -143,28 +147,13 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {allDivSaldo
               .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
-              .map((d) => {
-                const saldo = d.masuk - d.keluar;
-                return (
-                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">{d.nama}</h4>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">Pemasukan</span>
-                        <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatRupiah(d.masuk)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">Pengeluaran</span>
-                        <span className="font-medium text-red-600">{formatRupiah(d.keluar)}</span>
-                      </div>
-                      <div className="border-t border-slate-100 pt-1 flex justify-between text-xs dark:border-slate-800">
-                        <span className="text-slate-500 dark:text-slate-400">Saldo</span>
-                        <span className={`font-bold ${saldo >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600"}`}>{formatRupiah(saldo)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              .map((d) => (
+                <DivisiSummaryCard
+                  key={d.id}
+                  divisi={{ id: d.id, nama: d.nama, masuk: d.masuk, keluar: d.keluar }}
+                  periode="tahunan"
+                />
+              ))}
           </div>
         </CardContent>
       </Card>
@@ -179,19 +168,11 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
               .map((d) => {
                 const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
                 return (
-                  <div key={d.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200">{d.nama}</h4>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">Pemasukan</span>
-                        <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatRupiah(f.masuk)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">Pengeluaran</span>
-                        <span className="font-medium text-red-600">{formatRupiah(f.keluar)}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <DivisiSummaryCard
+                    key={d.id}
+                    divisi={{ id: d.id, nama: d.nama, masuk: f.masuk, keluar: f.keluar }}
+                    periode="bulanan"
+                  />
                 );
               })}
           </div>
@@ -247,36 +228,59 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
           )}
         </div>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
-                  <th className="px-3 py-2">Divisi</th>
-                  <th className="px-3 py-2 text-right">Pemasukan</th>
-                  <th className="px-3 py-2 text-right">Pengeluaran</th>
-                  <th className="px-3 py-2 text-right">Saldo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {divisiOptions
-                  .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
-                  .map((d) => {
-                    const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
-                    const saldo = f.masuk - f.keluar;
-                    return (
-                      <tr key={d.id} className="border-b border-slate-50">
-                        <td className="px-3 py-2 font-medium">{d.nama}</td>
-                        <td className="px-3 py-2 text-right">{formatRupiah(f.masuk)}</td>
-                        <td className="px-3 py-2 text-right">{formatRupiah(f.keluar)}</td>
-                        <td className={`px-3 py-2 text-right font-medium ${saldo >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"}`}>
-                          {formatRupiah(saldo)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+          <TableWrap minWidth={620}>
+            <THead>
+              <tr>
+                <TH>Divisi</TH>
+                <TH align="right">Pemasukan</TH>
+                <TH align="right">Pengeluaran</TH>
+                <TH align="right">Saldo</TH>
+                <TH align="right">Detail</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {divisiOptions
+                .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
+                .map((d) => {
+                  const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
+                  const saldo = f.masuk - f.keluar;
+                  return (
+                    <TR key={d.id}>
+                      <TD className="min-w-[9rem] whitespace-nowrap font-medium">
+                        {d.nama}
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        {formatRupiah(f.masuk)}
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        {formatRupiah(f.keluar)}
+                      </TD>
+                      <TD
+                        align="right"
+                        className={`whitespace-nowrap font-medium ${
+                          saldo >= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatRupiah(saldo)}
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        <Link
+                          href={`/dashboard/detail-keuangan?divisi=${encodeURIComponent(
+                            d.id
+                          )}&periode=bulanan`}
+                          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          <Eye className="h-3 w-3 text-slate-400" />
+                          <span>Lihat Detail</span>
+                        </Link>
+                      </TD>
+                    </TR>
+                  );
+                })}
+            </TBody>
+          </TableWrap>
         </CardContent>
       </Card>
     </div>

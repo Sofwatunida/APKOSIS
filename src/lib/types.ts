@@ -1,4 +1,11 @@
 import type { Database } from "./database.types";
+import type {
+  KebutuhanStatus,
+  StatusPersetujuan,
+  StatusPengambilan,
+} from "./database.types";
+
+export type { KebutuhanStatus, StatusPersetujuan, StatusPengambilan };
 
 export type Role = "division_admin" | "monitoring" | "sekretaris" | "bendahara";
 
@@ -28,6 +35,7 @@ export type Kebutuhan = Database["public"]["Tables"]["kebutuhan"]["Row"];
 export type TransaksiKeuangan =
   Database["public"]["Tables"]["transaksi_keuangan"]["Row"];
 export type SaldoAwal = Database["public"]["Tables"]["saldo_awal"]["Row"];
+export type PengajuanDana = Database["public"]["Tables"]["pengajuan_dana"]["Row"];
 
 export type JenisTransaksi = "pemasukan" | "pengeluaran";
 
