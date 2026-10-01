@@ -546,17 +546,111 @@ export interface Database {
             referencedRelation: "divisi";
             referencedColumns: ["id"],
           },
-          {
+{
             foreignKeyName: "transaksi_keuangan_laporan_id_fkey";
             columns: ["laporan_id"];
             referencedRelation: "laporan_harian";
-            referencedColumns: ["id"],
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      division_credentials: {
+        Row: {
+          divisi_id: string;
+          password_hash: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          divisi_id: string;
+          password_hash: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          divisi_id?: string;
+          password_hash?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "division_credentials_divisi_id_fkey";
+            columns: ["divisi_id"];
+            referencedRelation: "divisi";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      division_sessions: {
+        Row: {
+          token: string;
+          user_id: string;
+          divisi_id: string;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          token?: string;
+          user_id: string;
+          divisi_id: string;
+          created_at?: string;
+          expires_at: string;
+        };
+        Update: {
+          token?: string;
+          user_id?: string;
+          divisi_id?: string;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "division_sessions_divisi_id_fkey";
+            columns: ["divisi_id"];
+            referencedRelation: "divisi";
+            referencedColumns: ["id"];
           }
         ];
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      division_session_token: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      verify_division_password: {
+        Args: { p_divisi_id: string; p_password: string };
+        Returns: boolean;
+      };
+      start_division_session: {
+        Args: { p_divisi_id: string; p_password: string };
+        Returns: string;
+      };
+      end_division_session: {
+        Args: { p_token: string };
+        Returns: undefined;
+      };
+      set_division_password: {
+        Args: { p_divisi_id: string; p_password: string };
+        Returns: string;
+      };
+      division_crypto_search_path: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+      division_credential_status: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          divisi_id: string;
+          nomor_divisi: number;
+          nama_divisi: string;
+          has_password: boolean;
+          updated_at: string | null;
+        }>;
+      };
+    };
     Enums: {};
     CompositeTypes: {};
   };

@@ -230,14 +230,14 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
         </div>
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+      {/* <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
           Uang hanya bisa ditandai <strong>sudah diambil</strong> setelah
           pengajuan disetujui. Setelah diambil, status kebutuhan terkait otomatis
           ditandai <strong>Sudah Dipenuhi</strong> oleh sistem.
         </p>
-      </div>
+      </div> */}
 
       <Card>
         <CardHeader

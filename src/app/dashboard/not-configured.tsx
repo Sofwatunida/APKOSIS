@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { clearDivisionTokenCookie } from "@/lib/division-session-client";
 
 export function NotConfigured() {
   const router = useRouter();
   const supabase = createClient();
 
   async function handleLogout() {
+    clearDivisionTokenCookie();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();

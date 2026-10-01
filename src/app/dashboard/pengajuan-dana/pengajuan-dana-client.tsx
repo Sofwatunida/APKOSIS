@@ -226,9 +226,10 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
           Pengajuan hanya bisa dibuat untuk kebutuhan yang sudah{" "}
-          <strong>disetujui</strong> oleh Bendahara, dan satu kebutuhan hanya
+          <strong>disetujui</strong> oleh Bendahara.
+          {/* dan satu kebutuhan hanya
           boleh punya satu pengajuan. Status persetujuan &amp; pengambilan
-          ditangani Bendahara.
+          ditangani Bendahara. */}
         </p>
       </div>
 

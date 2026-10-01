@@ -27,6 +27,11 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Pengajuan Dana", href: "/dashboard/pengajuan-dana", roles: ["division_admin"] },
       { label: "Keuangan", href: "/dashboard/keuangan", roles: ["division_admin"] },
       { label: "Profil Divisi", href: "/dashboard/profil-divisi", roles: ["division_admin"] },
+      {
+        label: "Password Divisi",
+        href: "/dashboard/password-divisi",
+        roles: ["division_admin"],
+      },
     ],
   },
   {

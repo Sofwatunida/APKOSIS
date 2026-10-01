@@ -1,0 +1,250 @@
+PENTING — BATASAN PERUBAHAN ROLE
+
+JANGAN MENYENTUH, MENGUBAH, MERUSAK, ATAU MERANCANG ULANG konsep role yang sudah ada:
+
+1. monitoring
+2. bendahara
+3. sekretaris
+
+Ketiga role tersebut HARUS tetap menggunakan sistem login, akun, permission, dashboard, query, RLS, dan alur yang sekarang.
+
+PERUBAHAN YANG SAYA MINTA HANYA UNTUK ROLE DIVISI / division_admin.
+
+==================================================
+PEMISAHAN SISTEM ROLE
+==================================================
+
+Sistem APKOSIS memiliki beberapa kelompok user:
+
+A. AKUN DIVISI
+Role:
+division_admin
+
+Akun ini menggunakan konsep baru:
+
+1 akun Supabase Auth:
+divisi.apkosis26@gmail.com
+
+Kemudian setelah login Auth:
+→ pilih divisi
+→ masukkan password/kode divisi
+→ masuk ke dashboard divisi yang dipilih.
+
+B. MONITORING
+
+JANGAN DIUBAH.
+
+Tetap gunakan sistem login monitoring yang sudah ada.
+
+Jangan mengubah:
+- email
+- password
+- role
+- profile
+- dashboard
+- permission
+- query
+- RLS
+- middleware
+- redirect
+- database relation
+
+yang berkaitan dengan monitoring, kecuali benar-benar diperlukan agar sistem baru division_admin tidak merusaknya.
+
+C. BENDAHARA
+
+JANGAN DIUBAH.
+
+Tetap gunakan sistem login bendahara yang sudah ada.
+
+Jangan mengubah:
+- email
+- password
+- role
+- profile
+- dashboard
+- permission
+- query
+- RLS
+- middleware
+- redirect
+- database relation
+
+D. SEKRETARIS
+
+JANGAN DIUBAH.
+
+Tetap gunakan sistem login sekretaris yang sudah ada.
+
+Jangan mengubah:
+- email
+- password
+- role
+- profile
+- dashboard
+- permission
+- query
+- RLS
+- middleware
+- redirect
+- database relation
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+Jangan membuat satu sistem login baru yang berlaku untuk semua role.
+
+Sistem baru hanya berlaku ketika:
+
+role === "division_admin"
+
+Role lain harus melewati alur login existing.
+
+Konsepnya:
+
+                 LOGIN
+                   │
+                   ▼
+             SUPABASE AUTH
+                   │
+          ┌────────┴────────┐
+          │                 │
+          ▼                 ▼
+ division_admin       role lainnya
+          │                 │
+          ▼                 ▼
+   SISTEM BARU          SISTEM LAMA
+          │                 │
+          ▼                 ├── monitoring
+    PILIH DIVISI            ├── bendahara
+          │                 └── sekretaris
+          ▼
+ PASSWORD DIVISI
+          │
+          ▼
+ DASHBOARD DIVISI
+
+JANGAN menggabungkan sistem division_admin dengan
+monitoring/bendahara/sekretaris.
+
+==================================================
+DATABASE
+==================================================
+
+Jika membuat tabel baru untuk password divisi, tabel tersebut hanya digunakan oleh:
+
+division_admin.
+
+Jangan memasukkan monitoring, bendahara, atau sekretaris ke dalam tabel tersebut.
+
+Contoh:
+
+division_credentials
+
+hanya berisi credential untuk 20 divisi.
+
+Jangan membuat:
+
+monitoring_credentials
+bendahara_credentials
+sekretaris_credentials
+
+karena ketiga role tersebut sudah mempunyai sistem existing.
+
+==================================================
+PROFILES
+==================================================
+
+Jangan mengubah struktur role existing.
+
+Jika sekarang sudah ada:
+
+role = monitoring
+role = bendahara
+role = sekretaris
+role = division_admin
+
+pertahankan semuanya.
+
+Jangan mengganti nama role.
+
+Jangan menghapus role.
+
+Jangan membuat role baru untuk menggantikan role lama.
+
+Sistem baru hanya memperluas cara autentikasi untuk division_admin.
+
+==================================================
+RLS
+==================================================
+
+JANGAN mengubah RLS policy monitoring, bendahara, dan sekretaris
+kecuali perubahan tersebut benar-benar wajib agar policy division_admin
+yang baru tidak konflik.
+
+Prioritaskan membuat policy baru khusus division_admin.
+
+Jangan mengubah permission role lain hanya agar implementasi
+division_admin menjadi lebih mudah.
+
+==================================================
+SEBELUM CODING
+==================================================
+
+WAJIB audit terlebih dahulu:
+
+1. bagaimana login sekarang bekerja
+2. bagaimana role ditentukan
+3. bagaimana division_admin diarahkan ke dashboard
+4. bagaimana monitoring diarahkan
+5. bagaimana bendahara diarahkan
+6. bagaimana sekretaris diarahkan
+7. middleware
+8. Supabase Auth
+9. public.profiles
+10. tabel divisi
+11. RLS policy
+
+Setelah audit, tampilkan:
+
+- file yang akan diubah
+- file yang akan dibuat
+- tabel yang akan dibuat/diubah
+- RLS yang akan dibuat
+- bagian existing yang sengaja TIDAK disentuh
+
+Jangan langsung melakukan perubahan sebelum menjelaskan bagian tersebut.
+
+==================================================
+KRITERIA WAJIB
+==================================================
+
+Setelah implementasi:
+
+division_admin:
+→ menggunakan sistem login baru.
+
+monitoring:
+→ tetap login seperti sebelumnya.
+
+bendahara:
+→ tetap login seperti sebelumnya.
+
+sekretaris:
+→ tetap login seperti sebelumnya.
+
+Tidak boleh ada perubahan perilaku pada ketiga role tersebut.
+
+Jika ada bagian kode yang digunakan bersama oleh semua role,
+JANGAN langsung mengubahnya.
+
+Cari cara membuat perubahan yang terisolasi khusus untuk
+division_admin agar risiko merusak role lain seminimal mungkin.
+
+Jika perubahan shared code benar-benar diperlukan,
+jelaskan terlebih dahulu bagian mana yang terdampak dan
+pastikan behavior monitoring, bendahara, dan sekretaris tetap sama.
+
+Jangan menghapus atau mengganti sistem existing hanya karena
+sistem login division_admin dibuat baru.

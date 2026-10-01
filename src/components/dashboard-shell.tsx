@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { clearDivisionTokenCookie } from "@/lib/division-session-client";
 import { NAV_STRUCTURE } from "@/lib/nav";
 import type { Profile } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/role";
@@ -28,6 +29,7 @@ import {
   X,
   Calendar,
   HandCoins,
+  KeyRound,
 } from "lucide-react";
 
 function getNavIcon(href: string) {
@@ -40,6 +42,7 @@ function getNavIcon(href: string) {
   if (href.includes("kebutuhan")) return ShoppingBag;
   if (href.includes("keuangan") || href.includes("transaksi")) return Wallet;
   if (href.includes("profil-divisi")) return Building2;
+  if (href.includes("password-divisi")) return KeyRound;
   if (href.includes("divisi")) return Layers;
   if (href.includes("rekap-keuangan")) return Coins;
   if (href.includes("rekap-kendala")) return AlertCircle;
@@ -69,6 +72,7 @@ function ShellInner({
   })).filter((section) => section.items.length > 0);
 
   async function handleLogout() {
+    clearDivisionTokenCookie();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
