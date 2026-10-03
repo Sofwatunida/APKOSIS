@@ -30,6 +30,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     email: data.email,
     role: data.role,
     divisi_id: data.divisi_id,
+    periode_id: data.periode_id,
     created_at: data.created_at,
     updated_at: data.updated_at,
   };

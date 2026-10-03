@@ -42,7 +42,15 @@ function formatWaktu(value: string | null): string | null {
   }).format(date);
 }
 
-export function PasswordDivisiClient({ divisi }: { divisi: DivisiPasswordRow[] }) {
+export function PasswordDivisiClient({
+  divisi,
+  periodeId,
+  readOnly = false,
+}: {
+  divisi: DivisiPasswordRow[];
+  periodeId?: string;
+  readOnly?: boolean;
+}) {
   const { success, error: toastError } = useToast();
 
   const [values, setValues] = useState<Record<string, string>>({});
@@ -55,8 +63,16 @@ export function PasswordDivisiClient({ divisi }: { divisi: DivisiPasswordRow[] }
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [baruDisimpan, setBaruDisimpan] = useState<string | null>(null);
 
-  function mintaKonfirmasi(row: DivisiPasswordRow) {
+function mintaKonfirmasi(row: DivisiPasswordRow) {
     const value = values[row.id] ?? "";
+
+    if (readOnly) {
+      setRowError((prev) => ({
+        ...prev,
+        [row.id]: "Periode ini sudah diarsipkan, kredensial tidak bisa diubah.",
+      }));
+      return;
+    }
 
     if (!value) {
       setRowError((prev) => ({ ...prev, [row.id]: "Password divisi belum diisi." }));
@@ -83,7 +99,7 @@ export function PasswordDivisiClient({ divisi }: { divisi: DivisiPasswordRow[] }
 
     setSavingId(row.id);
 
-    const result = await saveDivisionPasswordAction(row.id, value);
+    const result = await saveDivisionPasswordAction(row.id, value, periodeId);
 
     setSavingId(null);
 
@@ -123,10 +139,18 @@ export function PasswordDivisiClient({ divisi }: { divisi: DivisiPasswordRow[] }
 
   return (
     <div className="space-y-5">
-      <PageHeader
+<PageHeader
         title="Pengaturan Password Divisi"
         description="Anda yang menentukan password setiap divisi. Password di-hash (bcrypt) di server sebelum disimpan dan tidak pernah ditampilkan kembali."
       />
+
+      {readOnly && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+          Periode ini sudah diarsipkan. Kredensial divisi periode berikutnya
+          diatur terpisah dan password lama tetap berlaku untuk arsipnya.
+        </div>
+      )}
+
 
       <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs dark:border-slate-800/80 dark:bg-slate-900/60">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">

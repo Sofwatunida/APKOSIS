@@ -1,5 +1,5 @@
 import { requireProfile, requireRole } from "@/lib/guard";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { DetailKeuanganClient } from "./detail-keuangan-client";
 
 export default async function DetailKeuanganPage({
@@ -18,12 +18,12 @@ export default async function DetailKeuanganPage({
   };
 
   return (
-    <DashboardShell profile={profile}>
+    <AppShell profile={profile}>
       <DetailKeuanganClient
         profile={profile}
         initialDivisi={pick("divisi") ?? ""}
         initialPeriode={pick("periode") ?? ""}
       />
-    </DashboardShell>
+    </AppShell>
   );
 }

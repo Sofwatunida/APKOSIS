@@ -1,11 +1,19 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "../database.types";
 import {
   DIVISI_TOKEN_COOKIE,
   DIVISI_TOKEN_HEADER,
 } from "../division-session-constants";
+import {
+  scopeBuilder,
+  setClientPeriodScope,
+  readPeriodCookie,
+} from "../period-scope";
 
-let clientInstance: ReturnType<typeof createBrowserClient<Database>> | null = null;
+let rawClient: SupabaseClient<Database> | null = null;
+let scopedClient: SupabaseClient<Database> | null = null;
+let lastScope: string | null | undefined = undefined;
 
 function readDivisionToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -21,9 +29,9 @@ function readDivisionToken(): string | null {
   }
 }
 
-export function createClient() {
-  if (clientInstance) return clientInstance;
-  clientInstance = createBrowserClient<Database>(
+function getRawClient(): SupabaseClient<Database> {
+  if (rawClient) return rawClient;
+  rawClient = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -39,5 +47,35 @@ export function createClient() {
       },
     }
   );
-  return clientInstance;
+  return rawClient;
+}
+
+/**
+ * Client Supabase untuk browser.
+ *
+ * Semua `.from(<tabel periode>)` otomatis dibungkus proxy yang
+ * memasang filter `periode_id` dan mengisi `periode_id` saat menulis.
+ * Lihat `src/lib/period-scope.ts`.
+ */
+export function createClient(): SupabaseClient<Database> {
+  const cookieValue = readPeriodCookie();
+  const scope = cookieValue ?? null;
+
+  if (scopedClient && lastScope === scope) return scopedClient;
+
+  setClientPeriodScope(scope);
+  lastScope = scope;
+
+  const client = getRawClient();
+
+  scopedClient = new Proxy(client, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (prop !== "from" || typeof value !== "function") return value;
+      return (table: string) =>
+        scopeBuilder((value as (t: string) => unknown).call(target, table), table);
+    },
+  });
+
+  return scopedClient;
 }

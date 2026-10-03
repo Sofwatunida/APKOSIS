@@ -1,13 +1,13 @@
 import { requireProfile, requireRole } from "@/lib/guard";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { RekapTahunanClient } from "./rekap-tahunan-client";
 
 export default async function RekapTahunanPage() {
   const { profile } = await requireProfile();
   requireRole(profile, ["bendahara"]);
   return (
-    <DashboardShell profile={profile}>
+    <AppShell profile={profile}>
       <RekapTahunanClient profile={profile} />
-    </DashboardShell>
+    </AppShell>
   );
 }

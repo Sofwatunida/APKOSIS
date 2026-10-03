@@ -1,0 +1,1830 @@
+Saya ingin melakukan perubahan arsitektur besar namun terkontrol pada aplikasi APKOSIS.
+
+PENTING:
+Jangan langsung mengubah kode sebelum memahami struktur aplikasi yang sekarang.
+Pertama lakukan audit terhadap authentication, authorization, role, database, Supabase RLS, middleware, routing, query data, dan seluruh fitur yang sudah ada.
+
+Tujuan utama perubahan ini adalah membuat APKOSIS menjadi aplikasi yang dapat digunakan lintas periode/kepengurusan dan diwariskan kepada adik kelas pada periode berikutnya, tanpa kehilangan data periode sebelumnya.
+
+==================================================
+1. KONSEP UTAMA APKOSIS
+==================================================
+
+APKOSIS akan digunakan terus-menerus untuk banyak periode kepengurusan.
+
+Contoh:
+
+Periode 2026/2027
+Periode 2027/2028
+Periode 2028/2029
+Periode 2029/2030
+dst.
+
+Data dari setiap periode WAJIB tetap tersimpan dan tidak boleh tercampur.
+
+Contoh:
+
+Data keuangan periode 2026/2027
+tidak boleh muncul sebagai data periode 2028/2029.
+
+Data kendala periode 2026/2027
+tidak boleh muncul sebagai data periode 2028/2029.
+
+Data laporan divisi periode 2026/2027
+tidak boleh muncul sebagai laporan periode 2028/2029.
+
+Semua data harus memiliki hubungan yang jelas dengan periode.
+
+Jangan hanya membuat filter tahun di frontend.
+PERIODE HARUS MENJADI BAGIAN DARI DATA DAN QUERY DATABASE.
+
+==================================================
+2. HIERARKI ROLE BARU
+==================================================
+
+Buat arsitektur role sebagai berikut:
+
+1. SUPER ADMIN
+2. ADMIN
+3. DIVISION ADMIN / KETUA-WAKIL DIVISI
+4. MONITORING
+5. BENDAHARA
+6. SEKRETARIS
+
+Jangan menghilangkan role yang sudah ada.
+
+Jangan mengubah konsep dan fungsi utama:
+- Monitoring
+- Bendahara
+- Sekretaris
+- Ketua/Wakil Divisi
+
+Perubahan utama adalah menambahkan struktur Super Admin dan Admin serta sistem periode yang benar.
+
+==================================================
+3. SUPER ADMIN
+==================================================
+
+SUPER ADMIN adalah pemilik/pembuat sistem APKOSIS.
+
+Super Admin adalah saya sebagai pembuat aplikasi.
+
+Super Admin memiliki akses tertinggi.
+
+Super Admin BUKAN sekadar email yang dicek menggunakan hardcode di frontend.
+
+Role Super Admin harus benar-benar tersimpan dan diverifikasi melalui sistem authorization yang aman.
+
+Super Admin dapat:
+
+- melihat seluruh periode
+- melihat seluruh data
+- membuat periode
+- mengaktifkan periode
+- mengarsipkan periode
+- mengubah periode
+- mengelola seluruh divisi
+- mengelola akun Admin
+- membuat Admin baru
+- mengganti Admin
+- mengubah email Admin
+- reset password Admin
+- mengelola akun divisi
+- mengubah email akun divisi
+- mengatur/reset password divisi
+- mengaktifkan/nonaktifkan divisi
+- melihat seluruh laporan
+- melihat seluruh data keuangan
+- melihat seluruh data kendala
+- melihat seluruh data kebutuhan
+- melihat seluruh data inventaris
+- melihat seluruh periode lama
+- memperbaiki data periode lama bila benar-benar diperlukan
+- melakukan recovery jika terjadi masalah pada periode atau akun
+- mengelola konfigurasi sistem yang bersifat global
+
+Super Admin memiliki hak tertinggi terhadap data.
+
+Namun jangan membuat Super Admin dapat melakukan sesuatu hanya karena tombolnya ditampilkan.
+
+Authorization harus tetap diamankan di server/database/Supabase RLS.
+
+==================================================
+4. ADMIN
+==================================================
+
+ADMIN adalah pengelola APKOSIS untuk kepengurusan/periode yang sedang berjalan.
+
+Contoh:
+
+Periode 2026/2027
+Admin = pengurus periode tersebut
+
+Kemudian ketika aplikasi diwariskan:
+
+Periode 2027/2028
+Admin = adik kelas/pengurus baru
+
+Super Admin tetap ada sebagai pemilik sistem.
+
+Admin baru TIDAK menggantikan Super Admin.
+
+Admin dapat mengelola kebutuhan operasional periode aktif sesuai permission yang diberikan.
+
+Admin dapat:
+- mengelola periode aktif sesuai kewenangannya
+- mengelola konfigurasi divisi
+- mengatur nama divisi
+- mengatur nomor divisi
+- mengaktifkan/nonaktifkan divisi
+- mengelola akun divisi
+- mengatur password divisi
+- reset password divisi
+- mengatur email akun divisi jika sistem memang menggunakan email tersebut
+- melihat laporan periode aktif
+- mengelola konfigurasi yang berkaitan dengan kepengurusan periode aktif
+
+Namun:
+
+ADMIN TIDAK BOLEH:
+- menghapus Super Admin
+- mengubah role Super Admin
+- mengambil alih Super Admin
+- mengubah kredensial Super Admin
+- menghapus arsip periode lama
+- sembarangan mengubah data periode lama
+- mengakses fungsi khusus Super Admin
+
+Jika diperlukan perubahan pada data lama, hanya Super Admin yang memiliki akses penuh untuk itu.
+
+==================================================
+5. ROLE DIVISI / KETUA-WAKIL
+==================================================
+
+Ketua/Wakil Divisi tetap menggunakan sistem APKOSIS seperti sekarang.
+
+Mereka dapat:
+- memilih/mengakses divisinya
+- membuat laporan
+- mengisi kegiatan
+- mengisi kendala dan solusi
+- mengisi inventaris
+- mengisi kebutuhan
+- mengisi pemasukan/pengeluaran jika fitur tersebut memang tersedia untuk divisi
+- melihat status pengajuan
+- melihat informasi divisinya sesuai permission
+
+TETAPI:
+
+HAPUS akses:
+- pengaturan password divisi
+- perubahan password divisi oleh Ketua/Wakil
+- perubahan email akun oleh Ketua/Wakil
+- perubahan konfigurasi divisi oleh Ketua/Wakil
+- perubahan periode
+- perubahan role
+- pengelolaan akun
+
+Password/email/konfigurasi divisi harus dikontrol oleh Admin atau Super Admin sesuai hak akses.
+
+Jangan lagi memberikan tombol:
+
+"Pengaturan password divisi"
+
+di halaman role divisi.
+
+Jika password perlu diganti, Ketua/Wakil harus meminta Admin.
+
+==================================================
+6. MONITORING
+==================================================
+
+JANGAN mengubah konsep utama role Monitoring.
+
+Monitoring tetap dapat:
+- melihat data
+- melakukan monitoring
+- melihat laporan
+- melihat keuangan
+- melihat kendala
+- melihat informasi seluruh divisi sesuai permission
+
+Namun Monitoring harus bisa memilih PERIODE.
+
+Contoh:
+
+Periode:
+[ 2028/2029 ▼ ]
+
+Jika dipilih 2028/2029:
+
+SEMUA DATA PADA HALAMAN TERSEBUT HARUS BERASAL DARI PERIODE 2028/2029.
+
+Jika memilih:
+
+[ 2026/2027 ]
+
+maka data yang ditampilkan harus benar-benar data 2026/2027.
+
+Bukan hanya label dropdown yang berubah.
+
+==================================================
+7. BENDAHARA
+==================================================
+
+JANGAN mengubah konsep utama role Bendahara.
+
+Bendahara tetap memiliki fitur keuangan yang sekarang.
+
+Namun seluruh data keuangan harus terikat ke periode.
+
+Contoh:
+
+Periode 2028/2029
+- pemasukan
+- pengeluaran
+- pengajuan dana
+- status dana
+- penggunaan dana
+- rekap keuangan
+- detail transaksi
+
+semuanya harus berasal dari periode 2028/2029.
+
+Jika Bendahara memilih:
+
+2026/2027
+
+maka seluruh data keuangan yang ditampilkan harus berasal dari periode 2026/2027.
+
+Data periode lama bersifat READ-ONLY untuk Bendahara.
+
+Bendahara tidak boleh mengedit atau menghapus transaksi periode lama.
+
+==================================================
+8. SEKRETARIS
+==================================================
+
+JANGAN mengubah konsep utama role Sekretaris.
+
+Sekretaris tetap dapat:
+- melihat laporan
+- melakukan rekap
+- export data
+- melihat data seluruh divisi sesuai permission
+
+Namun seluruh fitur Sekretaris harus mengikuti periode.
+
+Contoh:
+
+Periode:
+[ 2026/2027 ]
+
+Export laporan:
+
+HARUS hanya menghasilkan data periode 2026/2027.
+
+Jika memilih:
+
+[ 2028/2029 ]
+
+export harus hanya berisi data periode 2028/2029.
+
+Jangan pernah mencampurkan beberapa periode kecuali memang ada fitur khusus "Semua Periode" yang hanya dapat digunakan oleh Super Admin jika diperlukan.
+
+==================================================
+9. SISTEM PERIODE
+==================================================
+
+Jangan menjadikan tahun sebagai satu-satunya identitas data.
+
+Buat entitas/tabel periode yang jelas.
+
+Contoh:
+
+periods
+
+id
+nama_periode
+tahun_mulai
+tahun_selesai
+status
+created_at
+updated_at
+
+Contoh data:
+
+2026/2027
+2027/2028
+2028/2029
+2029/2030
+
+Status dapat berupa:
+
+active
+archived
+inactive
+
+Hanya SATU periode yang boleh menjadi periode aktif untuk satu konteks kepengurusan APKOSIS pada waktu tertentu.
+
+==================================================
+10. RELASI DATA DENGAN PERIODE
+==================================================
+
+INI BAGIAN PALING PENTING.
+
+Semua data yang berkaitan dengan kepengurusan harus memiliki relasi periode.
+
+Jangan hanya menyimpan:
+
+tanggal
+divisi_id
+user_id
+
+tetapi harus mempertimbangkan:
+
+periode_id
+
+Contoh:
+
+reports
+- id
+- periode_id
+- divisi_id
+- user_id
+- tanggal
+- kegiatan
+- kendala
+- solusi
+- dst.
+
+Keuangan:
+
+transactions
+- id
+- periode_id
+- divisi_id
+- jenis
+- nominal
+- keterangan
+- tanggal
+- dst.
+
+Pengajuan dana:
+
+fund_requests
+- id
+- periode_id
+- divisi_id
+- nominal
+- status
+- dst.
+
+Kendala:
+
+issues
+- id
+- periode_id
+- divisi_id
+- dst.
+
+Inventaris:
+
+inventory
+- id
+- periode_id
+- divisi_id
+- dst.
+
+Kebutuhan:
+
+needs
+- id
+- periode_id
+- divisi_id
+- dst.
+
+Laporan harian:
+
+daily_reports
+- id
+- periode_id
+- divisi_id
+- dst.
+
+Sesuaikan dengan struktur database yang SEKARANG sudah ada.
+
+Jangan membuat tabel duplikat jika tabel yang sudah ada dapat dimigrasikan.
+
+==================================================
+11. WAJIB AUDIT SEMUA DATA
+==================================================
+
+Cari SEMUA tabel yang menyimpan data:
+
+- laporan
+- kegiatan
+- kendala
+- solusi
+- inventaris
+- kebutuhan
+- pemasukan
+- pengeluaran
+- transaksi
+- pengajuan dana
+- status dana
+- data divisi
+- data monitoring
+- data sekretaris
+- data bendahara
+- data lain yang berkaitan dengan kepengurusan
+
+Tentukan mana yang harus memiliki periode_id.
+
+Jangan hanya memperbaiki tabel keuangan.
+
+SEMUA fitur yang memiliki filter tahun/periode harus menggunakan sumber periode yang sama.
+
+==================================================
+12. SEMUA DROPDOWN TAHUN/PERIODE HARUS TERINTEGRASI
+==================================================
+
+INI ADALAH REQUIREMENT PALING PENTING.
+
+Cari seluruh aplikasi yang memiliki:
+
+- dropdown tahun
+- dropdown periode
+- filter tahun
+- filter periode
+- pilihan bulan + tahun
+- filter laporan
+- filter keuangan
+- filter kendala
+- filter divisi + tahun
+- filter rekap
+- filter export
+
+Jangan biarkan masing-masing halaman memiliki daftar tahun sendiri-sendiri.
+
+Gunakan sumber periode dari database.
+
+Misalnya tersedia:
+
+2026/2027
+2027/2028
+2028/2029
+
+Maka dropdown di:
+- Monitoring
+- Bendahara
+- Sekretaris
+- Admin
+- Super Admin
+- Rekap Keuangan
+- Rekap Kendala
+- Rekap Laporan
+- Export
+- halaman lain yang membutuhkan filter
+
+harus mengambil data periode dari sumber yang sama.
+
+==================================================
+13. DROPDOWN PERIODE HARUS BENAR-BENAR MEMFILTER DATABASE
+==================================================
+
+JANGAN melakukan:
+
+Dropdown berubah menjadi 2026/2027
+tetapi query masih mengambil semua data.
+
+Contoh yang SALAH:
+
+SELECT *
+FROM transactions;
+
+lalu frontend hanya mengganti tulisan tahun.
+
+Itu TIDAK BOLEH.
+
+Harus benar-benar menggunakan:
+
+periode_id
+
+dalam query/database filtering.
+
+Contoh konsep:
+
+SELECT *
+FROM transactions
+WHERE periode_id = selected_periode_id;
+
+Sesuaikan implementasi dengan Supabase dan arsitektur aplikasi saat ini.
+
+==================================================
+14. CONTOH INTEGRASI PERIODE DI SEMUA FITUR
+==================================================
+
+Misalnya user memilih:
+
+2026/2027
+
+Maka:
+
+REKAP KEUANGAN
+→ hanya transaksi 2026/2027
+
+REKAP KENDALA
+→ hanya kendala 2026/2027
+
+REKAP LAPORAN
+→ hanya laporan 2026/2027
+
+INVENTARIS
+→ hanya data inventaris 2026/2027 jika inventaris memang period-based
+
+KEBUTUHAN
+→ hanya kebutuhan 2026/2027
+
+PENGAJUAN DANA
+→ hanya pengajuan 2026/2027
+
+PEMASUKAN
+→ hanya pemasukan 2026/2027
+
+PENGELUARAN
+→ hanya pengeluaran 2026/2027
+
+EXPORT
+→ hanya data 2026/2027
+
+Jika user mengganti menjadi:
+
+2028/2029
+
+semua data di halaman harus ikut berubah ke data 2028/2029.
+
+Jangan ada satu card atau tabel yang masih mengambil data periode sebelumnya.
+
+==================================================
+15. FILTER BULAN + PERIODE
+==================================================
+
+Jika sebuah halaman memiliki:
+
+Bulan
+Tahun/Periode
+Divisi
+
+maka ketiganya harus bekerja bersama.
+
+Contoh:
+
+Periode:
+2026/2027
+
+Bulan:
+Oktober
+
+Divisi:
+Keamanan
+
+Maka hasil harus:
+
+Data Oktober
+Dari periode 2026/2027
+Dari Divisi Keamanan
+
+Bukan:
+
+semua Oktober dari seluruh periode.
+
+==================================================
+16. DATA PERIODE LAMA
+==================================================
+
+Data periode lama TIDAK BOLEH DIHAPUS ketika membuat periode baru.
+
+Contoh:
+
+Saat membuat periode 2027/2028:
+
+JANGAN:
+- menghapus data 2026/2027
+- reset transaksi
+- reset laporan
+- reset kendala
+- reset pengajuan
+- reset rekap
+
+Yang dilakukan:
+
+buat periode baru.
+
+Sehingga database tetap menyimpan:
+
+2026/2027
+2027/2028
+2028/2029
+dst.
+
+==================================================
+17. PERIODE AKTIF VS PERIODE ARSIP
+==================================================
+
+Periode aktif:
+
+- dapat digunakan untuk input data
+- role yang memiliki permission dapat membuat data
+- laporan baru dapat dibuat
+- transaksi baru dapat dibuat
+- pengajuan baru dapat dibuat
+
+Periode archived:
+
+- dapat dilihat
+- dapat dicari
+- dapat difilter
+- dapat direkap
+- dapat diexport sesuai permission
+- TIDAK dapat diedit oleh role biasa
+- TIDAK dapat dihapus oleh role biasa
+
+Super Admin memiliki kemampuan khusus untuk memperbaiki data arsip jika diperlukan.
+
+==================================================
+18. JANGAN HANYA MENAMBAHKAN READ-ONLY DI FRONTEND
+==================================================
+
+Jangan hanya melakukan:
+
+if (periodArchived) {
+  disableButton()
+}
+
+Itu tidak cukup.
+
+Pastikan database/RLS/server authorization juga mencegah:
+
+INSERT
+UPDATE
+DELETE
+
+pada periode archived untuk role yang tidak memiliki izin.
+
+User tidak boleh bisa melewati UI dengan memanggil endpoint/query secara langsung.
+
+==================================================
+19. DATA LAMA HARUS AMAN
+==================================================
+
+Sebelum migrasi database:
+
+- lakukan audit
+- buat migration yang aman
+- jangan menghapus data existing
+- jangan melakukan destructive migration tanpa alasan
+- jangan mengganti struktur secara sembarangan
+
+Data yang sekarang sudah ada harus tetap tersedia.
+
+Jika tabel existing belum memiliki periode_id:
+
+buat strategi migrasi.
+
+Contoh:
+
+Semua data existing yang memang merupakan data periode 2026/2027 diberi:
+
+periode_id = periode 2026/2027
+
+Jangan sampai data lama menjadi NULL tanpa alasan.
+
+Jika ada data yang periode asalnya tidak dapat diketahui dengan pasti, JANGAN menebak.
+Tandai dan laporkan kepada saya file/tabel/data yang membutuhkan keputusan manual.
+
+==================================================
+20. DIVISI DAN PERIODE
+==================================================
+
+Perlu dibedakan antara:
+
+DIVISI
+dan
+KEANGGOTAAN DIVISI PADA PERIODE TERTENTU.
+
+Contoh:
+
+Divisi 01 = Keamanan
+
+Divisi tersebut dapat tetap ada di banyak periode:
+
+2026/2027 → Divisi 01 Keamanan
+2027/2028 → Divisi 01 Keamanan
+2028/2029 → Divisi 01 Keamanan
+
+Namun konfigurasi, akun, dan data yang berkaitan dengan kepengurusan harus dapat dikaitkan dengan periode yang benar.
+
+Jangan sampai data Divisi 01 periode 2026 otomatis bercampur dengan Divisi 01 periode 2028.
+
+Jika nama divisi dapat berubah antarperiode, desain database harus tetap mampu menangani perubahan tersebut.
+
+==================================================
+21. AKUN DIVISI
+==================================================
+
+Konsep akun divisi yang sekarang sudah ada harus dipertahankan sejauh memungkinkan.
+
+Namun kredensial divisi dikontrol oleh:
+
+SUPER ADMIN
+atau
+ADMIN sesuai permission.
+
+Ketua/Wakil tidak dapat mengganti password sendiri.
+
+Admin dapat:
+- membuat/mengatur akun divisi
+- reset password
+- mengatur hubungan akun dengan divisi/periode
+
+Super Admin dapat mengontrol semuanya.
+
+Jangan menyimpan password plaintext.
+
+Jangan mengekspos service_role key di browser.
+
+==================================================
+22. AKUN ADMIN
+==================================================
+
+Admin harus merupakan user dengan role yang jelas.
+
+Super Admin dapat:
+- membuat Admin
+- mengubah Admin
+- menonaktifkan Admin
+- reset credential Admin
+- menentukan Admin untuk periode tertentu
+
+Admin periode 2026/2027 tidak otomatis menjadi Admin periode 2027/2028.
+
+Ketika pergantian periode terjadi, Super Admin dapat menetapkan Admin baru.
+
+==================================================
+23. PERGANTIAN PERIODE
+==================================================
+
+Buat alur yang jelas:
+
+Contoh:
+
+PERIODE AKTIF
+2026/2027
+
+Ketika kepengurusan selesai:
+
+Super Admin/Admin membuat:
+2027/2028
+
+Kemudian:
+
+- periode 2026/2027 → archived
+- periode 2027/2028 → active
+- Admin baru ditentukan
+- akun divisi periode baru disiapkan
+- data lama tetap tersimpan
+
+JANGAN melakukan reset database.
+
+==================================================
+24. DASHBOARD
+==================================================
+
+Dashboard setiap role harus mengikuti periode yang sedang dipilih/aktif.
+
+Jika halaman menggunakan periode aktif secara otomatis:
+
+tampilkan indikator yang jelas:
+
+"Periode Aktif: 2028/2029"
+
+Jika halaman memiliki dropdown periode:
+
+pastikan seluruh komponen dashboard mengikuti periode tersebut.
+
+Jangan sampai:
+
+Card total pemasukan menggunakan 2028/2029
+
+tetapi tabel transaksi menggunakan 2026/2027.
+
+Semua komponen harus menggunakan filter periode yang sama.
+
+==================================================
+25. REKAP KEUANGAN
+==================================================
+
+Halaman seperti:
+
+/dashboard/monitoring/rekap-keuangan
+
+harus benar-benar terintegrasi dengan periode.
+
+Contoh:
+
+Periode:
+[ 2026/2027 ▼ ]
+
+Bulan:
+[ Oktober ▼ ]
+
+Divisi:
+[ Semua Divisi ▼ ]
+
+Maka:
+
+Total pemasukan
+= hanya periode 2026/2027
+
+Total pengeluaran
+= hanya periode 2026/2027
+
+Saldo
+= hanya periode 2026/2027
+
+Detail transaksi
+= hanya periode 2026/2027
+
+Jika memilih 2028/2029, semua berubah.
+
+==================================================
+26. REKAP KENDALA
+==================================================
+
+Halaman rekap kendala juga wajib menggunakan periode.
+
+Contoh:
+
+Periode:
+2026/2027
+
+Divisi:
+Semua Divisi
+
+Maka hanya kendala periode 2026/2027.
+
+Jika:
+
+2028/2029
+
+maka hanya kendala 2028/2029.
+
+Jangan menggunakan query global tanpa periode_id.
+
+==================================================
+27. EXPORT
+==================================================
+
+Semua export harus menghormati periode yang dipilih.
+
+Jika user memilih:
+
+2026/2027
+
+export hanya:
+
+2026/2027.
+
+Jangan sampai file export mengandung data semua periode kecuali memang user memiliki permission khusus dan secara eksplisit memilih "Semua Periode".
+
+Jika fitur "Semua Periode" dibuat:
+- batasi hanya untuk Super Admin jika memungkinkan
+- beri peringatan jelas
+- jangan jadikan default.
+
+==================================================
+28. USER EXPERIENCE
+==================================================
+
+UI APKOSIS sekarang tidak perlu dirombak total.
+
+Pertahankan:
+- style
+- warna
+- layout utama
+- navigasi
+- komponen
+- konsep role
+
+Perubahan UI hanya dilakukan jika diperlukan untuk:
+- Super Admin
+- Admin
+- pemilihan periode
+- status aktif/arsip
+- pengaturan sistem
+- pengelolaan akun
+
+Tambahkan indikator periode yang jelas.
+
+Contoh:
+
+"Periode Aktif
+2026/2027"
+
+atau:
+
+"Sedang melihat arsip
+2026/2027"
+
+Agar user tidak salah mengira sedang melihat periode aktif.
+
+==================================================
+29. SUPABASE AUTH DAN RLS
+==================================================
+
+Periksa seluruh:
+
+- Supabase Auth
+- profiles
+- role
+- middleware
+- protected routes
+- server actions
+- API routes
+- Supabase RLS
+- policies
+
+Buat authorization berdasarkan role.
+
+Jangan hanya mengandalkan:
+
+hidden button
+atau
+redirect frontend.
+
+Contoh:
+
+User Monitoring tidak boleh melakukan UPDATE transaksi hanya karena endpoint-nya diketahui.
+
+RLS harus mencegahnya.
+
+User Admin tidak boleh mengubah data yang hanya boleh diubah Super Admin.
+
+Ketua/Wakil tidak boleh mengubah password/configuration.
+
+==================================================
+30. JANGAN MERUSAK ROLE EXISTING
+==================================================
+
+INI SANGAT PENTING.
+
+Jangan mengubah konsep:
+
+MONITORING
+BENDAHARA
+SEKRETARIS
+KETUA/WAKIL DIVISI
+
+Fitur yang sudah berjalan harus tetap berjalan.
+
+Perubahan hanya dilakukan agar semuanya:
+- mendukung periode
+- memiliki authorization yang benar
+- memiliki arsip
+- memiliki Super Admin/Admin
+- memiliki kontrol kredensial yang benar.
+
+==================================================
+31. AUDIT SELURUH DROPDOWN PERIODE
+==================================================
+
+Setelah implementasi, cari seluruh source code yang mengandung:
+
+tahun
+year
+periode
+period
+2026
+2025
+2024
+2023
+dan daftar tahun hardcoded lainnya.
+
+Jangan biarkan daftar:
+
+2026
+2025
+2024
+2023
+...
+
+tertanam secara manual jika itu digunakan sebagai filter data.
+
+Ganti dengan data periode dari database.
+
+Pastikan tidak ada halaman yang masih menggunakan tahun hardcoded.
+
+==================================================
+32. SATU SUMBER PERIODE
+==================================================
+
+Buat satu mekanisme/service/query yang menjadi sumber daftar periode.
+
+Contoh konsep:
+
+getPeriods()
+
+atau sesuai arsitektur project.
+
+Semua dropdown periode harus menggunakan sumber tersebut.
+
+Jangan membuat:
+
+Monitoring:
+const years = [...]
+
+Bendahara:
+const years = [...]
+
+Sekretaris:
+const years = [...]
+
+Itu tidak boleh.
+
+Harus satu sumber data periode.
+
+==================================================
+33. DEFAULT PERIOD
+==================================================
+
+Jika user membuka halaman tanpa memilih periode:
+
+gunakan periode aktif.
+
+Contoh:
+
+periode aktif:
+2028/2029
+
+maka halaman otomatis menggunakan:
+
+2028/2029
+
+Jangan otomatis mengambil:
+
+new Date().getFullYear()
+
+karena tahun kalender belum tentu sama dengan periode kepengurusan.
+
+==================================================
+34. DATA SECURITY
+==================================================
+
+Pastikan:
+
+- password tidak plaintext
+- service_role tidak masuk client
+- role tidak hanya ditentukan frontend
+- RLS aktif
+- archived data terlindungi
+- Admin tidak dapat menjadi Super Admin sendiri
+- user biasa tidak dapat mengubah role dirinya sendiri
+- user tidak dapat mengubah periode_id pada data miliknya untuk memindahkan data ke periode lain
+- user tidak dapat melihat data periode yang tidak memiliki izin jika permission memang dibatasi
+
+PERIODE YANG DITERIMA DARI CLIENT HARUS TETAP DIVALIDASI DI SERVER/DATABASE.
+
+==================================================
+35. DATABASE MIGRATION
+==================================================
+
+Jangan langsung mengubah database production secara sembrono.
+
+Buat migration yang jelas.
+
+Contoh konsep:
+
+create periods table
+
+tambahkan periode_id ke tabel yang relevan
+
+buat foreign key
+
+buat index
+
+buat constraint jika diperlukan
+
+update existing records
+
+update RLS policies
+
+buat seed/default period jika diperlukan
+
+Jangan menghapus existing records.
+
+==================================================
+36. INDEX DAN PERFORMANCE
+==================================================
+
+Karena data akan terus bertambah setiap tahun, perhatikan performance.
+
+Tambahkan index yang relevan, misalnya:
+
+periode_id
+divisi_id
+tanggal
+dan kombinasi yang sering digunakan.
+
+Karena nantinya data bisa:
+
+2026
+2027
+2028
+2029
+2030
+...
+
+jangan membuat query yang selalu mengambil seluruh database lalu filtering di frontend.
+
+Filter harus dilakukan sedini mungkin di database.
+
+==================================================
+37. DATA RELATIONSHIP
+==================================================
+
+Pastikan relationship berikut dapat dilacak:
+
+PERIODE
+↓
+DIVISI
+↓
+LAPORAN
+↓
+KEUANGAN
+↓
+KEBUTUHAN
+↓
+KENDALA
+↓
+INVENTARIS
+↓
+PENGAJUAN DANA
+↓
+EXPORT/REKAP
+
+Semua harus memiliki hubungan yang konsisten.
+
+==================================================
+38. ACCEPTANCE TEST
+==================================================
+
+Setelah selesai, jangan hanya mengatakan "berhasil".
+
+Lakukan pengujian nyata.
+
+TEST 1:
+
+Buat periode:
+
+2026/2027
+
+Masukkan transaksi:
+
+Rp 1.000.000
+
+periode 2026/2027.
+
+Kemudian buat periode:
+
+2028/2029
+
+Masukkan transaksi:
+
+Rp 2.000.000.
+
+Ketika memilih:
+
+2026/2027
+
+harus muncul:
+
+Rp 1.000.000
+
+Ketika memilih:
+
+2028/2029
+
+harus muncul:
+
+Rp 2.000.000.
+
+Tidak boleh:
+
+Rp 3.000.000
+
+kecuali user memilih "Semua Periode" dan memiliki izin.
+
+TEST 2:
+
+Buat kendala pada periode 2026/2027.
+
+Buat kendala berbeda pada 2028/2029.
+
+Pastikan filter periode benar.
+
+TEST 3:
+
+Buka Monitoring.
+
+Pilih 2026/2027.
+
+Pastikan:
+- keuangan
+- kendala
+- laporan
+- divisi
+
+menggunakan periode 2026/2027.
+
+TEST 4:
+
+Buka Bendahara.
+
+Pilih 2026/2027.
+
+Pastikan transaksi 2028/2029 tidak muncul.
+
+TEST 5:
+
+Buka Sekretaris.
+
+Pilih 2026/2027.
+
+Export.
+
+Pastikan file hanya berisi data 2026/2027.
+
+TEST 6:
+
+Login sebagai Ketua/Wakil.
+
+Pastikan:
+- tidak ada menu pengaturan password
+- tidak bisa mengubah email
+- tidak bisa mengubah role
+- tidak bisa mengubah periode
+- tidak bisa mengakses Admin Dashboard
+
+TEST 7:
+
+Login sebagai Admin.
+
+Pastikan:
+- dapat mengatur konfigurasi periode aktif
+- dapat mengatur divisi
+- dapat mengatur akun divisi
+- tidak dapat mengubah Super Admin
+- tidak dapat menghapus arsip sembarangan
+
+TEST 8:
+
+Login sebagai Super Admin.
+
+Pastikan:
+- dapat melihat semua periode
+- dapat melihat semua data
+- dapat mengelola Admin
+- dapat mengelola periode
+- dapat mengelola divisi
+- dapat mengelola konfigurasi
+- dapat memperbaiki data arsip
+
+TEST 9:
+
+Coba akses URL Admin secara langsung menggunakan user non-admin.
+
+Harus ditolak.
+
+TEST 10:
+
+Coba akses fungsi database/endpoint Admin menggunakan user non-admin.
+
+Harus ditolak oleh authorization/RLS.
+
+==================================================
+39. README / DOKUMENTASI
+==================================================
+
+Setelah implementasi selesai, buat/update README yang menjelaskan secara rinci:
+
+1. Arsitektur role
+2. Super Admin
+3. Admin
+4. Division Admin
+5. Monitoring
+6. Bendahara
+7. Sekretaris
+8. Sistem periode
+9. Sistem arsip
+10. Relasi periode dengan data
+11. Supabase Auth
+12. RLS
+13. Authorization
+14. Password management
+15. Cara membuat periode baru
+16. Cara mengganti Admin
+17. Cara membuat akun divisi
+18. Cara mengarsipkan periode
+19. Cara melihat periode lama
+20. Cara kerja dropdown periode
+21. Cara export berdasarkan periode
+22. Struktur tabel database
+23. Migration yang dibuat
+24. Alasan desain database
+25. File kode penting dan fungsinya
+
+Dokumentasi harus ditulis agar saya sebagai siswa yang masih belajar coding dapat memahami sistemnya.
+
+Jelaskan:
+- file mana yang bertanggung jawab
+- fungsi apa yang melakukan filtering
+- bagaimana periode diteruskan ke query
+- bagaimana RLS bekerja
+- bagaimana role ditentukan
+- bagaimana data lama dilindungi
+
+==================================================
+40. OUTPUT YANG SAYA INGINKAN DARI AI CODING AGENT
+==================================================
+
+SEBELUM CODING:
+
+Berikan laporan audit terlebih dahulu:
+
+A. Struktur role saat ini
+B. Struktur database saat ini
+C. Tabel yang membutuhkan periode_id
+D. Halaman yang memiliki dropdown tahun/periode
+E. File authentication
+F. File authorization
+G. RLS policies
+H. Bagian yang menangani password divisi
+I. Risiko perubahan
+J. Rencana migration
+
+Jangan mengubah code dulu sebelum audit selesai.
+
+SETELAH AUDIT:
+
+Implementasikan perubahan secara bertahap.
+
+Setelah setiap tahap:
+- jelaskan file yang berubah
+- jelaskan perubahan
+- jelaskan alasan
+- jelaskan migration
+- jelaskan risiko
+- lakukan pengecekan error
+
+==================================================
+41. PRIORITAS IMPLEMENTASI
+==================================================
+
+Urutan pengerjaan:
+
+PHASE 1
+Audit seluruh sistem.
+
+PHASE 2
+Buat sistem periods.
+
+PHASE 3
+Hubungkan data existing ke periode.
+
+PHASE 4
+Update query/filter semua fitur agar menggunakan periode_id.
+
+PHASE 5
+Update semua dropdown tahun/periode agar mengambil data dari periods.
+
+PHASE 6
+Implementasi Super Admin.
+
+PHASE 7
+Implementasi Admin.
+
+PHASE 8
+Pindahkan pengaturan password/email/configuration dari role divisi ke Admin/Super Admin.
+
+PHASE 9
+Update RLS dan authorization.
+
+PHASE 10
+Implementasi archived/read-only period.
+
+PHASE 11
+Update export.
+
+PHASE 12
+Testing seluruh role.
+
+PHASE 13
+Testing pergantian periode.
+
+PHASE 14
+Dokumentasi README.
+
+==================================================
+42. HASIL AKHIR YANG DIHARAPKAN
+==================================================
+
+Saya ingin APKOSIS akhirnya memiliki konsep:
+
+SUPER ADMIN
+↓
+mengontrol sistem dan seluruh periode
+↓
+ADMIN
+↓
+mengelola kepengurusan/periode aktif
+↓
+KETUA/WAKIL DIVISI
+MONITORING
+BENDAHARA
+SEKRETARIS
+
+Dan:
+
+PERIODE 2026/2027
+PERIODE 2027/2028
+PERIODE 2028/2029
+PERIODE berikutnya...
+
+semuanya hidup berdampingan di database.
+
+Data lama tidak hilang.
+
+Data lama tidak tercampur.
+
+Semua halaman yang mempunyai dropdown periode/tahun benar-benar menampilkan data sesuai periode yang dipilih.
+
+Contoh paling penting:
+
+Jika user memilih:
+
+2026/2027
+
+MAKA SELURUH DATA PADA FITUR TERSEBUT HARUS DATA 2026/2027.
+
+Jika user memilih:
+
+2028/2029
+
+MAKA SELURUH DATA PADA FITUR TERSEBUT HARUS DATA 2028/2029.
+
+Hal ini berlaku untuk SEMUA ROLE dan SEMUA FITUR yang menggunakan filter periode, termasuk tetapi tidak terbatas pada:
+
+- Keuangan
+- Pemasukan
+- Pengeluaran
+- Transaksi
+- Pengajuan dana
+- Kendala
+- Solusi
+- Laporan
+- Kegiatan
+- Inventaris
+- Kebutuhan
+- Rekap
+- Monitoring
+- Sekretaris
+- Bendahara
+- Export
+- Dashboard
+- fitur lain yang memiliki dropdown/filter tahun atau periode.
+
+Jangan ada filter periode yang hanya mengubah tampilan tanpa mengubah data yang di-query.
+
+==================================================
+43. JANGAN MELAKUKAN HAL BERIKUT
+==================================================
+
+JANGAN:
+- menghapus data existing
+- mereset database ketika membuat periode baru
+- mencampur data antarperiode
+- membuat daftar tahun hardcoded
+- membuat filter tahun palsu di frontend
+- menyimpan password plaintext
+- mengekspos service_role key
+- mengandalkan hidden button sebagai security
+- membuat Super Admin hanya berdasarkan pengecekan email frontend
+- membiarkan Ketua/Wakil mengubah password sendiri
+- membiarkan user biasa mengubah role sendiri
+- membiarkan user memindahkan datanya sendiri ke periode lain
+- mengubah konsep Monitoring
+- mengubah konsep Bendahara
+- mengubah konsep Sekretaris
+- menghapus fitur existing yang tidak berkaitan dengan perubahan ini
+- melakukan redesign total UI tanpa alasan.
+
+==================================================
+44. CATATAN TERAKHIR
+==================================================
+
+APKOSIS bukan lagi dianggap sebagai aplikasi yang hanya digunakan untuk periode 2026/2027.
+
+Anggap APKOSIS sebagai SISTEM JANGKA PANJANG yang akan digunakan oleh banyak generasi pengurus OSIS.
+
+Saya ingin ketika saya sudah lulus dan menyerahkan APKOSIS kepada adik kelas:
+
+- aplikasi tetap bisa digunakan
+- Admin dapat berganti
+- periode dapat berganti
+- 20 divisi tetap dapat digunakan
+- akun divisi dapat dikonfigurasi ulang
+- data lama tetap aman
+- periode lama tetap dapat dilihat
+- laporan lama tetap dapat dicari
+- keuangan lama tetap dapat dilihat
+- kendala lama tetap dapat dilihat
+- export periode lama tetap bisa dilakukan sesuai permission
+- data baru tidak bercampur dengan data lama
+- Super Admin tetap menjadi kontrol tertinggi sistem
+
+Prioritaskan keamanan data, konsistensi periode, authorization, Supabase RLS, dan backward compatibility terhadap data APKOSIS yang sudah ada.
+
+Jangan membuat asumsi jika struktur database saat ini berbeda dari instruksi di atas.
+Jika ada bagian yang bertentangan dengan struktur aplikasi sekarang, tampilkan konflik tersebut terlebih dahulu dan jelaskan solusi yang paling aman sebelum mengubahnya.
+
+==================================================
+5A. HUBUNGAN SUPER ADMIN DAN ADMIN ANTAR PERIODE
+==================================================
+
+APKOSIS dirancang sebagai sistem jangka panjang yang akan diwariskan dari satu generasi pengurus OSIS ke generasi berikutnya.
+
+SUPER ADMIN adalah pemilik/pengelola tertinggi sistem APKOSIS dan tetap berada di atas seluruh periode.
+
+ADMIN adalah pengelola operasional untuk periode kepengurusan tertentu dan dapat berganti setiap kali periode berganti.
+
+CONTOH:
+
+Periode 2026/2027
+→ Admin: Sofwatunida
+
+Periode 2027/2028
+→ Admin: Adik Kelas A
+
+Periode 2028/2029
+→ Admin: Adik Kelas B
+
+SUPER ADMIN tetap sama dan tidak ikut berganti hanya karena periode berganti.
+
+==================================================
+5B. PERAN SUPER ADMIN DALAM PERGANTIAN GENERASI
+==================================================
+
+Super Admin tidak perlu mengurus operasional harian setiap periode.
+
+Tugas Super Admin adalah menjaga dan mengontrol sistem secara keseluruhan.
+
+Super Admin dapat:
+
+1. Membuat periode baru.
+2. Menentukan periode aktif.
+3. Menentukan siapa Admin untuk periode tersebut.
+4. Mengubah atau mengganti Admin.
+5. Menonaktifkan Admin.
+6. Melakukan reset/recovery akun Admin.
+7. Mengelola seluruh akun divisi.
+8. Mengelola seluruh konfigurasi sistem.
+9. Melihat seluruh data seluruh periode.
+10. Mengakses arsip seluruh periode.
+11. Melakukan koreksi data arsip jika benar-benar diperlukan.
+12. Melakukan recovery apabila terjadi masalah.
+13. Mengontrol struktur role dan permission.
+
+Super Admin TIDAK harus ikut melakukan pekerjaan operasional Admin setiap hari.
+
+Setelah periode baru diserahkan kepada Admin baru, Admin baru bertanggung jawab atas operasional periode tersebut.
+
+==================================================
+5C. ADMIN BERDASARKAN PERIODE
+==================================================
+
+Admin harus memiliki hubungan yang jelas dengan periode yang menjadi tanggung jawabnya.
+
+Contoh:
+
+Admin A
+→ bertanggung jawab terhadap periode 2027/2028.
+
+Admin B
+→ bertanggung jawab terhadap periode 2028/2029.
+
+Admin tidak otomatis memiliki kontrol penuh terhadap seluruh periode hanya karena memiliki role "admin".
+
+Authorization harus mempertimbangkan:
+
+- role
+- periode
+- permission
+
+Jangan hanya melakukan:
+
+role = admin → boleh mengakses semua data.
+
+Sebaliknya:
+
+ADMIN
+→ boleh mengelola operasional periode yang ditugaskan kepadanya.
+
+SUPER ADMIN
+→ boleh mengakses seluruh periode.
+
+==================================================
+5D. PROSES PERGANTIAN ADMIN
+==================================================
+
+Ketika periode baru akan dimulai, prosesnya:
+
+1. Super Admin membuat periode baru.
+
+Contoh:
+2027/2028
+
+2. Super Admin menentukan Admin periode tersebut.
+
+Contoh:
+Admin = Adik Kelas A
+
+3. Sistem menghubungkan Admin tersebut dengan periode 2027/2028.
+
+4. Super Admin mengaktifkan periode 2027/2028 ketika periode tersebut mulai digunakan.
+
+5. Periode sebelumnya:
+2026/2027
+
+diubah menjadi:
+
+ARCHIVED
+
+6. Data 2026/2027 tetap tersimpan.
+
+7. Admin baru mulai mengelola periode 2027/2028.
+
+8. Admin baru TIDAK memperoleh hak Super Admin.
+
+==================================================
+5E. ADMIN TIDAK BOLEH MENGAMBIL ALIH SUPER ADMIN
+==================================================
+
+Admin tidak boleh memiliki kemampuan untuk:
+
+- mengubah role dirinya menjadi super_admin
+- membuat dirinya sendiri menjadi Super Admin
+- mengubah akun Super Admin
+- mengganti email Super Admin
+- mengganti password Super Admin
+- menghapus Super Admin
+- menonaktifkan Super Admin
+- menghapus role super_admin
+- memberikan role super_admin kepada user lain
+
+Semua tindakan tersebut hanya boleh dilakukan melalui mekanisme khusus Super Admin jika memang diperlukan.
+
+Jangan membuat endpoint yang memungkinkan Admin melakukan privilege escalation.
+
+==================================================
+5F. ADMIN TIDAK BOLEH OTOMATIS MENGUASAI PERIODE LAMA
+==================================================
+
+Ketika Admin baru ditetapkan untuk periode baru:
+
+Contoh:
+
+Admin B
+→ periode 2028/2029
+
+Admin B tidak otomatis mendapatkan hak edit terhadap:
+
+2026/2027
+2027/2028
+
+Data periode lama tetap dapat dilihat jika permission mengizinkannya, tetapi bersifat READ-ONLY.
+
+Contoh:
+
+Admin B dapat:
+
+VIEW 2026/2027 → sesuai permission
+VIEW 2027/2028 → sesuai permission
+EDIT 2026/2027 → ❌
+EDIT 2027/2028 → ❌
+DELETE 2026/2027 → ❌
+DELETE 2027/2028 → ❌
+
+Super Admin tetap memiliki akses khusus terhadap arsip.
+
+==================================================
+5G. PERIODE AKTIF TIDAK SAMA DENGAN PERIODE ADMIN
+==================================================
+
+Jangan menganggap:
+
+current year
+=
+current period
+=
+admin period
+
+Gunakan entitas periode yang sebenarnya.
+
+Contoh:
+
+Current date:
+2028
+
+belum tentu berarti:
+
+periode = 2028/2029
+
+Periode harus ditentukan dari tabel `periods`.
+
+Admin juga harus memiliki hubungan dengan periode melalui database, bukan hanya berdasarkan tahun atau tanggal komputer.
+
+==================================================
+5H. STRUKTUR RELASI ADMIN DAN PERIODE
+==================================================
+
+Buat hubungan database yang memungkinkan:
+
+SUPER ADMIN
+    ↓
+PERIODE
+    ↓
+ADMIN PERIODE
+    ↓
+DIVISI
+    ↓
+AKUN DIVISI
+    ↓
+DATA OPERASIONAL
+
+Contoh:
+
+2026/2027
+└── Admin: Sofwatunida
+    ├── Divisi 01
+    ├── Divisi 02
+    └── ...
+    
+2027/2028
+└── Admin: Adik Kelas A
+    ├── Divisi 01
+    ├── Divisi 02
+    └── ...
+
+2028/2029
+└── Admin: Adik Kelas B
+    ├── Divisi 01
+    ├── Divisi 02
+    └── ...
+
+Pastikan struktur ini tidak menyebabkan data antarperiode tercampur.
+
+==================================================
+5I. SUPER ADMIN TETAP MENJADI PEMILIK SISTEM
+==================================================
+
+Walaupun Admin dapat berganti setiap periode, Super Admin tetap menjadi pemilik/pengelola tertinggi aplikasi.
+
+Konsep akhirnya:
+
+SUPER ADMIN
+= pengontrol dan penjaga sistem APKOSIS lintas generasi.
+
+ADMIN
+= pengelola operasional APKOSIS pada periode tertentu.
+
+ROLE OPERASIONAL
+= pengguna fitur sesuai fungsi masing-masing.
+
+Dengan demikian, ketika saya lulus dan APKOSIS diserahkan kepada adik kelas:
+
+Saya tidak perlu ikut mengelola laporan harian, keuangan, kendala, atau administrasi periode baru.
+
+Adik kelas cukup menerima akun ADMIN untuk periode mereka.
+
+Saya tetap memiliki akun SUPER ADMIN untuk:
+
+- recovery
+- pengawasan sistem
+- pemeliharaan
+- pengaturan periode
+- penggantian Admin
+- perlindungan arsip
+- pengelolaan konfigurasi tingkat tinggi
+
+Tujuan akhirnya adalah APKOSIS dapat digunakan selama bertahun-tahun tanpa harus membuat ulang aplikasi atau database setiap pergantian kepengurusan.

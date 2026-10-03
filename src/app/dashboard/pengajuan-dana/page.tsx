@@ -3,7 +3,7 @@ import {
   requireDivisionSelection,
   withActiveDivisi,
 } from "@/lib/division-session";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { PengajuanDanaClient } from "./pengajuan-dana-client";
 
 export default async function PengajuanDanaPage() {
@@ -12,8 +12,8 @@ export default async function PengajuanDanaPage() {
   await requireDivisionSelection();
   const scopedProfile = await withActiveDivisi(profile);
   return (
-    <DashboardShell profile={scopedProfile}>
+    <AppShell profile={scopedProfile}>
       <PengajuanDanaClient profile={scopedProfile} />
-    </DashboardShell>
+    </AppShell>
   );
 }

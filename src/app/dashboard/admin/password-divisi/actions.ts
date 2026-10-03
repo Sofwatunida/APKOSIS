@@ -10,15 +10,26 @@ export interface SaveDivisionPasswordResult {
   updatedAt?: string;
 }
 
+/**
+ * Reset password divisi.
+ *
+ * Phase 8: halaman ini BUKAN lagi milik role divisi. Hanya Admin
+ * periode dan Super Admin yang boleh mengubah kredensial divisi,
+ * karena ketua/wakil tidak boleh mengganti password sendiri.
+ *
+ * Penjagaan sesungguhnya ada di RLS + fungsi `admin_set_division_password`
+ * pada database; pengecekan di sini hanya lapisan pertama.
+ */
 export async function saveDivisionPasswordAction(
   divisiId: string,
-  password: string
+  password: string,
+  periodeId?: string
 ): Promise<SaveDivisionPasswordResult> {
   const profile = await getProfile();
-  if (!profile || profile.role !== "division_admin") {
+  if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
     return {
       ok: false,
-      message: "Akses hanya untuk akun divisi (division_admin).",
+      message: "Hanya Admin atau Super Admin yang boleh mengatur password divisi.",
     };
   }
 
@@ -27,9 +38,10 @@ export async function saveDivisionPasswordAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("set_division_password", {
+  const { data, error } = await supabase.rpc("admin_set_division_password", {
     p_divisi_id: divisiId,
     p_password: password,
+    p_periode_id: periodeId ?? null,
   });
 
   if (error || !data) {
@@ -40,7 +52,8 @@ export async function saveDivisionPasswordAction(
     };
   }
 
-  revalidatePath("/dashboard/password-divisi");
+  revalidatePath("/dashboard/admin/password-divisi");
+  revalidatePath("/dashboard/superadmin/akun");
 
   return { ok: true, updatedAt: data };
 }

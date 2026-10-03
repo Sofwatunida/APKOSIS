@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, KeyRound, Lock, LogOut, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, KeyRound, Lock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
@@ -244,13 +243,6 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
         </div>
 
 <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/dashboard/password-divisi"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            Pengaturan password divisi
-          </Link>
           <Button
             type="button"
             variant="ghost"

@@ -6,14 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, Divisi, AnggotaDivisi } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Textarea } from "@/components/ui/form";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { usePeriode } from "@/lib/periode-context";
 
 export function ProfilDivisiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const { success, error } = useToast();
   const router = useRouter();
+  // Daftar periode dari sumber tunggal (tabel `periods`), bukan hardcoded.
+  const { options: periodeOptions, readOnly } = usePeriode();
   const [loading, setLoading] = useState(true);
   const [divisi, setDivisi] = useState<Divisi | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -87,7 +90,11 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
     return Object.keys(e).length === 0;
   }
 
-  async function handleSave() {
+async function handleSave() {
+    if (readOnly) {
+      error("Periode ini sudah diarsipkan dan tidak bisa diubah.");
+      return;
+    }
     if (!profile.divisi_id || !validate()) return;
     setSaving(true);
     const payload = {
@@ -155,6 +162,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
           : {
               id: "",
               divisi_id: profile.divisi_id!,
+              periode_id: profile.periode_id ?? "",
               nama: form.ketua_divisi.trim(),
               jabatan: "Ketua",
               status: "aktif",
@@ -173,6 +181,7 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
           : {
               id: "",
               divisi_id: profile.divisi_id!,
+              periode_id: profile.periode_id ?? "",
               nama: form.wakil_divisi.trim(),
               jabatan: "Wakil Ketua",
               status: "aktif",
@@ -305,11 +314,20 @@ export function ProfilDivisiClient({ profile }: { profile: Profile }) {
                   />
                 </Field>
                 <Field label="Periode">
-                  <Input
+                  {/* Phase 5: periode TIDAK diketik bebas, selalu dari
+                      tabel `periods` agar tidak ada periode karangan. */}
+                  <Select
                     value={form.periode}
                     onChange={(e) => setForm({ ...form, periode: e.target.value })}
-                    placeholder="2026/2027"
-                  />
+                  >
+                    <option value="">Belum ditentukan</option>
+                    {periodeOptions.map((p) => (
+                      <option key={p.id} value={p.namaPeriode}>
+                        {p.namaPeriode}
+                        {p.status === "active" ? " (aktif)" : ""}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -3,7 +3,7 @@ import {
   requireDivisionSelection,
   withActiveDivisi,
 } from "@/lib/division-session";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { ProfilDivisiClient } from "./profil-client";
 
 export default async function ProfilDivisiPage() {
@@ -12,8 +12,8 @@ export default async function ProfilDivisiPage() {
   await requireDivisionSelection();
   const scopedProfile = await withActiveDivisi(profile);
   return (
-    <DashboardShell profile={scopedProfile}>
+    <AppShell profile={scopedProfile}>
       <ProfilDivisiClient profile={scopedProfile} />
-    </DashboardShell>
+    </AppShell>
   );
 }

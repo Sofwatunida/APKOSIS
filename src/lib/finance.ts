@@ -8,6 +8,13 @@ export interface FinanceSummary {
   totalSaldo: number;
 }
 
+/**
+ * Ringkasan kas untuk periode yang sedang dipilih.
+ *
+ * Periode sudah difilter oleh `src/lib/supabase/client.ts`
+ * (query otomatis diberi `periode_id`), sehingga fungsi ini TIDAK
+ * pernah menggabungkan data antarperiode.
+ */
 export async function fetchFinanceSummary(
   supabase: SupabaseClient<Database>
 ): Promise<FinanceSummary> {
@@ -26,7 +33,6 @@ export async function fetchFinanceSummary(
   const { data: saldo } = await supabase
     .from("saldo_awal")
     .select("nominal")
-    .eq("id", 1)
     .maybeSingle();
 
   const saldoAwal = Number(saldo?.nominal) || 0;
@@ -38,13 +44,32 @@ export async function fetchFinanceSummary(
   };
 }
 
+/** Saldo awal KHUSUS periode terpilih (satu baris per periode). */
 export async function fetchSaldoAwal(
   supabase: SupabaseClient<Database>
 ): Promise<number> {
   const { data: saldo } = await supabase
     .from("saldo_awal")
     .select("nominal")
-    .eq("id", 1)
     .maybeSingle();
   return Number(saldo?.nominal) || 0;
+}
+
+/**
+ * Menyimpan saldo awal periode terpilih.
+ * `periode_id` diisi otomatis oleh period scope, dan unik per periode
+ * sehingga saldo awal antarperiode tidak saling menimpa.
+ */
+export async function saveSaldoAwal(
+  supabase: SupabaseClient<Database>,
+  nominal: number,
+  userId: string | null
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await supabase
+    .from("saldo_awal")
+    .upsert(
+      { nominal, updated_by: userId, updated_at: new Date().toISOString() },
+      { onConflict: "periode_id" }
+    );
+  return { error };
 }

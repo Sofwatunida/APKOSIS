@@ -29,3 +29,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# build output for scripts/verify-period-scope.mjs
+.verify/
+

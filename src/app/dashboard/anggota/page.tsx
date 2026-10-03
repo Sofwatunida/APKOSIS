@@ -3,7 +3,7 @@ import {
   requireDivisionSelection,
   withActiveDivisi,
 } from "@/lib/division-session";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { AnggotaClient } from "./anggota-client";
 
 export default async function AnggotaPage() {
@@ -12,8 +12,8 @@ export default async function AnggotaPage() {
   await requireDivisionSelection();
   const scopedProfile = await withActiveDivisi(profile);
   return (
-    <DashboardShell profile={scopedProfile}>
+    <AppShell profile={scopedProfile}>
       <AnggotaClient profile={scopedProfile} />
-    </DashboardShell>
+    </AppShell>
   );
 }

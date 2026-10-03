@@ -8,6 +8,7 @@ import {
   type ExportColumn,
   type ExportFormat,
 } from "@/lib/export-client";
+import { usePeriode } from "@/lib/periode-context";
 import {
   Download,
   ChevronDown,
@@ -71,9 +72,17 @@ export function ExportMenu({
   size = "sm",
 }: ExportMenuProps) {
   const { success, error } = useToast();
+  // Phase 11: setiap file export harus menyebut periode asalnya supaya
+  // arsip antar periode tidak tertukar. Barisnya sendiri sudah otomatis
+  // terfilter periode oleh period scope di supabase client.
+  const { periodeId, allPeriodsMode, options } = usePeriode();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<ExportFormat | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const periodeLabel = allPeriodsMode
+    ? "Semua Periode"
+    : options.find((p) => p.id === periodeId)?.namaPeriode ?? "Tanpa Periode";
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
@@ -91,12 +100,16 @@ export function ExportMenu({
       await downloadExport({
         format,
         title,
-        subtitle,
+        // Periode selalu ikut tercetak di kop dokumen.
+        subtitle: [subtitle, `Periode: ${periodeLabel}`]
+          .filter(Boolean)
+          .join(" · "),
         columns,
         rows,
-        filename: filename ?? title,
+        // Nama file memuat periode agar tidak tertukar antar periode.
+        filename: `${filename ?? title}-${periodeLabel.replace(/[^\w-]+/g, "-")}`,
       });
-      success(`File ${format.toUpperCase()} "${title}" berhasil diunduh.`);
+      success(`File ${format.toUpperCase()} "${title}" (${periodeLabel}) berhasil diunduh.`);
     } catch {
       error("Gagal membuat file export.");
     } finally {

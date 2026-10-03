@@ -14,6 +14,7 @@ import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import { usePeriode } from "@/lib/periode-context";
 import {
   Users,
   ClipboardCheck,
@@ -39,6 +40,8 @@ export function DashboardHome({ profile }: { profile: Profile }) {
   if (role === "monitoring") return <MonitoringDashboard profile={profile} />;
   if (role === "sekretaris") return <StaffDashboard profile={profile} />;
   if (role === "bendahara") return <BendaharaDashboard profile={profile} />;
+  // super_admin dan admin punya dashboard sendiri di /dashboard/superadmin
+  // dan /dashboard/admin, keduanya server component.
   return null;
 }
 
@@ -114,6 +117,11 @@ function StatCard({
 /* ============ DIVISION ADMIN ============ */
 function DivisionDashboard({ profile }: { profile: Profile }) {
   const supabase = createClient();
+  // Periode TIDAK pernah hardcoded: label diambil dari tabel `periods`
+  // lewat context, sehingga dashboard selalu mengikuti periode terpilih.
+  const { periodeId, options } = usePeriode();
+  const periodeLabel =
+    options.find((p) => p.id === periodeId)?.namaPeriode ?? "—";
   const [loading, setLoading] = useState(true);
   const [divisi, setDivisi] = useState<Divisi | null>(null);
   const [anggotaCount, setAnggotaCount] = useState(0);
@@ -247,7 +255,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-brand-200 backdrop-blur-md mb-3 border border-white/10">
               <Sparkles className="h-3.5 w-3.5 text-brand-400" />
-              <span>Divisi OSIS • Periode {divisi?.periode || "2025/2026"}</span>
+              <span>Divisi OSIS • Periode {periodeLabel}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               {divisi?.nama_divisi ?? "Dashboard Divisi"}

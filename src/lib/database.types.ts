@@ -1,4 +1,6 @@
-export type Role = "division_admin" | "monitoring" | "sekretaris" | "bendahara";
+export type Role = "super_admin" | "admin" | "division_admin" | "monitoring" | "sekretaris" | "bendahara";
+
+export type PeriodStatus = "active" | "archived" | "inactive";
 
 /** Status kebutuhan divisi - ditentukan oleh Bendahara. */
 export type KebutuhanStatus =
@@ -31,6 +33,7 @@ export interface Database {
           email: string | null;
           role: Role | null;
           divisi_id: string | null;
+          periode_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -40,6 +43,7 @@ export interface Database {
           email?: string | null;
           role?: Role | null;
           divisi_id?: string | null;
+          periode_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -49,6 +53,7 @@ export interface Database {
           email?: string | null;
           role?: Role | null;
           divisi_id?: string | null;
+          periode_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -57,6 +62,12 @@ export interface Database {
             foreignKeyName: "profiles_id_fkey";
             columns: ["id"];
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
             referencedColumns: ["id"];
           }
         ];
@@ -69,6 +80,7 @@ export interface Database {
           ketua_divisi: string | null;
           wakil_divisi: string | null;
           periode: string | null;
+          periode_id: string | null;
           deskripsi: string | null;
           catatan_program_belum_terlaksana: string | null;
           created_at: string;
@@ -81,6 +93,7 @@ export interface Database {
           ketua_divisi?: string | null;
           wakil_divisi?: string | null;
           periode?: string | null;
+          periode_id?: string | null;
           deskripsi?: string | null;
           catatan_program_belum_terlaksana?: string | null;
           created_at?: string;
@@ -93,17 +106,26 @@ export interface Database {
           ketua_divisi?: string | null;
           wakil_divisi?: string | null;
           periode?: string | null;
+          periode_id?: string | null;
           deskripsi?: string | null;
           catatan_program_belum_terlaksana?: string | null;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "divisi_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       anggota_divisi: {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           nama: string;
           jabatan: string | null;
           status: string;
@@ -116,6 +138,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           nama: string;
           jabatan?: string | null;
           status?: string;
@@ -128,6 +151,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           nama?: string;
           jabatan?: string | null;
           status?: string;
@@ -143,6 +167,12 @@ export interface Database {
             columns: ["divisi_id"];
             referencedRelation: "divisi";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "anggota_divisi_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -150,6 +180,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           nama_program: string | null;
           deskripsi: string | null;
           file_name: string | null;
@@ -161,6 +192,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           nama_program?: string | null;
           deskripsi?: string | null;
           file_name?: string | null;
@@ -172,6 +204,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           nama_program?: string | null;
           deskripsi?: string | null;
           file_name?: string | null;
@@ -186,6 +219,12 @@ export interface Database {
             columns: ["divisi_id"];
             referencedRelation: "divisi";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "program_kerja_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -193,6 +232,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           tanggal: string;
           pelapor_id: string | null;
           kegiatan_hari_ini: string;
@@ -205,6 +245,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           tanggal: string;
           pelapor_id?: string | null;
           kegiatan_hari_ini: string;
@@ -217,6 +258,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           tanggal?: string;
           pelapor_id?: string | null;
           kegiatan_hari_ini?: string;
@@ -238,6 +280,12 @@ export interface Database {
             columns: ["pelapor_id"];
             referencedRelation: "anggota_divisi";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "laporan_harian_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -245,6 +293,7 @@ export interface Database {
         Row: {
           id: string;
           laporan_id: string;
+          periode_id: string;
           kendala: string;
           solusi: string;
           created_at: string;
@@ -253,6 +302,7 @@ export interface Database {
         Insert: {
           id?: string;
           laporan_id: string;
+          periode_id?: string;
           kendala: string;
           solusi: string;
           created_at?: string;
@@ -261,6 +311,7 @@ export interface Database {
         Update: {
           id?: string;
           laporan_id?: string;
+          periode_id?: string;
           kendala?: string;
           solusi?: string;
           created_at?: string;
@@ -272,6 +323,12 @@ export interface Database {
             columns: ["laporan_id"];
             referencedRelation: "laporan_harian";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "kendala_solusi_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -279,6 +336,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           nama_kegiatan: string;
           created_at: string;
           updated_at: string;
@@ -286,6 +344,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           nama_kegiatan: string;
           created_at?: string;
           updated_at?: string;
@@ -293,6 +352,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           nama_kegiatan?: string;
           created_at?: string;
           updated_at?: string;
@@ -303,6 +363,12 @@ export interface Database {
             columns: ["divisi_id"];
             referencedRelation: "divisi";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "opsi_kegiatan_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -310,6 +376,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           nama_barang: string;
           jumlah: number | null;
           kondisi: string | null;
@@ -320,6 +387,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           nama_barang: string;
           jumlah?: number | null;
           kondisi?: string | null;
@@ -330,6 +398,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           nama_barang?: string;
           jumlah?: number | null;
           kondisi?: string | null;
@@ -343,6 +412,12 @@ export interface Database {
             columns: ["divisi_id"];
             referencedRelation: "divisi";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "inventaris_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -350,6 +425,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           laporan_id: string | null;
           nama_kebutuhan: string;
           jumlah: number | null;
@@ -363,6 +439,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           laporan_id?: string | null;
           nama_kebutuhan: string;
           jumlah?: number | null;
@@ -376,6 +453,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           laporan_id?: string | null;
           nama_kebutuhan?: string;
           jumlah?: number | null;
@@ -398,6 +476,12 @@ export interface Database {
             columns: ["laporan_id"];
             referencedRelation: "laporan_harian";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "kebutuhan_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -405,6 +489,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           user_id: string;
           kebutuhan_id: string | null;
           tanggal_pengajuan: string;
@@ -422,6 +507,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           user_id: string;
           kebutuhan_id?: string | null;
           tanggal_pengajuan: string;
@@ -439,6 +525,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           user_id?: string;
           kebutuhan_id?: string | null;
           tanggal_pengajuan?: string;
@@ -453,12 +540,18 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
+Relationships: [
           {
             foreignKeyName: "pengajuan_dana_divisi_id_fkey";
             columns: ["divisi_id"];
             referencedRelation: "divisi";
-            referencedColumns: ["id"],
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pengajuan_dana_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           },
           {
             foreignKeyName: "pengajuan_dana_kebutuhan_id_fkey";
@@ -471,18 +564,21 @@ export interface Database {
       saldo_awal: {
         Row: {
           id: number;
+          periode_id: string;
           nominal: number;
           updated_by: string | null;
           updated_at: string;
         };
         Insert: {
           id?: number;
+          periode_id?: string;
           nominal?: number;
           updated_by?: string | null;
           updated_at?: string;
         };
         Update: {
           id?: number;
+          periode_id?: string;
           nominal?: number;
           updated_by?: string | null;
           updated_at?: string;
@@ -493,6 +589,12 @@ export interface Database {
             columns: ["updated_by"];
             referencedRelation: "users";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saldo_awal_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -500,6 +602,7 @@ export interface Database {
         Row: {
           id: string;
           divisi_id: string;
+          periode_id: string;
           laporan_id: string | null;
           tanggal: string;
           jenis_transaksi: "pemasukan" | "pengeluaran";
@@ -514,6 +617,7 @@ export interface Database {
         Insert: {
           id?: string;
           divisi_id: string;
+          periode_id?: string;
           laporan_id?: string | null;
           tanggal: string;
           jenis_transaksi: "pemasukan" | "pengeluaran";
@@ -528,6 +632,7 @@ export interface Database {
         Update: {
           id?: string;
           divisi_id?: string;
+          periode_id?: string;
           laporan_id?: string | null;
           tanggal?: string;
           jenis_transaksi?: "pemasukan" | "pengeluaran";
@@ -539,12 +644,18 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
+Relationships: [
           {
             foreignKeyName: "transaksi_keuangan_divisi_id_fkey";
             columns: ["divisi_id"];
             referencedRelation: "divisi";
-            referencedColumns: ["id"],
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaksi_keuangan_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
+            referencedColumns: ["id"];
           },
 {
             foreignKeyName: "transaksi_keuangan_laporan_id_fkey";
@@ -557,18 +668,21 @@ export interface Database {
       division_credentials: {
         Row: {
           divisi_id: string;
+          periode_id: string;
           password_hash: string;
           updated_at: string;
           updated_by: string | null;
         };
         Insert: {
           divisi_id: string;
+          periode_id?: string;
           password_hash: string;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
           divisi_id?: string;
+          periode_id?: string;
           password_hash?: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -578,6 +692,12 @@ export interface Database {
             foreignKeyName: "division_credentials_divisi_id_fkey";
             columns: ["divisi_id"];
             referencedRelation: "divisi";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "division_credentials_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
             referencedColumns: ["id"];
           }
         ];
@@ -609,6 +729,73 @@ export interface Database {
             foreignKeyName: "division_sessions_divisi_id_fkey";
             columns: ["divisi_id"];
             referencedRelation: "divisi";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      periods: {
+        Row: {
+          id: string;
+          nama_periode: string;
+          tahun_mulai: number;
+          tahun_selesai: number;
+          status: PeriodStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama_periode: string;
+          tahun_mulai: number;
+          tahun_selesai: number;
+          status?: PeriodStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama_periode?: string;
+          tahun_mulai?: number;
+          tahun_selesai?: number;
+          status?: PeriodStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_periods: {
+        Row: {
+          id: string;
+          admin_id: string;
+          periode_id: string;
+          assigned_by: string | null;
+          assigned_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_id: string;
+          periode_id?: string;
+          assigned_by?: string | null;
+          assigned_at?: string;
+        };
+        Update: {
+          id?: string;
+          admin_id?: string;
+          periode_id?: string;
+          assigned_by?: string | null;
+          assigned_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_periods_admin_id_fkey";
+            columns: ["admin_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "admin_periods_periode_id_fkey";
+            columns: ["periode_id"];
+            referencedRelation: "periods";
             referencedColumns: ["id"];
           }
         ];
@@ -649,6 +836,130 @@ export interface Database {
           has_password: boolean;
           updated_at: string | null;
         }>;
+      };
+      get_active_period_id: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      get_periods_for_dropdown: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          id: string;
+          nama_periode: string;
+          tahun_mulai: number;
+          tahun_selesai: number;
+          status: PeriodStatus;
+        }>;
+      };
+      is_super_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      current_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      is_admin: {
+        Args: { p_period_id?: string | null };
+        Returns: boolean;
+      };
+      current_periode_id: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      can_access_period: {
+        Args: { p_period_id: string };
+        Returns: boolean;
+      };
+      is_period_writable: {
+        Args: { p_period_id: string | null };
+        Returns: boolean;
+      };
+      admin_period_create: {
+        Args: {
+          p_nama_periode: string;
+          p_tahun_mulai: number;
+          p_tahun_selesai: number;
+        };
+        Returns: string;
+      };
+      admin_period_activate: {
+        Args: { p_periode_id: string };
+        Returns: string;
+      };
+      admin_period_archive: {
+        Args: { p_periode_id: string };
+        Returns: string;
+      };
+      admin_period_update: {
+        Args: {
+          p_periode_id: string;
+          p_nama_periode?: string | null;
+          p_tahun_mulai?: number | null;
+          p_tahun_selesai?: number | null;
+        };
+        Returns: undefined;
+      };
+      admin_period_list_all: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          id: string;
+          nama_periode: string;
+          tahun_mulai: number;
+          tahun_selesai: number;
+          status: PeriodStatus;
+          jumlah_laporan: number;
+          jumlah_transaksi: number;
+          jumlah_anggota: number;
+          created_at: string;
+        }>;
+      };      admin_accounts_list: {
+        Args: { p_periode_id?: string | null };
+        Returns: Array<{
+          id: string;
+          nama: string | null;
+          email: string | null;
+          role: string | null;
+          periode_id: string | null;
+          assigned_at: string | null;
+        }>;
+      };
+      admin_assign_period: {
+        Args: { p_user_id: string; p_periode_id: string | null };
+        Returns: undefined;
+      };
+      admin_set_user_role: {
+        Args: { p_user_id: string; p_role: string };
+        Returns: undefined;
+      };
+      admin_set_division_password: {
+        Args: { p_divisi_id: string; p_password: string; p_periode_id?: string | null };
+        Returns: string;
+      };
+      admin_division_credential_status: {
+        Args: { p_periode_id?: string | null };
+        Returns: Array<{
+          divisi_id: string;
+          nomor_divisi: number;
+          nama_divisi: string;
+          has_password: boolean;
+          updated_at: string | null;
+        }>;
+      };
+      admin_division_account_list: {
+        Args: { p_periode_id?: string | null };
+        Returns: Array<{
+          divisi_id: string;
+          nomor_divisi: number;
+          nama_divisi: string;
+          account_count: number;
+          has_password: boolean;
+          updated_at: string | null;
+        }>;
+      };
+      admin_divisi_set_period: {
+        Args: { p_divisi_id: string; p_periode_id: string | null };
+        Returns: undefined;
       };
     };
     Enums: {};

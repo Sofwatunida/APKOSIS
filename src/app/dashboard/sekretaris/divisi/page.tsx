@@ -1,12 +1,12 @@
 import { requireProfile, requireRole } from "@/lib/guard";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { MonitoringDivisiClient } from "@/app/dashboard/monitoring/divisi/monitoring-divisi-client";
 
 export default async function SekretarisDivisiPage() {
   const { profile } = await requireProfile();
   requireRole(profile, ["sekretaris"]);
   return (
-    <DashboardShell profile={profile}>
+    <AppShell profile={profile}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Semua Divisi</h1>
@@ -14,6 +14,6 @@ export default async function SekretarisDivisiPage() {
         </div>
         <MonitoringDivisiClient profile={profile} />
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }

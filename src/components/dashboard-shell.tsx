@@ -5,11 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { clearDivisionTokenCookie } from "@/lib/division-session-client";
+import { PeriodeProvider } from "@/lib/periode-context";
 import { NAV_STRUCTURE } from "@/lib/nav";
+import type { PeriodeOption } from "@/lib/period";
 import type { Profile } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/role";
 import { ToastProvider, useToast } from "@/components/ui/toast";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PeriodePicker } from "@/components/periode-picker";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -30,6 +33,9 @@ import {
   Calendar,
   HandCoins,
   KeyRound,
+  ShieldCheck,
+  Settings2,
+  Archive,
 } from "lucide-react";
 
 function getNavIcon(href: string) {
@@ -43,6 +49,8 @@ function getNavIcon(href: string) {
   if (href.includes("keuangan") || href.includes("transaksi")) return Wallet;
   if (href.includes("profil-divisi")) return Building2;
   if (href.includes("password-divisi")) return KeyRound;
+  if (href.includes("superadmin") || href.includes("periode")) return ShieldCheck;
+  if (href.includes("pengaturan")) return Settings2;
   if (href.includes("divisi")) return Layers;
   if (href.includes("rekap-keuangan")) return Coins;
   if (href.includes("rekap-kendala")) return AlertCircle;
@@ -53,9 +61,17 @@ function getNavIcon(href: string) {
 
 function ShellInner({
   profile,
+  periods,
+  allPeriodsMode,
+  readOnly,
+  selectedPeriodId,
   children,
 }: {
   profile: Profile;
+  periods: PeriodeOption[];
+  allPeriodsMode: boolean;
+  readOnly: boolean;
+  selectedPeriodId: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -99,6 +115,13 @@ function ShellInner({
     year: "numeric",
   }).format(new Date());
 
+  // Badge Never hardcoded: selalu dari tabel `periods`.
+  const activePeriodBadge =
+    periods.find((p) => p.id === selectedPeriodId)?.tahunMulai ??
+    periods.find((p) => p.status === "active")?.tahunMulai ??
+    periods[0]?.tahunMulai ??
+    "-";
+
   const sidebarContent = (
     <div className="sidebar-surface flex h-full flex-col justify-between">
       <div>
@@ -110,7 +133,7 @@ function ShellInner({
                 APKOSIS
               </span>
               <span className="rounded-md border border-brand-500/20 bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 dark:text-brand-400">
-                2026
+                {activePeriodBadge}
               </span>
             </div>
             <p className="sidebar-subtle mt-1 text-[10px] font-medium leading-none">
@@ -229,6 +252,7 @@ function ShellInner({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <PeriodePicker canSelectAllPeriods={profile.role === "super_admin"} />
             <ThemeToggle />
 
             <div className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-xs text-slate-600 shadow-xs sm:flex dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-400">
@@ -247,7 +271,21 @@ function ShellInner({
         </header>
 
         {/* Content Body */}
-        <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+          {readOnly && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+              <Archive className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-semibold">Periode arsip — hanya bisa dibaca.</p>
+                <p className="mt-0.5 text-[13px]">
+                  Data periode ini sudah selesai dan tidak bisa ditambah atau
+                  diubah. Hubungi Super Admin bila diperlukan koreksi arsip.
+                </p>
+              </div>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -255,14 +293,43 @@ function ShellInner({
 
 export function DashboardShell({
   profile,
+  periods,
+  allPeriodsMode,
+  readOnly,
+  selectedPeriodId,
   children,
 }: {
   profile: Profile;
+  periods: PeriodeOption[];
+  allPeriodsMode: boolean;
+  readOnly: boolean;
+  selectedPeriodId: string | null;
   children: React.ReactNode;
 }) {
   return (
     <ToastProvider>
-      <ShellInner profile={profile}>{children}</ShellInner>
+      <PeriodeProvider
+        periodeId={selectedPeriodId}
+        allPeriodsMode={allPeriodsMode}
+        readOnly={readOnly}
+        options={periods.map((p) => ({
+          id: p.id,
+          namaPeriode: p.namaPeriode,
+          tahunMulai: p.tahunMulai,
+          tahunSelesai: p.tahunSelesai,
+          status: p.status,
+        }))}
+      >
+        <ShellInner
+          profile={profile}
+          periods={periods}
+          allPeriodsMode={allPeriodsMode}
+          readOnly={readOnly}
+          selectedPeriodId={selectedPeriodId}
+        >
+          {children}
+        </ShellInner>
+      </PeriodeProvider>
     </ToastProvider>
   );
 }

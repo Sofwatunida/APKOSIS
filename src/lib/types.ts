@@ -1,4 +1,4 @@
-import type { Database } from "./database.types";
+import type { Database, Role, PeriodStatus } from "./database.types";
 import type {
   KebutuhanStatus,
   StatusPersetujuan,
@@ -6,8 +6,7 @@ import type {
 } from "./database.types";
 
 export type { KebutuhanStatus, StatusPersetujuan, StatusPengambilan };
-
-export type Role = "division_admin" | "monitoring" | "sekretaris" | "bendahara";
+export type { Role, PeriodStatus };
 
 export interface Profile {
   id: string;
@@ -15,6 +14,7 @@ export interface Profile {
   email: string | null;
   role: Role | null;
   divisi_id: string | null;
+  periode_id: string | null;
   created_at: string;
   updated_at: string;
 }

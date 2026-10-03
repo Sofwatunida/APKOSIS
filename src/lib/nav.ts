@@ -11,10 +11,71 @@ export interface NavSection {
   items: NavItem[];
 }
 
+/**
+ * Navigasi per role.
+ *
+ * `super_admin` dan `admin` sengaja TIDAK diberi akses ke halaman
+ * operasional divisi. Super Admin mengendalikan sistem, Admin
+ * mengelola periode; keduanya bukan kepala divisi.
+ */
 export const NAV_STRUCTURE: NavSection[] = [
   {
     title: "Utama",
-    items: [{ label: "Dashboard", href: "/dashboard", roles: ["division_admin", "monitoring", "sekretaris", "bendahara"] }],
+    items: [
+      {
+        label: "Dashboard",
+        href: "/dashboard",
+        roles: [
+          "super_admin",
+          "admin",
+          "division_admin",
+          "monitoring",
+          "sekretaris",
+          "bendahara",
+        ],
+      },
+    ],
+  },
+  {
+    title: "Super Admin",
+    items: [
+      {
+        label: "Ringkasan Sistem",
+        href: "/dashboard/superadmin",
+        roles: ["super_admin"],
+      },
+      {
+        label: "Kelola Periode",
+        href: "/dashboard/superadmin/periode",
+        roles: ["super_admin"],
+      },
+      {
+        label: "Kelola Akun",
+        href: "/dashboard/superadmin/akun",
+        roles: ["super_admin"],
+      },
+      {
+        label: "Kelola Divisi",
+        href: "/dashboard/superadmin/divisi",
+        roles: ["super_admin"],
+      },
+    ],
+  },
+  {
+    title: "Admin Periode",
+    items: [
+      { label: "Ringkasan", href: "/dashboard/admin", roles: ["admin"] },
+      {
+        label: "Password Divisi",
+        href: "/dashboard/admin/password-divisi",
+        roles: ["admin"],
+      },
+      {
+        label: "Kelola Divisi",
+        href: "/dashboard/admin/divisi",
+        roles: ["admin"],
+      },
+    ],
   },
   {
     title: "Divisi",
@@ -27,11 +88,7 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Pengajuan Dana", href: "/dashboard/pengajuan-dana", roles: ["division_admin"] },
       { label: "Keuangan", href: "/dashboard/keuangan", roles: ["division_admin"] },
       { label: "Profil Divisi", href: "/dashboard/profil-divisi", roles: ["division_admin"] },
-      {
-        label: "Password Divisi",
-        href: "/dashboard/password-divisi",
-        roles: ["division_admin"],
-      },
+      { label: "Rekap Keuangan", href: "/dashboard/detail-keuangan", roles: ["division_admin", "monitoring", "sekretaris", "bendahara"] },
     ],
   },
   {

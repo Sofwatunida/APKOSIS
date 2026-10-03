@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:verify": "tsc src/lib/period-scope.ts src/lib/period-constants.ts --outDir .verify --module commonjs --target es2020 --moduleResolution node --skipLibCheck",
+    "verify:period": "npm run build:verify && node scripts/verify-period-scope.mjs",
+    "verify:rpc": "node scripts/verify-rpc-signatures.mjs",
+    "verify": "npm run typecheck && npm run verify:period && npm run verify:rpc"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

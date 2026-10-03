@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -16,6 +16,8 @@ import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
+import { usePeriode } from "@/lib/periode-context";
+import { saveSaldoAwal } from "@/lib/finance";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
@@ -24,7 +26,26 @@ interface Row extends TransaksiKeuangan {
 export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const { success, error } = useToast();
-  const currentYear = new Date().getFullYear();
+  const { readOnly, options: periodeOptions } = usePeriode();
+  // Tahun filter TIDAK lagi memakai tahun kalender, melainkan tahun
+  // milik periode yang dipilih (dari tabel `periods`).
+  const periodeTahun = useMemo(() => {
+    const now = new Date().getFullYear();
+    const nowMonth = now - 1; // 0 = Januari
+    const years: number[] = [];
+    for (const p of periodeOptions) {
+      for (let y = p.tahunMulai; y <= p.tahunSelesai; y++) years.push(y);
+    }
+    const active = periodeOptions.find((p) => p.status === "active");
+    if (active && now >= active.tahunMulai && now <= active.tahunSelesai) {
+      return now;
+    }
+    if (active) return active.tahunMulai;
+    void nowMonth;
+    return years[0] ?? now;
+  }, [periodeOptions]);
+
+  const currentYear = periodeTahun;
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
@@ -45,10 +66,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [savingSaldo, setSavingSaldo] = useState(false);
 
   async function loadSaldoAwal() {
+    // Saldo awal sekarang satu baris per periode, jadi tidak memakai id=1.
     const { data } = await supabase
       .from("saldo_awal")
       .select("nominal")
-      .eq("id", 1)
       .maybeSingle();
     setSaldoAwal(Number(data?.nominal) || 0);
   }
@@ -108,14 +129,14 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       error("Nominal saldo awal tidak valid.");
       return;
     }
+    if (readOnly) {
+      error("Periode arsip tidak bisa diubah.");
+      return;
+    }
     setSavingSaldo(true);
     const user = (await supabase.auth.getUser()).data.user;
-    const payload = {
-      id: 1,
-      nominal,
-      updated_by: user?.id ?? null,
-    };
-    const { error: upErr } = await supabase.from("saldo_awal").upsert(payload, { onConflict: "id" });
+    // periode_id diisi otomatis oleh period scope + unik per periode.
+    const { error: upErr } = await saveSaldoAwal(supabase, nominal, user?.id ?? null);
     if (upErr) {
       setSavingSaldo(false);
       error("Gagal menyimpan saldo awal: " + upErr.message);
@@ -135,7 +156,14 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterDivisi, filterJenis, filterTanggal, filterBulan, filterTahun]);
 
-  const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
+  // Daftar tahun diambil dari tabel `periods`, bukan daftar hardcoded.
+  const yearOptions = useMemo(() => {
+    const years: number[] = [];
+    for (const p of periodeOptions) {
+      for (let y = p.tahunMulai; y <= p.tahunSelesai; y++) years.push(y);
+    }
+    return Array.from(new Set(years)).sort((a, b) => b - a);
+  }, [periodeOptions]);
 
   return (
     <div className="space-y-6">

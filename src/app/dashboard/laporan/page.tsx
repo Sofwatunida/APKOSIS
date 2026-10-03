@@ -3,7 +3,7 @@ import {
   requireDivisionSelection,
   withActiveDivisi,
 } from "@/lib/division-session";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { LaporanHarianClient } from "./laporan-client";
 
 export default async function LaporanPage() {
@@ -13,8 +13,8 @@ export default async function LaporanPage() {
   const scopedProfile = await withActiveDivisi(profile);
 
   return (
-    <DashboardShell profile={scopedProfile}>
+    <AppShell profile={scopedProfile}>
       <LaporanHarianClient profile={scopedProfile} />
-    </DashboardShell>
+    </AppShell>
   );
 }

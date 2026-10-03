@@ -3,7 +3,7 @@ import {
   requireDivisionSelection,
   withActiveDivisi,
 } from "@/lib/division-session";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppShell } from "@/components/app-shell";
 import { InventarisClient } from "./inventaris-client";
 
 export default async function InventarisPage() {
@@ -12,8 +12,8 @@ export default async function InventarisPage() {
   await requireDivisionSelection();
   const scopedProfile = await withActiveDivisi(profile);
   return (
-    <DashboardShell profile={scopedProfile}>
+    <AppShell profile={scopedProfile}>
       <InventarisClient profile={scopedProfile} />
-    </DashboardShell>
+    </AppShell>
   );
 }
