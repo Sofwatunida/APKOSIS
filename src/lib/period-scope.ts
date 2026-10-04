@@ -83,6 +83,35 @@ function injectPeriod(payload: unknown, periodId: string): unknown {
 
 type Builder = Record<string, unknown>;
 
+/** Builder yang sudah mendukung filter `.eq()`. */
+type FilterableBuilder = Builder & {
+  eq: (column: string, value: string) => Builder;
+};
+
+function supportsEq(value: unknown): value is FilterableBuilder {
+  return (
+    Boolean(value) && typeof (value as FilterableBuilder).eq === "function"
+  );
+}
+
+/**
+ * CATATAN PENTING -- jangan dibalik.
+ *
+ * `supabase.from(t)` mengembalikan `PostgrestQueryBuilder` yang HANYA
+ * punya select / insert / update / upsert / delete.
+ *
+ * `.eq()` TIDAK ADA di objek itu. `.eq()` baru ada pada
+ * `PostgrestFilterBuilder` yang dikembalikan kelima method tersebut.
+ *
+ * Karena itu method WAJIB dipanggil lebih dulu, baru filter periode
+ * dipasang ke hasilnya. Memasang `.eq()` lebih dulu akan melempar
+ * `TypeError: target.eq is not a function` dan membuat seluruh
+ * halaman yang touched tabel ber-periode gagal dengan HTTP 500.
+ *
+ * `update` dan `delete` tetap aman: keduanya juga mengembalikan
+ * FilterBuilder, jadi ikut terfilter dan user tidak bisa menyentuh
+ * baris milik periode lain.
+ */
 function wrap(
   builder: Builder,
   table: string,
@@ -94,48 +123,30 @@ function wrap(
       const value = Reflect.get(target, prop, target);
       if (typeof value !== "function") return value;
 
-const name = String(prop);
+      const name = String(prop);
 
-        return (...args: unknown[]) => {
-          // Tulis: pastikan periode_id terisi dan tidak bisa dipindah user.
-          if (WRITE_METHODS.has(name)) {
-            // Insert dan upsert juga wajib di-inject, kalau tidak baris
-            // baru akan tersimpan tanpa periode dan tidak pernah muncul.
-            // Argumen pertama pada ketiganya selalu payload.
-            const nextArgs = [...args];
-            nextArgs[0] = injectPeriod(args[0], periodId);
+      return (...args: unknown[]) => {
+        // Tulis: pastikan periode_id terisi dan tidak bisa dipindah user.
+        // Insert dan upsert juga wajib di-inject, kalau tidak baris
+        // baru akan tersimpan tanpa periode dan tidak pernah muncul.
+        // Argumen pertama pada ketiganya selalu payload.
+        const callArgs = WRITE_METHODS.has(name)
+          ? [injectPeriod(args[0], periodId), ...args.slice(1)]
+          : args;
 
-            // `update`/`delete` juga dibatasi ke periode terpilih supaya
-            // user tidak bisa mengubah baris periode lain lewat filter.
-            let base = target;
-            let nowScoped = scoped;
-            if (!scoped) {
-              base = (
-                target as unknown as { eq: (c: string, v: string) => Builder }
-              ).eq("periode_id", periodId);
-              nowScoped = true;
-            }
+        // Selalu panggil method di builder aslinya lebih dulu.
+        const out = (value as (...a: unknown[]) => unknown).apply(
+          target,
+          callArgs
+        );
 
-            const out = (value as (...a: unknown[]) => unknown).apply(
-              base,
-              nextArgs
-            );
-            return wrap(out as Builder, table, nowScoped, periodId);
-          }
+        // Baru pasang filter periode ke hasilnya.
+        if (!scoped && supportsEq(out)) {
+          return wrap(out.eq("periode_id", periodId), table, true, periodId);
+        }
 
-          // Baca / delete / order / single / ... : pasang filter periode dulu.
-          let base = target;
-          let nowScoped = scoped;
-          if (!scoped) {
-            base = (
-              target as unknown as { eq: (c: string, v: string) => Builder }
-            ).eq("periode_id", periodId);
-            nowScoped = true;
-          }
-
-          const out = (value as (...a: unknown[]) => unknown).apply(base, args);
-          return wrap(out as Builder, table, nowScoped, periodId);
-        };
+        return wrap(out as Builder, table, scoped, periodId);
+      };
     },
   });
 }

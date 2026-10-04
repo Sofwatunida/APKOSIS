@@ -131,6 +131,7 @@ karena hanya memakai *publishable key*. Jalankan migration berurutan di
 20261001000002_rls_authorization_periods.sql # Phase 9 & 10: RLS, RPC, arsip
 20261001000003_fix_profiles_policy_recursion.sql # Wajib: hentikan infinite recursion policy
 20261001000004_fix_division_credential.sql      # Wajib: perbaiki simpan password + periode divisi
+20261001000005_drop_ambiguous_periode_refs.sql   # Wajib: hapus overload liar + qualification periode_id
 ```
 
 > **WAJIB dijalankan setelah `20261001000002`.** Tanpa migration ini semua
@@ -147,6 +148,21 @@ karena hanya memakai *publishable key*. Jalankan migration berurutan di
 > hash tanpa batas periode, dan `admin_division_account_list()` memakai
 > `left join ... on dc.periode_id = p_periode_id` yang selalu false saat
 > `p_periode_id` bernilai `null`.
+
+> **WAJIB dijalankan setelah `20261001000004`.** Tanpa migration ini setiap
+> kartu divisi di "Super Admin > Kelola Akun" gagal dengan
+> `42703 column reference "periode_id" is ambiguous`. Semua referensi
+> `periode_id` di file SQL repo ini sudah beralias, jadi penyebabnya ada di
+> database: **overload lama** dari salah satu fungsi RPC. PostgREST memilih
+> overload berdasarkan nama argumen, dan
+> `drop function if exists public.f(uuid)` hanya menghapus satu signature.
+> Migration ini menghapus semua overload liar lalu membuat ulang rantainya
+> dengan parameter `p_*` dan seluruh referensi kolom beralias.
+>
+> Kalau setelah menjalankan migration ini error masih muncul, jalankan
+> `supabase/diagnose_periode_ambiguous.sql` (read-only) di SQL Editor dan
+> kirim outputnya. Bagian **G** langsung menjalankan tiap RPC dan memberi
+> tahu baris mana yang gagal.
 
 ### Membuat Super Admin pertama
 

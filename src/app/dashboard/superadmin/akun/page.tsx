@@ -19,16 +19,32 @@ export default async function SuperAdminAkunPage({
   const params = await searchParams;
 
   // Tanpa parameter -> seluruh akun. Dengan parameter -> akun periode itu.
-  const { data: accounts } = await supabase.rpc(
+  const { data: accounts, error: accountsError } = await supabase.rpc(
     "admin_accounts_list",
     params.periode ? { p_periode_id: params.periode } : { p_periode_id: null }
   );
 
-  const { data: divisions } = await supabase.rpc("admin_division_account_list", {
-    p_periode_id: params.periode ?? null,
-  });
+  const { data: divisions, error: divisionsError } = await supabase.rpc(
+    "admin_division_account_list",
+    { p_periode_id: params.periode ?? null }
+  );
 
   const periods = await getPeriods();
+
+  // Error TIDAK boleh ditelan. Kalau RPC gagal, halaman harus
+  // menampilkan nama RPC + kode + pesan PostgreSQL apa adanya,
+  // bukan hanya menampilkan daftar kosong yang menyesatkan.
+  const dbErrors = [
+    ["admin_accounts_list", accountsError],
+    ["admin_division_account_list", divisionsError],
+  ]
+    .filter(([, e]) => Boolean(e))
+    .map(([nama, e]) => {
+      const err = e as { code?: string; message: string; details?: string | null };
+      return `${nama} [${err.code ?? "?"}] ${err.message}${
+        err.details ? ` — ${err.details}` : ""
+      }`;
+    });
 
   return (
     <AppShell profile={profile}>
@@ -40,6 +56,7 @@ export default async function SuperAdminAkunPage({
       <AccountsAdminClient
         currentUserId={profile.id}
         selectedPeriodeId={params.periode ?? ""}
+        dbErrors={dbErrors}
         periods={periods.map((p) => ({
           id: p.id,
           namaPeriode: p.namaPeriode,

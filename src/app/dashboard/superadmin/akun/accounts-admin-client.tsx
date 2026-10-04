@@ -76,12 +76,15 @@ function roleBadge(role: string) {
 export function AccountsAdminClient({
   currentUserId,
   selectedPeriodeId,
+  dbErrors,
   periods,
   accounts,
   divisions,
 }: {
   currentUserId: string;
   selectedPeriodeId: string;
+  /** Error RPC dari server. Ditampilkan apa adanya, tidak pernah disembunyikan. */
+  dbErrors?: string[];
   periods: PeriodOption[];
   accounts: AccountRow[];
   divisions: DivisionRow[];
@@ -139,6 +142,26 @@ export function AccountsAdminClient({
 
   return (
     <div className="space-y-6">
+      {dbErrors && dbErrors.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-300 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-900/20"
+        >
+          <p className="flex items-center gap-2 text-sm font-semibold text-rose-800 dark:text-rose-300">
+            <AlertTriangle className="h-4 w-4" />
+            Database menolak permintaan ({dbErrors.length}). Data di bawah mungkin
+            tidak lengkap.
+          </p>
+          <ul className="mt-2 space-y-1 font-mono text-xs text-rose-700 dark:text-rose-400">
+            {dbErrors.map((m) => (
+              <li key={m} className="break-words">
+                {m}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-end gap-2">
         <ExportMenu
           title="APKOSIS — Pengaturan Akun Divisi"
