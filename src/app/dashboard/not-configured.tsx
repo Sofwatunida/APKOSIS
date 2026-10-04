@@ -21,8 +21,7 @@ export function NotConfigured() {
       <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center shadow-lg">
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">Akun belum dikonfigurasi</h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          Akun Anda telah terhubung, tetapi belum memiliki peran (<code>role</code>) dan divisi (
-          <code>divisi_id</code>).
+          Akun Anda telah terhubung, tetapi belum memiliki peran (<code>role</code>).
         </p>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Hubungi admin untuk menetapkan peran Anda di tabel{" "}
