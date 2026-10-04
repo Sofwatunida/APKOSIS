@@ -8,6 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 export interface PeriodActionResult {
   ok: boolean;
   message: string;
+  /** Waktu simpan terakhir (dari database), hanya untuk aksi akun divisi. */
+  updatedAt?: string;
+  /** Periode divisi setelah disimpan (dari database). */
+  periodeId?: string;
 }
 
 /**
@@ -31,6 +35,21 @@ function ok(message: string): PeriodActionResult {
 
 function fail(message: string): PeriodActionResult {
   return { ok: false, message };
+}
+
+/**
+ * PostgREST kadang mengembalikan pesan error sebagai string JSON utuh.
+ * Ambil bagian `message`-nya supaya toast tidak menampilkan mentah.
+ */
+function pesanDb(message: string): string {
+  const teks = message.trim();
+  if (!teks.startsWith("{")) return teks;
+  try {
+    const parsed = JSON.parse(teks) as { message?: string };
+    return parsed.message?.trim() || teks;
+  } catch {
+    return teks;
+  }
 }
 
 /**
@@ -187,7 +206,18 @@ export async function setUserRoleAction(formData: FormData): Promise<PeriodActio
   return ok("Role user diperbarui.");
 }
 
-/** Reset password divisi (dipakai Super Admin dan Admin Periode). */
+/**
+ * Simpan konfigurasi akun divisi: password + periode, sekaligus.
+ *
+ * Satu panggilan RPC `admin_division_account_save` yang:
+ *   - menyimpan periode ke `divisi` (sumber kebenaran aplikasi),
+ *   - menulis hash bcrypt ke `division_credentials`,
+ *   - memverifikasi hash benar-benar tersimpan,
+ *   - mencabut sesi divisi supaya password baru langsung berlaku.
+ *
+ * Semuanya atomik di database. Kalau gagal, tidak ada notifikasi
+ * sukses palsu dan data lama tetap utuh.
+ */
 export async function setDivisionPasswordAction(
   formData: FormData
 ): Promise<PeriodActionResult> {
@@ -202,19 +232,32 @@ export async function setDivisionPasswordAction(
 
   if (!divisiId) return fail("Divisi tidak valid.");
   if (password.length < 4) return fail("Password divisi minimal 4 karakter.");
+  if (password.length > 128) return fail("Password divisi maksimal 128 karakter.");
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("admin_set_division_password", {
+  const { data, error } = await supabase.rpc("admin_division_account_save", {
     p_divisi_id: divisiId,
     p_password: password,
     p_periode_id: periodeId,
   });
 
-  if (error) return fail(error.message);
+  if (error) return fail(pesanDb(error.message));
+
+  const saved = Array.isArray(data) ? data[0] : data;
+  if (!saved) return fail("Password gagal disimpan. Data lama tidak berubah.");
+
   revalidatePath("/dashboard/password-divisi");
   revalidatePath("/dashboard/admin/password-divisi");
+  revalidatePath("/dashboard/admin/divisi");
+  revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/superadmin/akun");
-  return ok("Password divisi diperbarui.");
+
+  return {
+    ok: true,
+    message: "Password divisi berhasil disimpan.",
+    updatedAt: saved.updated_at ?? undefined,
+    periodeId: saved.periode_id ?? undefined,
+  };
 }
 
 /** Mengaitkan / melepas divisi ke suatu periode. */

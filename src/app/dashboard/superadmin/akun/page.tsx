@@ -61,6 +61,11 @@ export default async function SuperAdminAkunPage({
           accountCount: d.account_count,
           hasPassword: d.has_password,
           updatedAt: d.updated_at,
+          periodeId: d.periode_id ?? "",
+          periodeNama:
+            d.periode_nama ??
+            periods.find((p) => p.id === d.periode_id)?.namaPeriode ??
+            "—",
         }))}
       />
 

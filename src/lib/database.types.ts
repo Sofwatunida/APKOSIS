@@ -955,6 +955,20 @@ Relationships: [
           account_count: number;
           has_password: boolean;
           updated_at: string | null;
+          periode_id: string | null;
+          periode_nama: string | null;
+        }>;
+      };
+      admin_division_account_save: {
+        Args: {
+          p_divisi_id: string;
+          p_password: string;
+          p_periode_id?: string | null;
+        };
+        Returns: Array<{
+          has_password: boolean;
+          periode_id: string;
+          updated_at: string;
         }>;
       };
       admin_divisi_set_period: {

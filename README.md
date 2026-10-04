@@ -129,7 +129,24 @@ karena hanya memakai *publishable key*. Jalankan migration berurutan di
 20261001000000_periods_system.sql            # Phase 2: tabel periods + periode_id
 20261001000001_roles_admin_periods.sql       # Phase 3: role baru + admin_periods
 20261001000002_rls_authorization_periods.sql # Phase 9 & 10: RLS, RPC, arsip
+20261001000003_fix_profiles_policy_recursion.sql # Wajib: hentikan infinite recursion policy
+20261001000004_fix_division_credential.sql      # Wajib: perbaiki simpan password + periode divisi
 ```
+
+> **WAJIB dijalankan setelah `20261001000002`.** Tanpa migration ini semua
+> query ke `profiles` (termasuk saat login) gagal dengan
+> `42P17 infinite recursion detected in policy for relation "profiles"`,
+> sehingga dashboard selalu menampilkan "Akun belum dikonfigurasi" meskipun
+> `role` sudah terisi. Penyebabnya: beberapa policy menunjuk `profiles`
+> secara langsung sehingga membentuk siklus policy.
+
+> **WAJIB dijalankan setelah `20261001000003`.** Tanpa migration ini password
+> divisi yang baru disimpan tidak bisa dipakai untuk login (password lama
+> masih berlaku), dan status di "Super Admin > Kelola Akun" selalu
+> "Belum ada password". Penyebabnya: `verify_division_password()` membaca
+> hash tanpa batas periode, dan `admin_division_account_list()` memakai
+> `left join ... on dc.periode_id = p_periode_id` yang selalu false saat
+> `p_periode_id` bernilai `null`.
 
 ### Membuat Super Admin pertama
 

@@ -22,7 +22,22 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     .eq("id", user.id)
     .single();
 
-  if (error || !data) return null;
+  // Query profil bisa gagal karena RLS / policy, bukan karena profilnya
+  // memang kosong. Tanpa log, keduanya terlihat sama dari luar dan
+  // dashboard hanya menampilkan "Akun belum dikonfigurasi".
+  if (error) {
+    console.error("[auth] gagal membaca profiles:", error.code, error.message);
+    return null;
+  }
+
+  if (!data) {
+    console.warn("[auth] tidak ada baris profiles untuk:", user.email);
+    return null;
+  }
+
+  if (!data.role) {
+    console.warn("[auth] profiles.role kosong untuk:", user.email);
+  }
 
   return {
     id: data.id,

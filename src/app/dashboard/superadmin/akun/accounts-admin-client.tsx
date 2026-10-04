@@ -1,10 +1,19 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  KeyRound,
+  Save,
+  ShieldCheck,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
+import { ExportMenu } from "@/components/export-menu";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ROLE_LABELS } from "@/lib/role";
@@ -14,6 +23,12 @@ import {
   setDivisionPasswordAction,
   setUserRoleAction,
 } from "../../actions/periode-actions";
+
+const MIN_PASSWORD_LENGTH = 4;
+
+function divisiLabel(nomor: number): string {
+  return `Divisi ${String(nomor).padStart(2, "0")}`;
+}
 
 interface AccountRow {
   id: string;
@@ -32,6 +47,8 @@ interface DivisionRow {
   accountCount: number;
   hasPassword: boolean;
   updatedAt: string | null;
+  periodeId: string;
+  periodeNama: string;
 }
 
 interface PeriodOption {
@@ -100,16 +117,44 @@ export function AccountsAdminClient({
     run(() => setUserRoleAction(fd));
   }
 
-  function handlePassword(divisiId: string, password: string, periodeId: string) {
-    const fd = new FormData();
-    fd.set("divisi_id", divisiId);
-    fd.set("password", password);
-    fd.set("periode_id", periodeId);
-    run(() => setDivisionPasswordAction(fd));
-  }
+  const sudahDiatur = useMemo(
+    () => divisions.filter((d) => d.hasPassword).length,
+    [divisions]
+  );
+
+  // Ekspor konfigurasi divisi. Password SENGAJA tidak ikut: yang diekspor
+  // hanya status ("Sudah diatur"/"Belum diatur"), tidak pernah hash
+  // maupun password aslinya.
+  const exportRows = useMemo(
+    () =>
+      divisions.map((d) => ({
+        no: d.nomorDivisi,
+        divisi: divisiLabel(d.nomorDivisi),
+        nama: d.namaDivisi,
+        status: d.hasPassword ? "Sudah diatur" : "Belum diatur",
+        periode: d.periodeNama !== "—" ? d.periodeNama : "-",
+      })),
+    [divisions]
+  );
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <ExportMenu
+          title="APKOSIS — Pengaturan Akun Divisi"
+          subtitle="Daftar konfigurasi password & periode setiap divisi"
+          filename="pengaturan-akun-divisi"
+          columns={[
+            { header: "No", key: "no", width: 0.6, align: "center" },
+            { header: "Divisi", key: "divisi", width: 1.1 },
+            { header: "Nama Divisi", key: "nama", width: 2 },
+            { header: "Status Password", key: "status", width: 1.3, align: "center" },
+            { header: "Periode", key: "periode", width: 1.2, align: "center" },
+          ]}
+          rows={exportRows}
+        />
+      </div>
+
       <Card>
         <CardHeader title="Filter Periode" />
         <CardContent>
@@ -213,12 +258,30 @@ export function AccountsAdminClient({
       </Card>
 
       <Card>
-        <CardHeader title="Password Divisi" />
+        <CardHeader
+          title="Password Divisi"
+          subtitle="Password di-hash (bcrypt) di server sebelum disimpan dan tidak pernah ditampilkan kembali."
+        />
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
             Ketua dan wakil divisi tidak dapat mengganti password sendiri.
-            Password hanya dapat direset di sini.
+            Password hanya dapat diatur di sini. Status di bawah dibaca langsung
+            dari database, jadi tetap benar setelah halaman di-refresh.
           </p>
+
+          {sudahDiatur > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs dark:border-slate-800/80 dark:bg-slate-900/60">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {sudahDiatur} / {divisions.length} divisi sudah punya password
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {divisions.length - sudahDiatur} belum punya password
+              </span>
+            </div>
+          )}
+
           <div className="space-y-3">
             {divisions.map((d) => (
               <PasswordRow
@@ -226,9 +289,13 @@ export function AccountsAdminClient({
                 division={d}
                 periods={periods}
                 disabled={pending}
-                onSubmit={handlePassword}
               />
             ))}
+            {divisions.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Belum ada data divisi.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -240,41 +307,105 @@ function PasswordRow({
   division,
   periods,
   disabled,
-  onSubmit,
 }: {
   division: DivisionRow;
   periods: PeriodOption[];
   disabled: boolean;
-  onSubmit: (divisiId: string, password: string, periodeId: string) => void;
 }) {
+  const router = useRouter();
+  const { success, error: toastError } = useToast();
+
+  // Default dropdown mengikuti periode divisi di database; kalau divisi belum
+  // punya periode, baru memakai periode aktif.
+  const [periodeId, setPeriodeId] = useState(
+    division.periodeId || periods.find((p) => p.status === "active")?.id || ""
+  );
   const [password, setPassword] = useState("");
-  const [periodeId, setPeriodeId] = useState(periods.find((p) => p.status === "active")?.id ?? "");
+  const [saving, setSaving] = useState(false);
+  const [rowError, setRowError] = useState("");
+
+  const sudahDiatur = division.hasPassword;
+  const terakhirDiubah = formatWaktu(division.updatedAt);
+  const valid = password.length >= MIN_PASSWORD_LENGTH && !saving && !disabled;
+
+  async function handleSubmit() {
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setRowError(`Password divisi minimal ${MIN_PASSWORD_LENGTH} karakter.`);
+      return;
+    }
+
+    setSaving(true);
+    setRowError("");
+
+    const fd = new FormData();
+    fd.set("divisi_id", division.divisiId);
+    fd.set("password", password);
+    fd.set("periode_id", periodeId);
+
+    const result = await setDivisionPasswordAction(fd);
+
+    setSaving(false);
+
+    if (!result.ok) {
+      // Gagal: status TIDAK diubah, input dipertahankan supaya user
+      // tidak perlu mengetik ulang, pesan error ditampilkan.
+      setRowError(result.message);
+      toastError(result.message);
+      return;
+    }
+
+    setPassword("");
+    success(
+      `Password ${divisiLabel(division.nomorDivisi)} berhasil disimpan.`
+    );
+    // Status "sudah diatur" sekarang berasal dari database.
+    router.refresh();
+  }
 
   return (
-    <div className="grid items-end gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-[1fr_auto_1fr_auto] dark:border-slate-800">
+    <div className="grid items-end gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-[1fr_1.4fr_1fr_auto] dark:border-slate-800">
       <div>
-        <p className="font-medium">Divisi {division.nomorDivisi}</p>
+        <p className="font-medium">{divisiLabel(division.nomorDivisi)}</p>
         <p className="text-xs text-muted-foreground">
           {division.namaDivisi} · {division.accountCount} akun
         </p>
         <div className="mt-1">
-          {division.hasPassword ? (
-            <Badge color="green">Password tersedia</Badge>
+          {sudahDiatur ? (
+            <Badge color="green">
+              <ShieldCheck className="h-3 w-3" /> Password sudah diatur
+            </Badge>
           ) : (
             <Badge color="amber">Belum ada password</Badge>
           )}
         </div>
+        {terakhirDiubah && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Terakhir diubah {terakhirDiubah}
+          </p>
+        )}
       </div>
+
       <Field label="Password Baru">
         <Input
           type="password"
           value={password}
-          placeholder="Minimal 4 karakter"
-          onChange={(e) => setPassword(e.target.value)}
+          maxLength={128}
+          autoComplete="new-password"
+          placeholder="Masukkan password baru"
+          disabled={saving || disabled}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (rowError) setRowError("");
+          }}
         />
       </Field>
+
       <Field label="Periode">
-        <Select value={periodeId} onChange={(e) => setPeriodeId(e.target.value)}>
+        <Select
+          value={periodeId}
+          onChange={(e) => setPeriodeId(e.target.value)}
+          disabled={saving || disabled}
+        >
           {periods.map((p) => (
             <option key={p.id} value={p.id}>
               {p.namaPeriode}
@@ -282,15 +413,36 @@ function PasswordRow({
           ))}
         </Select>
       </Field>
+
       <Button
-        disabled={disabled || password.length < 4}
-        onClick={() => {
-          onSubmit(division.divisiId, password, periodeId);
-          setPassword("");
-        }}
+        disabled={!valid}
+        loading={saving}
+        onClick={handleSubmit}
+        className="min-w-28"
       >
-        Reset
+        {sudahDiatur ? (
+          <KeyRound className="h-4 w-4" />
+        ) : (
+          <Save className="h-4 w-4" />
+        )}
+        <span>{sudahDiatur ? "Ubah" : "Simpan"}</span>
       </Button>
+
+      {rowError && (
+        <p className="sm:col-span-4 text-xs font-medium text-rose-600 dark:text-rose-400">
+          {rowError}
+        </p>
+      )}
     </div>
   );
+}
+
+function formatWaktu(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
