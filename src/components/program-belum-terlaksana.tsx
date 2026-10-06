@@ -116,7 +116,8 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
           />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
-            <table className="w-full text-sm">
+            <div className="table-scroll">
+              <table className="w-full min-w-[30rem] text-sm">
               <thead>
                 <tr className="border-b border-slate-200/80 bg-slate-50/70 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-slate-800/80 dark:bg-slate-800/60 dark:text-slate-400">
                   <th className="px-5 py-3.5 font-semibold">No</th>
@@ -143,6 +144,7 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </CardContent>

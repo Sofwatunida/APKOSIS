@@ -179,8 +179,8 @@ export function InventarisClient({ profile }: { profile: Profile }) {
           {items.length === 0 ? (
             <EmptyState title="Belum ada inventaris" description="Tambahkan barang inventaris divisi." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="table-scroll">
+              <table className="w-full min-w-[36rem] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
                     <th className="px-3 py-2">Nama Barang</th>

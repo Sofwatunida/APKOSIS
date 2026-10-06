@@ -130,7 +130,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="table-scroll">
         <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700">

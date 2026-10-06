@@ -289,8 +289,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
   function validateUnggulan() {
     const e: Record<string, string> = {};
     if (!unggulanForm.nama_program.trim()) e.nama_program = "Nama program unggulan wajib diisi.";
-    if (!editingUnggulan && !unggulanForm.file)
-      e.file = "Unggah file untuk program unggulan.";
+    // File lampiran opsional: hanya format yang divalidasi bila dipilih.
     if (unggulanForm.file && !ALLOWED.includes(unggulanForm.file.type))
       e.file = "Format file harus PDF, DOC, DOCX, XLS, atau XLSX.";
     setUnggulanErrors(e);
@@ -302,6 +301,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
     setSavingUnggulan(true);
     const user = (await supabase.auth.getUser()).data.user;
 
+    // Lampiran opsional: program tetap tersimpan tanpa file.
     let fileInfo: { name: string; path: string } | null = null;
     if (unggulanForm.file) {
       fileInfo = await uploadFile(unggulanForm.file);
@@ -678,8 +678,8 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                 error={unggulanErrors.file}
                 hint={
                   editingUnggulan
-                    ? "Kosongkan jika tidak mengubah file."
-                    : "Wajib diunggah agar dapat diunduh role lain."
+                    ? "Opsional. Kosongkan jika tidak ingin mengubah file."
+                    : "Opsional. Program tetap bisa disimpan tanpa lampiran. Bila diunggah, file dapat diunduh role lain."
                 }
               >
                 <input

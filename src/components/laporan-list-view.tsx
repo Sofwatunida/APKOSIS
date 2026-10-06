@@ -158,8 +158,8 @@ export function LaporanListView({
           {laporan.length === 0 ? (
             <EmptyState title="Tidak ada laporan" description="Atur filter untuk melihat laporan." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="table-scroll">
+              <table className="w-full min-w-[40rem] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800 dark:text-slate-500">
                     <th className="px-3 py-2">Divisi</th>

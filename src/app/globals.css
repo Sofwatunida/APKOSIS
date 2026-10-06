@@ -70,6 +70,12 @@
   p, span, td, th, li, dd, dt, label, h1, h2, h3, h4 {
     overflow-wrap: anywhere;
   }
+
+  /* Isi tabel boleh membungkus di batas kata, tapi TIDAK dipecah per huruf
+     supaya kolom tetap terbaca rapi pada kolom sempit. */
+  td, th {
+    overflow-wrap: break-word;
+  }
 }
 
 @layer components {
@@ -106,6 +112,13 @@
     @apply rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-card dark:shadow-elevated transition-shadow duration-200;
   }
 
+  /* Kartu & konten utama: `min-w-0` mencegah child yang lebar (tabel, teks
+     panjang) ikut memaksa layout melebar keluar viewport. */
+  .card-base,
+  .page-body {
+    min-width: 0;
+  }
+
   /* Sidebar / navigation rail - mengikuti theme, tidak ada background gelap
      yang tertinggal di Light Mode. */
   .sidebar-surface {
@@ -139,6 +152,15 @@
   /* Tabel seragam untuk semua role */
   .table-shell {
     @apply w-full text-sm;
+  }
+
+  /* Wadah scroll untuk tabel. Tabel yang lebih lebar dari container digeser
+     horizontal, bukan dipaksa mengecil atau merusak layout utama.
+     `min-w-0` wajib agar wrapper tetap bisa menyusut di dalam flex/grid. */
+  .table-scroll {
+    @apply w-full min-w-0 overflow-x-auto;
+    /* scrollbar tetap bisa dipakai di layar sentuh */
+    -webkit-overflow-scrolling: touch;
   }
 
   .table-head {

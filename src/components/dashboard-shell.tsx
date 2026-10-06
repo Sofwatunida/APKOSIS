@@ -234,7 +234,7 @@ function ShellInner({
       )}
 
       {/* Main Content Area */}
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         {/* Sticky Top Header */}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/85">
           <div className="flex min-w-0 items-center gap-3">
@@ -270,8 +270,11 @@ function ShellInner({
           </div>
         </header>
 
-        {/* Content Body */}
-        <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        {/* Content Body
+            `min-w-0` + `overflow-x-hidden` menjaga tabel/konten lebar tetap
+            bisa digeser di dalam container-nya sendiri, bukan memaksa seluruh
+            halaman melebar keluar viewport. */}
+        <main className="page-body mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden p-4 sm:p-6 lg:p-8">
           {readOnly && (
             <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
               <Archive className="mt-0.5 h-4 w-4 shrink-0" />

@@ -303,8 +303,8 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
               <EmptyState title="Tidak ada hasil" description={`Tidak ditemukan anggota dengan kata kunci "${search}".`} />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <div className="table-scroll">
+              <table className="w-full min-w-[44rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <th className="px-5 py-3.5">Nama & Profil</th>

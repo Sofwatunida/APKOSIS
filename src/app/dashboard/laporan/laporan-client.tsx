@@ -1042,8 +1042,8 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               {searchHistory ? "Tidak ada laporan yang sesuai pencarian." : "Belum ada laporan."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="table-scroll">
+              <table className="w-full min-w-[44rem] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-xs uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                     <th className="px-5 py-3.5 font-semibold">Tanggal</th>

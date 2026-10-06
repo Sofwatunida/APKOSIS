@@ -1,19 +1,38 @@
-import type { ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
+import type { CSSProperties, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
 
-/** Pembungkus tabel: mencegah tabel keluar dari viewport. */
+/**
+ * Pembungkus tabel seragam untuk semua role.
+ *
+ * - `w-full min-w-0` menjaga wrapper tetap mengikuti lebar container sehingga
+ *   tabel tidak ikut melebar keluar viewport.
+ * - `overflow-x-auto` membuat tabel yang lebih lebar dari layar bisa digeser
+ *   horizontal (struktur kolom tetap utuh, tidak dipaksa mengecil).
+ * - `maxHeight` (opsional) mengaktifkan scroll vertikal bila isi tabel sangat
+ *   banyak baris, sehingga halaman utama tidak ikut memanjang.
+ * - `minWidth` adalah lebar minimum tabel: kolom tetap terbaca, teks tidak
+ *   turun satu huruf per baris.
+ */
 export function TableWrap({
   children,
   className = "",
   minWidth = 640,
+  maxHeight,
 }: {
   children: ReactNode;
   className?: string;
   minWidth?: number;
+  /** mis. "70vh" atau "600px" untuk mengaktifkan scroll vertikal */
+  maxHeight?: number | string;
 }) {
+  const tableStyle: CSSProperties = { minWidth };
+
   return (
-    <div className={`-mx-5 overflow-x-auto sm:mx-0 ${className}`}>
-      <div className="min-w-full px-5 sm:px-0" style={{ minWidth: 0 }}>
-        <table className="table-shell w-full" style={{ minWidth }}>
+    <div
+      className={`w-full min-w-0 overflow-x-auto ${maxHeight ? "overflow-y-auto" : ""} ${className}`}
+      style={maxHeight ? { maxHeight } : undefined}
+    >
+      <div className="min-w-full">
+        <table className="table-shell w-full" style={tableStyle}>
           {children}
         </table>
       </div>

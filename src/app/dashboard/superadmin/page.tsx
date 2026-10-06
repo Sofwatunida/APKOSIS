@@ -63,8 +63,8 @@ export default async function SuperAdminDashboard() {
       <Card>
         <CardHeader title="Ringkasan Periode" />
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="table-scroll">
+            <table className="w-full min-w-[30rem] text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="p-2 text-left">Periode</th>
