@@ -13,6 +13,7 @@ import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import { buildDivisiOptions } from "@/lib/divisi-options";
 import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
@@ -22,6 +23,8 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
+  // Khusus dropdown divisi: selalu lengkap "Divisi 01" .. "Divisi 20".
+  const [divisiSelect, setDivisiSelect] = useState<{ id: string; nama: string }[]>([]);
   const [filterDivisi, setFilterDivisi] = useState("all");
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
@@ -32,8 +35,12 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     async function init() {
-      const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
+      const { data: div } = await supabase
+        .from("divisi")
+        .select("id, nomor_divisi, nama_divisi")
+        .order("nomor_divisi");
       setDivisiOptions((div ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi })));
+      setDivisiSelect(buildDivisiOptions(div));
     }
     init();
   }, []);
@@ -127,7 +134,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
                 <option value="all">Semua Divisi</option>
-                {divisiOptions.map((d) => (
+                {divisiSelect.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
                   </option>

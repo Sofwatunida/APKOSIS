@@ -18,7 +18,7 @@ export default async function ProgramKerjaPage() {
       {scopedProfile.role === "division_admin" ? (
         <ProgramKerjaClient profile={scopedProfile} />
       ) : scopedProfile.role === "bendahara" ? (
-        <ProgramKerjaBendaharaClient profile={scopedProfile} />
+        <ProgramKerjaBendaharaClient profile={scopedProfile} mode="isi" />
       ) : (
         <ProgramKerjaReadOnly profile={scopedProfile} />
       )}

@@ -10,6 +10,7 @@ import {
   type KebutuhanDetail,
 } from "@/lib/kebutuhan";
 import { formatDate, todayISO } from "@/lib/date";
+import { buildDivisiOptions } from "@/lib/divisi-options";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -74,9 +75,12 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
 
       const { data: divisi } = await supabase
         .from("divisi")
-        .select("id, nama_divisi")
-        .order("nama_divisi", { ascending: true });
-      setDivisiOptions(divisi ?? []);
+        .select("id, nomor_divisi, nama_divisi")
+        .order("nomor_divisi", { ascending: true });
+      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
+      setDivisiOptions(
+        buildDivisiOptions(divisi).map((d) => ({ id: d.id, nama_divisi: d.nama }))
+      );
 
       // Kebutuhan yang sudah punya pengajuan dana (untuk mematikan tombol
       // "Ajukan Dana" dan mencegah pengajuan ganda).

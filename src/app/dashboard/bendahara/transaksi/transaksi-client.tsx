@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { usePeriode } from "@/lib/periode-context";
 import { saveSaldoAwal } from "@/lib/finance";
+import { buildDivisiOptions } from "@/lib/divisi-options";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
@@ -114,8 +115,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     async function init() {
-      const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
-      setDivisiOptions((div ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi })));
+      const { data: div } = await supabase
+        .from("divisi")
+        .select("id, nomor_divisi, nama_divisi")
+        .order("nomor_divisi");
+      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
+      setDivisiOptions(buildDivisiOptions(div));
       await loadSaldoAwal();
     }
     init();

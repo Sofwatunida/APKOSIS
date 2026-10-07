@@ -75,6 +75,11 @@ export const NAV_STRUCTURE: NavSection[] = [
         href: "/dashboard/admin/divisi",
         roles: ["admin"],
       },
+      {
+        label: "Kontrol Semua Program Kerja",
+        href: "/dashboard/admin/program-kerja",
+        roles: ["admin", "super_admin"],
+      },
     ],
   },
   {

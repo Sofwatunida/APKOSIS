@@ -13,6 +13,7 @@ import {
 } from "@/lib/pengajuan-dana";
 import { formatDate } from "@/lib/date";
 import { formatRupiah } from "@/lib/format";
+import { buildDivisiOptions } from "@/lib/divisi-options";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,9 +47,12 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
       setItems(rows);
       const { data: divisi } = await supabase
         .from("divisi")
-        .select("id, nama_divisi")
-        .order("nama_divisi", { ascending: true });
-      setDivisiOptions(divisi ?? []);
+        .select("id, nomor_divisi, nama_divisi")
+        .order("nomor_divisi", { ascending: true });
+      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
+      setDivisiOptions(
+        buildDivisiOptions(divisi).map((d) => ({ id: d.id, nama_divisi: d.nama }))
+      );
     } catch {
       error("Gagal memuat data pengajuan dana.");
     }

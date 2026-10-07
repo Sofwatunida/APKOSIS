@@ -32,7 +32,21 @@ interface DivisiOption {
   nama_divisi: string;
 }
 
-export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
+export function ProgramKerjaBendaharaClient({
+  profile,
+  mode = "isi",
+}: {
+  profile: Profile;
+  /**
+   * "isi" — hanya mengisi & mengunggah file (Bendahara):
+   *         tambah program/unggulan + unduh, tanpa ubah/hapus
+   *         dan tanpa catatan (kontrol semua divisi).
+   * "kontrol" — penuh: tambah, ubah, hapus, unduh, dan catatan
+   *             (Admin & Super Admin di /dashboard/admin/program-kerja).
+   */
+  mode?: "isi" | "kontrol";
+}) {
+  const canControl = mode === "kontrol";
   const supabase = createClient();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(true);
@@ -365,9 +379,13 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Program Kerja</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {canControl ? "Kontrol Semua Program Kerja" : "Program Kerja"}
+        </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)
+          {canControl
+            ? "Tambah, ubah, hapus, dan catat program kerja seluruh divisi"
+            : "Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)"}
         </p>
       </div>
 
@@ -451,30 +469,34 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                               Download File
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => openEditUnggulan(p)}
-                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!confirm(`Hapus program unggulan "${p.nama_program}"?`)) return;
-                              if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
-                              const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
-                              if (delErr) {
-                                error("Gagal menghapus program unggulan.");
-                                return;
-                              }
-                              success("Program unggulan dihapus.");
-                              load();
-                            }}
-                            className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
-                          >
-                            Hapus
-                          </button>
+                          {canControl && (
+                            <button
+                              type="button"
+                              onClick={() => openEditUnggulan(p)}
+                              className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {canControl && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!confirm(`Hapus program unggulan "${p.nama_program}"?`)) return;
+                                if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
+                                const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
+                                if (delErr) {
+                                  error("Gagal menghapus program unggulan.");
+                                  return;
+                                }
+                                success("Program unggulan dihapus.");
+                                load();
+                              }}
+                              className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+                            >
+                              Hapus
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -511,30 +533,34 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
                               Download File
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => openEdit(p)}
-                            className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!confirm(`Hapus "${p.nama_program}"?`)) return;
-                              if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
-                              const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
-                              if (delErr) {
-                                error("Gagal menghapus program kerja.");
-                                return;
-                              }
-                              success("Program kerja dihapus.");
-                              load();
-                            }}
-                            className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
-                          >
-                            Hapus
-                          </button>
+                          {canControl && (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(p)}
+                              className="rounded-lg border border-blue-400 bg-blue-50/70 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {canControl && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!confirm(`Hapus "${p.nama_program}"?`)) return;
+                                if (p.file_path) await supabase.storage.from("program-kerja").remove([p.file_path]);
+                                const { error: delErr } = await supabase.from("program_kerja").delete().eq("id", p.id);
+                                if (delErr) {
+                                  error("Gagal menghapus program kerja.");
+                                  return;
+                                }
+                                success("Program kerja dihapus.");
+                                load();
+                              }}
+                              className="rounded-lg border border-red-400 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+                            >
+                              Hapus
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -544,7 +570,9 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
             </CardContent>
           </Card>
 
-          {/* Catatan Program Belum Terlaksana */}
+          {/* Catatan Program Belum Terlaksana — hanya mode kontrol
+              (Admin/Super Admin). Bendahara hanya mengisi & upload file. */}
+          {canControl && (
           <Card>
             <CardHeader
               title="Catatan Program Belum Terlaksana"
@@ -613,6 +641,7 @@ export function ProgramKerjaBendaharaClient({ profile }: { profile: Profile }) {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Modal Tambah/Edit */}
           <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit Program Kerja" : "Tambah Program Kerja"}>

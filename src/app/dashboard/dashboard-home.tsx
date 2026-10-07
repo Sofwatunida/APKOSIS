@@ -298,7 +298,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
 
             {/* Keluar untuk role ketua/wakil divisi: tutup sesi divisi,
                 kembali ke pemilihan divisi. */}
-            <button
+            {/* <button
               type="button"
               onClick={handleKeluarDivisi}
               disabled={leaving}
@@ -307,7 +307,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
             >
               <LogOut className="h-4 w-4" />
               <span>{leaving ? "Keluar..." : "Keluar"}</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

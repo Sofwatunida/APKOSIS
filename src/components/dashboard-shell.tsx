@@ -135,10 +135,11 @@ function ShellInner({
     "-";
 
   const sidebarContent = (
-    <div className="sidebar-surface flex h-full flex-col justify-between">
-      <div>
+    <div className="sidebar-surface flex h-full flex-col overflow-hidden">
+      {/* Bagian atas: brand + menu navigasi (menu panjang discroll sendiri) */}
+      <div className="flex min-h-0 flex-1 flex-col">
         {/* Brand Header - identitas hanya tulisan "APKOSIS", tanpa logo/icon tambahan */}
-        <div className="flex h-16 items-center border-b border-slate-200/80 px-5 dark:border-slate-800/80">
+        <div className="flex h-16 shrink-0 items-center border-b border-slate-200/80 px-5 dark:border-slate-800/80">
           <Link href="/dashboard" className="group flex min-w-0 flex-col justify-center">
             <div className="flex items-center gap-2">
               <span className="sidebar-brand-text text-xl font-extrabold leading-none tracking-[-0.02em]">
@@ -154,11 +155,13 @@ function ShellInner({
           </Link>
         </div>
 
-        {/* Navigation Sections */}
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3.5 py-5">
+        {/* Navigation Sections — `min-h-0` + `flex-1` membuat nav benar-benar
+            bisa discroll saat menu banyak, tanpa mendorong kartu user di bawah
+            keluar layar. Antar kelompok menu diberi jarak (space-y-8). */}
+        <nav className="min-h-0 flex-1 space-y-8 overflow-y-auto px-3.5 py-5">
           {sections.map((section) => (
             <div key={section.title}>
-              <p className="sidebar-section-title mb-2 px-3 text-[11px] font-bold uppercase tracking-wider">
+              <p className="sidebar-section-title mb-2.5 px-3 text-[11px] font-bold uppercase tracking-wider">
                 {section.title}
               </p>
               <ul className="space-y-1">
@@ -192,8 +195,9 @@ function ShellInner({
         </nav>
       </div>
 
-      {/* User Info & Logout */}
-      <div className="border-t border-slate-200/80 p-3 dark:border-slate-800/80">
+      {/* User Info & Logout — `shrink-0` agar selalu menempel di dasar
+          sidebar (tidak ikut terdorong keluar layar saat menu panjang). */}
+      <div className="shrink-0 border-t border-slate-200/80 p-3 dark:border-slate-800/80">
         <div className="sidebar-user-card flex items-center gap-3 rounded-xl border p-2.5">
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-xs">
             {initials}
@@ -205,21 +209,30 @@ function ShellInner({
             </p>
             <p className="sidebar-subtle truncate text-[11px]">{ROLE_LABELS[role]}</p>
           </div>
-          <button
-            onClick={role === "division_admin" ? handleKeluarDivisi : handleLogout}
-            title={
-              role === "division_admin"
-                ? "Keluar & pilih divisi lain"
-                : "Keluar"
-            }
-            aria-label={
-              role === "division_admin" ? "Keluar & pilih divisi lain" : "Keluar"
-            }
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          {role === "division_admin" && (
+            <button
+              onClick={handleKeluarDivisi}
+              title="Keluar & pilih divisi lain"
+              aria-label="Keluar & pilih divisi lain"
+              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
         </div>
+
+        {/* Tombol Keluar di paling bawah untuk role selain ketua/wakil divisi
+            (Bendahara, Sekretaris, Monitoring, Admin, Super Admin). Memakai
+            sistem logout yang sama: hapus sesi divisi + signOut + ke /login. */}
+        {role !== "division_admin" && (
+          <button
+            onClick={handleLogout}
+            className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.99] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Keluar</span>
+          </button>
+        )}
       </div>
     </div>
   );

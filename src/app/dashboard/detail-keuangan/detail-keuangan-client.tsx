@@ -12,6 +12,7 @@ import {
   startOfMonthISO,
 } from "@/lib/date";
 import { parseBukti } from "@/lib/bukti";
+import { buildDivisiOptions } from "@/lib/divisi-options";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
@@ -31,11 +32,18 @@ import {
 
 type Periode = "bulanan" | "tahunan";
 
+/** Baris transaksi + nama divisi asal (dipakai saat "Semua Divisi"). */
+interface Row extends TransaksiKeuangan {
+  divisi: { nama_divisi: string } | null;
+}
+
 /**
- * Halaman "Detail Keuangan" per divisi.
+ * Halaman "Detail Keuangan" per divisi atau "Semua Divisi".
  *
  * Dibuka dari kartu/tabel rekap keuangan. Menampilkan rincian transaksi:
  * tanggal, jenis, sumber pemasukan / digunakan untuk, keterangan, bukti, nominal.
+ * Pilihan "Semua Divisi" menampilkan seluruh transaksi seluruh divisi
+ * (filter bulan/tahun tetap berlaku) lengkap dengan kolom divisi asal.
  * Kolom sumber & penggunaan dibuat nullable di database, jadi transaksi lama
  * yang belum punya rincian tetap tampil aman dengan tanda "-".
  */
@@ -54,6 +62,7 @@ export function DetailKeuanganClient({
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
+  const [optReady, setOptReady] = useState(false);
   const [divisiId, setDivisiId] = useState(initialDivisi);
   const [namaDivisi, setNamaDivisi] = useState("");
   const [periode, setPeriode] = useState<Periode>(
@@ -62,31 +71,38 @@ export function DetailKeuanganClient({
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
   const [filterJenis, setFilterJenis] = useState<"all" | "pemasukan" | "pengeluaran">("all");
-  const [rows, setRows] = useState<TransaksiKeuangan[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
+
+  /** "Semua Divisi" = tanpa filter divisi; seluruh data divisi ikut terhitung. */
+  const isSemuaDivisi = divisiId === "";
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from("divisi")
-        .select("id, nama_divisi")
+        .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi");
-      const list = (data ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi }));
-      setDivisiOptions(list);
+      // Selalu lengkap "Divisi 01" .. "Divisi 20" walau ada baris yang kurang.
+      const list = buildDivisiOptions(data);
+      setDivisiOptions(list.map((d) => ({ id: d.id, nama: d.nama })));
       if (!initialDivisi && list.length > 0) setDivisiId(list[0].id);
+      setOptReady(true);
     })();
   }, [initialDivisi]);
 
   useEffect(() => {
-    (async () => {
-      if (!divisiId) return;
-      setNamaDivisi(divisiOptions.find((d) => d.id === divisiId)?.nama ?? "");
-    })();
+    if (!divisiId) {
+      setNamaDivisi("Semua Divisi");
+      return;
+    }
+    setNamaDivisi(divisiOptions.find((d) => d.id === divisiId)?.nama ?? "");
   }, [divisiId, divisiOptions]);
 
   useEffect(() => {
     async function load() {
-      if (!divisiId) {
+      // Belum ada pilihan & daftar divisi belum siap: tunggu.
+      if (!divisiId && !optReady) {
         setLoading(false);
         return;
       }
@@ -95,20 +111,24 @@ export function DetailKeuanganClient({
       const start = periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`;
       const end = periode === "bulanan" ? endOfMonthISO(filterYear, filterMonth) : `${filterYear}-12-31`;
 
-      const { data } = await supabase
+      let query = supabase
         .from("transaksi_keuangan")
-        .select("*")
-        .eq("divisi_id", divisiId)
+        .select("*, divisi(nama_divisi)")
         .gte("tanggal", start)
         .lte("tanggal", end)
         .order("tanggal", { ascending: false })
         .order("created_at", { ascending: false });
 
-      setRows(data ?? []);
+      // "Semua Divisi" tidak memakai filter divisi_id — angka yang
+      // tampil adalah total data asli seluruh divisi pada periode ini.
+      if (!isSemuaDivisi) query = query.eq("divisi_id", divisiId);
+
+      const { data } = await query;
+      setRows((data ?? []) as Row[]);
       setLoading(false);
     }
     load();
-  }, [divisiId, periode, filterMonth, filterYear]);
+  }, [divisiId, optReady, periode, filterMonth, filterYear, isSemuaDivisi]);
 
   const total = useMemo(() => {
     let masuk = 0;
@@ -121,15 +141,33 @@ export function DetailKeuanganClient({
     return { masuk, keluar, saldo: masuk - keluar };
   }, [rows]);
 
+  /**
+   * Ringkasan per sumber: pemasukan, pengeluaran, dan netto-nya digabung.
+   * Satu label bisa dipakai untuk pemasukan maupun pengeluaran (mis. "Lainnya"),
+   * jadi dijumlahkan terpisah lalu dinilai netto = masuk − keluar.
+   * Bar "Arus Kas" memakai total |arus| = masuk + keluar.
+   */
   const perSumber = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { masuk: number; keluar: number }>();
     rows.forEach((t) => {
       const key =
         (t.jenis_transaksi === "pemasukan" ? t.sumber_pemasukan : t.digunakan_untuk) ??
         "(tidak diisi)";
-      map.set(key, (map.get(key) ?? 0) + (Number(t.nominal) || 0));
+      const cur = map.get(key) ?? { masuk: 0, keluar: 0 };
+      const n = Number(t.nominal) || 0;
+      if (t.jenis_transaksi === "pemasukan") cur.masuk += n;
+      else cur.keluar += n;
+      map.set(key, cur);
     });
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    return [...map.entries()]
+      .map(([label, v]) => ({
+        label,
+        masuk: v.masuk,
+        keluar: v.keluar,
+        netto: v.masuk - v.keluar,
+        arus: v.masuk + v.keluar,
+      }))
+      .sort((a, b) => b.arus - a.arus);
   }, [rows]);
 
   const filtered = useMemo(
@@ -174,15 +212,19 @@ export function DetailKeuanganClient({
           disabled={filtered.length === 0}
           columns={[
             { header: "Tanggal", key: "tanggal", width: 13 },
+            ...(isSemuaDivisi
+              ? [{ header: "Divisi", key: "divisi", width: 18 } as const]
+              : []),
             { header: "Jenis", key: "jenis", width: 13 },
             { header: "Sumber / Digunakan Untuk", key: "rincian", width: 22 },
             { header: "Keterangan", key: "keterangan", width: 32 },
-            { header: "Nominal", key: "nominal", width: 20, align: "right" },
+            { header: "Nominal", key: "nominal", width: 20, align: "right" as const },
           ]}
           rows={filtered.map((t) => {
             const { cleanKeterangan } = parseBukti(t.keterangan);
             return {
               tanggal: formatDate(t.tanggal),
+              divisi: t.divisi?.nama_divisi ?? "-",
               jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
               rincian: (t.jenis_transaksi === "pemasukan"
                 ? t.sumber_pemasukan
@@ -200,6 +242,7 @@ export function DetailKeuanganClient({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Divisi">
               <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
+                <option value="">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -274,30 +317,89 @@ export function DetailKeuanganClient({
         <Card>
           <CardHeader
             title="Komposisi Nominal"
-            subtitle="Dikelompokkan dari sumber pemasukan / digunakan untuk"
+            subtitle="Pemasukan & pengeluaran digabung per sumber — netto = pemasukan − pengeluaran"
           />
           <CardContent>
-            <div className="space-y-2">
-              {perSumber.map(([key, nilai]) => {
-                const basis = total.masuk + total.keluar || 1;
-                const pct = Math.round((nilai / basis) * 100);
-                return (
-                  <div key={key} className="flex items-center gap-3">
-                    <span className="w-44 shrink-0 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
-                      {key}
-                    </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-brand-500"
-                        style={{ width: `${pct}%` }}
-                      />
+            {/* overflow-x supaya kolom angka tidak saling menimpa di layar sempit */}
+            <div className="overflow-x-auto">
+              <div className="min-w-[720px] space-y-2">
+                <div className="flex items-center gap-3 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  <span className="w-44 shrink-0">Sumber</span>
+                  <span className="min-w-16 flex-1">Arus Kas</span>
+                  <span className="w-32 shrink-0 text-right">Masuk</span>
+                  <span className="w-32 shrink-0 text-right">Keluar</span>
+                  <span className="w-32 shrink-0 text-right">Netto</span>
+                </div>
+
+                {perSumber.map((item) => {
+                  const basis = total.masuk + total.keluar || 1;
+                  const pct = Math.round((item.arus / basis) * 100);
+                  return (
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-1 py-2 dark:border-slate-800 dark:bg-slate-900/40"
+                    >
+                      <span
+                        className="w-44 shrink-0 truncate text-xs font-medium text-slate-700 dark:text-slate-300"
+                        title={item.label}
+                      >
+                        {item.label}
+                      </span>
+                      <div className="h-2 min-w-16 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                        <div
+                          className="h-full rounded-full bg-brand-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-32 shrink-0 text-right text-[11px] tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {item.masuk > 0 ? `+${formatRupiah(item.masuk)}` : "-"}
+                      </span>
+                      <span className="w-32 shrink-0 text-right text-[11px] tabular-nums text-rose-600 dark:text-rose-400">
+                        {item.keluar > 0 ? `-${formatRupiah(item.keluar)}` : "-"}
+                      </span>
+                      <span
+                        className={`w-32 shrink-0 text-right text-[11px] font-bold tabular-nums ${
+                          item.netto >= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400"
+                        }`}
+                        title={
+                          item.netto >= 0
+                            ? "Pemasukan lebih besar dari pengeluaran"
+                            : "Pengeluaran lebih besar dari pemasukan"
+                        }
+                      >
+                        {formatRupiah(item.netto)}
+                      </span>
                     </div>
-                    <span className="w-32 shrink-0 text-right text-xs text-slate-500 dark:text-slate-400">
-                      {formatRupiah(nilai)} ({pct}%)
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+
+                <div className="flex items-center gap-3 border-t border-slate-200 px-1 pt-2 dark:border-slate-700">
+                  <span className="w-44 shrink-0 text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Total
+                  </span>
+                  <span className="min-w-16 flex-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    {perSumber.length} sumber · arus kas{" "}
+                    {formatRupiah(total.masuk + total.keluar)}
+                  </span>
+                  <span className="w-32 shrink-0 text-right text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    +{formatRupiah(total.masuk)}
+                  </span>
+                  <span className="w-32 shrink-0 text-right text-[11px] font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                    -{formatRupiah(total.keluar)}
+                  </span>
+                  <span
+                    className={`w-32 shrink-0 text-right text-[11px] font-bold tabular-nums ${
+                      total.saldo >= 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400"
+                    }`}
+                  >
+                    {formatRupiah(total.saldo)}
+                  </span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -340,14 +442,19 @@ export function DetailKeuanganClient({
             <div className="p-5 sm:p-6">
               <EmptyState
                 title="Belum ada transaksi"
-                description={`Tidak ada transaksi ${namaDivisi || "divisi"} pada ${labelPeriode}.`}
+                description={
+                  isSemuaDivisi
+                    ? `Tidak ada transaksi divisi mana pun pada ${labelPeriode}.`
+                    : `Tidak ada transaksi ${namaDivisi || "divisi"} pada ${labelPeriode}.`
+                }
               />
             </div>
           ) : (
-            <TableWrap minWidth={980}>
+            <TableWrap minWidth={isSemuaDivisi ? 1120 : 980}>
               <THead>
                 <tr>
                   <TH>Tanggal</TH>
+                  {isSemuaDivisi && <TH>Divisi</TH>}
                   <TH>Jenis</TH>
                   <TH>Sumber / Digunakan Untuk</TH>
                   <TH>Keterangan</TH>
@@ -367,6 +474,11 @@ export function DetailKeuanganClient({
                       <TD className="whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {formatDate(t.tanggal)}
                       </TD>
+                      {isSemuaDivisi && (
+                        <TD className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-300">
+                          {t.divisi?.nama_divisi ?? "-"}
+                        </TD>
+                      )}
                       <TD className="whitespace-nowrap">
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
                           {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}

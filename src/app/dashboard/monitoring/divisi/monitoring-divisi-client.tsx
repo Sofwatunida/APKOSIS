@@ -1,15 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Divisi } from "@/lib/types";
+import type { Profile, Divisi, AnggotaDivisi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { formatDate, todayISO } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { sortByJabatan } from "@/lib/jabatan";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/feedback";
+import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { Modal } from "@/components/ui/modal";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
+import { Eye } from "lucide-react";
+
+/** Baris anggota yang dibutuhkan tabel & modal "Lihat Anggota". */
+type AnggotaRow = Pick<AnggotaDivisi, "id" | "divisi_id" | "nama" | "jabatan" | "status">;
+
+/** Border seragam tiap sel: garis baris + kolom yang jelas. */
+const CELL =
+  "border-r border-b border-slate-200 whitespace-nowrap last:border-r-0 dark:border-slate-700/70";
 
 export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -17,6 +26,10 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
   const [divisiList, setDivisiList] = useState<
     Array<Divisi & { anggota: number; todayReport: boolean; lastReportDate: string | null; kendala: string; pemasukan: number; pengeluaran: number }>
   >([]);
+  // Anggota per divisi: dipakai untuk jumlah pada tabel DAN modal,
+  // sehingga angka jumlah selalu sama dengan daftar anggota (data asli).
+  const [memberMap, setMemberMap] = useState<Record<string, AnggotaRow[]>>({});
+  const [memberModal, setMemberModal] = useState<{ id: string; nama: string } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -43,10 +56,13 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
         }
       });
 
-      const { data: anggota } = await supabase.from("anggota_divisi").select("divisi_id, id");
-      const anggotaCount = new Map<string, number>();
+      // Satu query untuk jumlah sekaligus daftar anggota (baca saja).
+      const { data: anggota } = await supabase
+        .from("anggota_divisi")
+        .select("id, divisi_id, nama, jabatan, status");
+      const membersByDiv: Record<string, AnggotaRow[]> = {};
       (anggota ?? []).forEach((a) => {
-        anggotaCount.set(a.divisi_id, (anggotaCount.get(a.divisi_id) ?? 0) + 1);
+        (membersByDiv[a.divisi_id] ??= []).push(a);
       });
 
       const { data: kendala } = await supabase
@@ -79,7 +95,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
         const last = lastByDiv.get(d.id);
         return {
           ...d,
-          anggota: anggotaCount.get(d.id) ?? 0,
+          anggota: (membersByDiv[d.id] ?? []).length,
           todayReport: todaySet.has(d.id),
           lastReportDate: last?.tanggal ?? null,
           kendala: kendalaLatest.get(d.id) ?? "",
@@ -88,13 +104,17 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
         };
       });
 
+      setMemberMap(membersByDiv);
       setDivisiList(enriched);
       setLoading(false);
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <Spinner />;
+
+  const modalMembers = memberModal ? sortByJabatan(memberMap[memberModal.id] ?? []) : [];
 
   return (
     <div className="space-y-6">
@@ -130,46 +150,124 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
         />
       </div>
 
-      <div className="table-scroll">
-        <table className="w-full min-w-[1040px] text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700">
-              <th className="px-3 py-3">Divisi</th>
-              <th className="px-3 py-3">Ketua</th>
-              <th className="px-3 py-3">Wakil</th>
-              <th className="px-3 py-3">Anggota</th>
-              <th className="px-3 py-3">Laporan Hari Ini</th>
-              <th className="px-3 py-3">Laporan Terakhir</th>
-              <th className="px-3 py-3">Kendala Terbaru</th>
-              <th className="px-3 py-3 text-right">Saldo</th>
+      {/* Tabel per divisi: garis baris & kolom jelas, spasi rapi,
+          teks tidak tumpang tindih, dan geser horizontal bila lebar. */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+        <TableWrap minWidth={1240}>
+          <THead>
+            <tr>
+              <TH className={CELL}>Divisi</TH>
+              <TH className={CELL}>Ketua</TH>
+              <TH className={CELL}>Wakil</TH>
+              <TH className={CELL} align="center">Anggota</TH>
+              <TH className={CELL}>Laporan Hari Ini</TH>
+              <TH className={CELL}>Laporan Terakhir</TH>
+              <TH className={CELL}>Kendala Terbaru</TH>
+              <TH className={CELL} align="right">Saldo</TH>
+              <TH className={CELL} align="center">Aksi</TH>
             </tr>
-          </thead>
-          <tbody>
+          </THead>
+          <TBody>
             {divisiList.map((d) => (
-              <tr key={d.id} className="border-b border-slate-100 dark:border-slate-800">
-                <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-900 dark:text-white">{d.nama_divisi}</td>
-                <td className="whitespace-nowrap px-3 py-3">{d.ketua_divisi || "-"}</td>
-                <td className="whitespace-nowrap px-3 py-3">{d.wakil_divisi || "-"}</td>
-                <td className="whitespace-nowrap px-3 py-3">{d.anggota}</td>
-                <td className="whitespace-nowrap px-3 py-3">
+              <TR key={d.id}>
+                <TD className={`${CELL} font-medium text-slate-900 dark:text-white`}>
+                  {d.nama_divisi}
+                </TD>
+                <TD className={CELL}>{d.ketua_divisi || "-"}</TD>
+                <TD className={CELL}>{d.wakil_divisi || "-"}</TD>
+                <TD className={`${CELL} text-center font-semibold`} align="center">
+                  {d.anggota}
+                </TD>
+                <TD className={CELL}>
                   {d.todayReport ? (
                     <Badge color="green">Sudah Mengisi</Badge>
                   ) : (
                     <Badge color="red">Belum Mengisi</Badge>
                   )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3">
+                </TD>
+                <TD className={CELL}>
                   {d.lastReportDate ? formatDate(d.lastReportDate) : "-"}
-                </td>
-                <td className="max-w-[200px] truncate px-3 py-3">{d.kendala || "-"}</td>
-                <td className="whitespace-nowrap px-3 py-3 text-right font-medium">
+                </TD>
+                <TD className="border-r border-b border-slate-200 px-4 py-3 align-middle last:border-r-0 dark:border-slate-700/70">
+                  <span className="block w-[190px] truncate" title={d.kendala || undefined}>
+                    {d.kendala || "-"}
+                  </span>
+                </TD>
+                <TD className={`${CELL} text-right font-medium`} align="right">
                   {formatRupiah(d.pemasukan - d.pengeluaran)}
-                </td>
-              </tr>
+                </TD>
+                <TD className={`${CELL} text-center`} align="center">
+                  <button
+                    type="button"
+                    onClick={() => setMemberModal({ id: d.id, nama: d.nama_divisi })}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <Eye className="h-3 w-3 text-slate-400" />
+                    <span>Lihat Anggota</span>
+                  </button>
+                </TD>
+              </TR>
             ))}
-          </tbody>
-        </table>
+          </TBody>
+        </TableWrap>
       </div>
+
+      {/* Modal Anggota: hanya baca — tanpa ubah/hapus/ganti status.
+          Daftar & jumlah berasal dari baris `anggota_divisi` yang sama. */}
+      <Modal
+        open={memberModal !== null}
+        onClose={() => setMemberModal(null)}
+        title={memberModal ? `Anggota ${memberModal.nama}` : "Anggota Divisi"}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Data yang diisi ketua divisi. Total{" "}
+            <strong className="text-slate-800 dark:text-slate-200">
+              {modalMembers.length} anggota
+            </strong>{" "}
+            — tampilan baca saja.
+          </p>
+
+          {modalMembers.length === 0 ? (
+            <EmptyState
+              title="Belum ada anggota"
+              description="Ketua divisi ini belum mengisi data anggota."
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <TableWrap minWidth={520}>
+                <THead>
+                  <tr>
+                    <TH className={CELL}>Nama</TH>
+                    <TH className={CELL}>Jabatan / Posisi</TH>
+                    <TH className={CELL} align="center">Status</TH>
+                  </tr>
+                </THead>
+                <TBody>
+                  {modalMembers.map((a) => (
+                    <TR key={a.id}>
+                      <TD className={`${CELL} font-medium text-slate-900 dark:text-white`}>
+                        {a.nama}
+                      </TD>
+                      <TD className={CELL}>{a.jabatan || "-"}</TD>
+                      <TD className={CELL} align="center">
+                        <Badge color={a.status === "aktif" ? "green" : "slate"} dot>
+                          {a.status === "aktif"
+                            ? "Aktif"
+                            : a.status === "nonaktif"
+                              ? "Nonaktif"
+                              : a.status || "-"}
+                        </Badge>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </TableWrap>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
