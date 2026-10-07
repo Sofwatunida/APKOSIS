@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { clearDivisionTokenCookie } from "@/lib/division-session-client";
+import { endDivisionSessionAction } from "@/app/pilih-divisi/actions";
 import { PeriodeProvider } from "@/lib/periode-context";
 import { NAV_STRUCTURE } from "@/lib/nav";
 import type { PeriodeOption } from "@/lib/period";
@@ -91,6 +92,17 @@ function ShellInner({
     clearDivisionTokenCookie();
     await supabase.auth.signOut();
     router.push("/login");
+    router.refresh();
+  }
+
+  /**
+   * Keluar khusus role ketua/wakil divisi (division_admin): tutup sesi divisi
+   * lalu kembali ke /pilih-divisi supaya bisa memilih divisi lain.
+   * Akun tetap login, sehingga pindah divisi tidak perlu login ulang.
+   */
+  async function handleKeluarDivisi() {
+    await endDivisionSessionAction();
+    router.push("/pilih-divisi");
     router.refresh();
   }
 
@@ -194,9 +206,15 @@ function ShellInner({
             <p className="sidebar-subtle truncate text-[11px]">{ROLE_LABELS[role]}</p>
           </div>
           <button
-            onClick={handleLogout}
-            title="Keluar"
-            aria-label="Keluar"
+            onClick={role === "division_admin" ? handleKeluarDivisi : handleLogout}
+            title={
+              role === "division_admin"
+                ? "Keluar & pilih divisi lain"
+                : "Keluar"
+            }
+            aria-label={
+              role === "division_admin" ? "Keluar & pilih divisi lain" : "Keluar"
+            }
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400"
           >
             <LogOut className="h-4 w-4" />
@@ -260,13 +278,28 @@ function ShellInner({
               <span className="font-semibold text-slate-800 dark:text-slate-200">{ROLE_LABELS[role]}</span>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Logout</span>
-            </button>
+            {/* Tombol Keluar khusus ketua/wakil divisi: kembali ke
+                /pilih-divisi untuk memilih divisi lain. */}
+            {role === "division_admin" && (
+              <button
+                onClick={handleKeluarDivisi}
+                title="Keluar & pilih divisi lain"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Keluar</span>
+              </button>
+            )}
+
+            {role !== "division_admin" && (
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </header>
 

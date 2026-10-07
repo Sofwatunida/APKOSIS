@@ -42,7 +42,7 @@ export function Badge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${current.badge} ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${current.badge} ${className}`}
     >
       {dot && <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${current.dot}`} />}
       {children}

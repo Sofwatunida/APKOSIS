@@ -93,7 +93,7 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
                   {p.tahun_mulai}/{p.tahun_selesai}
                 </p>
               </TD>
-              <TD>{statusBadge(p.status)}</TD>
+              <TD className="whitespace-nowrap">{statusBadge(p.status)}</TD>
               <TD className="text-right tabular-nums">{p.jumlah_laporan}</TD>
               <TD className="text-right tabular-nums">{p.jumlah_transaksi}</TD>
               <TD className="text-right tabular-nums">{p.jumlah_anggota}</TD>

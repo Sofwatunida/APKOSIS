@@ -195,7 +195,7 @@ export function InventarisClient({ profile }: { profile: Profile }) {
                     <tr key={i.id} className="border-b border-slate-50 dark:border-slate-800">
                       <td className="px-3 py-2 font-medium">{i.nama_barang}</td>
                       <td className="px-3 py-2">{i.jumlah ?? "-"}</td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         <span className={`font-medium ${kondisiColor(i.kondisi ?? "")}`}>
                           {KONDISI_LABEL[i.kondisi ?? ""] ?? i.kondisi}
                         </span>

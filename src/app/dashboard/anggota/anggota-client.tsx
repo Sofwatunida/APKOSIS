@@ -339,7 +339,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="whitespace-nowrap px-5 py-3.5">
                           {a.jabatan ? (
                             <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                               <Briefcase className="h-3 w-3 text-slate-400" />
@@ -349,7 +349,7 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
                             <span className="text-xs text-slate-400">-</span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="whitespace-nowrap px-5 py-3.5">
                           <Badge color={a.status === "aktif" ? "green" : "slate"} dot>
                             {a.status === "aktif" ? "Aktif" : "Nonaktif"}
                           </Badge>

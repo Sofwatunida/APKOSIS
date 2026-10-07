@@ -131,7 +131,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
       </div>
 
       <div className="table-scroll">
-        <table className="w-full min-w-[900px] text-sm">
+        <table className="w-full min-w-[1040px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700">
               <th className="px-3 py-3">Divisi</th>
@@ -147,22 +147,22 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
           <tbody>
             {divisiList.map((d) => (
               <tr key={d.id} className="border-b border-slate-100 dark:border-slate-800">
-                <td className="px-3 py-3 font-medium text-slate-900 dark:text-white">{d.nama_divisi}</td>
-                <td className="px-3 py-3">{d.ketua_divisi || "-"}</td>
-                <td className="px-3 py-3">{d.wakil_divisi || "-"}</td>
-                <td className="px-3 py-3">{d.anggota}</td>
-                <td className="px-3 py-3">
+                <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-900 dark:text-white">{d.nama_divisi}</td>
+                <td className="whitespace-nowrap px-3 py-3">{d.ketua_divisi || "-"}</td>
+                <td className="whitespace-nowrap px-3 py-3">{d.wakil_divisi || "-"}</td>
+                <td className="whitespace-nowrap px-3 py-3">{d.anggota}</td>
+                <td className="whitespace-nowrap px-3 py-3">
                   {d.todayReport ? (
                     <Badge color="green">Sudah Mengisi</Badge>
                   ) : (
                     <Badge color="red">Belum Mengisi</Badge>
                   )}
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap">
+                <td className="whitespace-nowrap px-3 py-3">
                   {d.lastReportDate ? formatDate(d.lastReportDate) : "-"}
                 </td>
-                <td className="px-3 py-3 max-w-[200px] truncate">{d.kendala || "-"}</td>
-                <td className="px-3 py-3 text-right font-medium">
+                <td className="max-w-[200px] truncate px-3 py-3">{d.kendala || "-"}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-right font-medium">
                   {formatRupiah(d.pemasukan - d.pengeluaran)}
                 </td>
               </tr>

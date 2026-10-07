@@ -80,7 +80,7 @@ export default async function SuperAdminDashboard() {
                     <td className="p-2">
                       {p.tahunMulai}/{p.tahunSelesai}
                     </td>
-                    <td className="p-2">{periodBadge(p.status)}</td>
+                    <td className="whitespace-nowrap p-2">{periodBadge(p.status)}</td>
                     <td className="p-2">
                       <a
                         className="underline"

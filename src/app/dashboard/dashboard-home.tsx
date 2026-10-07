@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { endDivisionSessionAction } from "@/app/pilih-divisi/actions";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { Profile, Divisi, LaporanHarian, TransaksiKeuangan, KendalaSolusi } from "@/lib/types";
@@ -31,6 +33,7 @@ import {
   Eye,
   AlertCircle,
   Check,
+  LogOut,
 } from "lucide-react";
 
 export function DashboardHome({ profile }: { profile: Profile }) {
@@ -134,6 +137,21 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
   const [detailReport, setDetailReport] = useState<LaporanHarian | null>(null);
   const [detailKendala, setDetailKendala] = useState<KendalaSolusi[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const router = useRouter();
+
+  /**
+   * Tombol Keluar khusus role ketua/wakil divisi (division_admin).
+   * Menutup sesi divisi lalu kembali ke /pilih-divisi sehingga bisa
+   * memilih divisi lain tanpa harus keluar dari akun.
+   */
+  async function handleKeluarDivisi() {
+    setLeaving(true);
+    await endDivisionSessionAction();
+    setLeaving(false);
+    router.push("/pilih-divisi");
+    router.refresh();
+  }
 
   useEffect(() => {
     async function load() {
@@ -247,22 +265,23 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-6">
       {/* 2026 Modern Hero Banner
-            Semua elemen informasi divisi memakai skala putih/slate agar menyatu
-            dengan gradient gelap banner (tidak ada biru brand yang kontras). */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white shadow-elevated border border-white/10">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-1/3 h-32 w-32 rounded-full bg-slate-400/10 blur-2xl" />
+            Kartu identitas divisi (nama divisi, ketua, wakil) mengikuti tema:
+            terang = kartu putih bertekstur slate, gelap = gradient slate/indigo.
+            Warna teks selalu punya pasangan `dark:` supaya kontras di kedua mode. */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-brand-50/70 p-6 text-slate-900 shadow-elevated sm:p-8 dark:border-white/10 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 dark:text-white">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-brand-500/10 blur-3xl dark:bg-white/10" />
+        <div className="pointer-events-none absolute bottom-0 right-1/3 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl dark:bg-slate-400/10" />
 
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-slate-100 backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-slate-200" />
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md dark:border-white/15 dark:bg-white/10 dark:text-slate-100">
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-brand-500 dark:text-brand-300" />
               <span className="truncate">Divisi OSIS • Periode {periodeLabel}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
               {divisi?.nama_divisi ?? "Dashboard Divisi"}
             </h1>
-            <p className="mt-1 text-xs text-slate-300">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
               {divisi?.ketua_divisi ? `Ketua Divisi: ${divisi.ketua_divisi}` : "Ketua belum ditentukan"}
               {divisi?.wakil_divisi ? ` • Wakil: ${divisi.wakil_divisi}` : ""}
             </p>
@@ -271,11 +290,24 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
               href="/dashboard/laporan"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] dark:border-white/20 dark:bg-white dark:hover:bg-slate-100"
             >
               <Plus className="h-4 w-4 text-slate-500" />
               <span>{laporanToday ? "Buka Laporan Hari Ini" : "Buat Laporan Hari Ini"}</span>
             </Link>
+
+            {/* Keluar untuk role ketua/wakil divisi: tutup sesi divisi,
+                kembali ke pemilihan divisi. */}
+            <button
+              type="button"
+              onClick={handleKeluarDivisi}
+              disabled={leaving}
+              title="Keluar dari divisi ini dan pilih divisi lain"
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-600 shadow-sm transition hover:bg-rose-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>{leaving ? "Keluar..." : "Keluar"}</span>
+            </button>
           </div>
         </div>
       </div>

@@ -223,8 +223,8 @@ export function AccountsAdminClient({
                         <p className="font-medium">{a.nama}</p>
                         <p className="text-xs text-muted-foreground">{a.email}</p>
                       </TD>
-                      <TD>{roleBadge(a.role)}</TD>
-                      <TD>
+                      <TD className="whitespace-nowrap">{roleBadge(a.role)}</TD>
+                      <TD className="whitespace-nowrap">
                         {a.periodeId ? (
                           <span className="text-sm">{a.periodeNama}</span>
                         ) : (

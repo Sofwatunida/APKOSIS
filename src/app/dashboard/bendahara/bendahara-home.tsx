@@ -78,7 +78,7 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
                   {recent.map((t) => (
                     <tr key={t.id} className="border-b border-slate-50 dark:border-slate-800">
                       <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
                           {t.jenis_transaksi}
                         </Badge>

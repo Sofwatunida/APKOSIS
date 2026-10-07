@@ -76,6 +76,20 @@
   td, th {
     overflow-wrap: break-word;
   }
+
+  /* Elemen di dalam sel (span badge status, p keterangan, dll) cukup memakai
+     `break-word`. Bila tetap memakai `anywhere` dari selector span/p di atas,
+     lebar minimum sel menyusut sampai 1 huruf sehingga teks status turun
+     per huruf. Sisa lebar ditangani scroll horizontal tabel. */
+  td *, th * {
+    overflow-wrap: break-word;
+  }
+
+  /* Header tabel tidak boleh turun baris: bila ruang tidak cukup, tabel
+     digeser horizontal (.table-scroll / TableWrap), bukan teks dipecah. */
+  thead th {
+    white-space: nowrap;
+  }
 }
 
 @layer components {
