@@ -329,7 +329,7 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
           {filtered.length === 0 ? (
             <EmptyState
               title="Belum ada kebutuhan"
-              description="Kebutuhan yang dikirim divisi lewat Laporan Harian akan muncul di sini."
+              description="Kebutuhan yang dikirim divisi akan muncul di sini."
             />
           ) : (
             <TableWrap minWidth={1100}>

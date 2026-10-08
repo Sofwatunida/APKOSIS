@@ -7,8 +7,8 @@ import type { Kebutuhan, KebutuhanStatus } from "./types";
  * LOGIC KEBUTUHAN DIVISI
  * ==========================================================
  * Satu tabel `kebutuhan` dipakai bersama oleh dua pihak:
- *   - ROLE DIVISI  : membuat kebutuhan (dari Laporan Harian atau halaman
- *                    "Kebutuhan Divisi"), hanya bisa MELIHAT status.
+ *   - ROLE DIVISI  : membuat kebutuhan dari halaman "Kebutuhan Divisi",
+ *                    hanya bisa MELIHAT status.
  *   - ROLE BENDAHARA: membaca semua kebutuhan + mengubah `status`.
  *
  * Status memakai satu sumber kebenaran di kolom `kebutuhan.status`:

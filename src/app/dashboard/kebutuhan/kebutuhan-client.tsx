@@ -214,7 +214,7 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
           {items.length === 0 ? (
             <EmptyState
               title="Belum ada kebutuhan"
-              description="Tambahkan kebutuhan divisi Anda, atau ajukan lewat Laporan Harian."
+              description={'Tambahkan kebutuhan divisi Anda lewat tombol "+ Tambah Kebutuhan".'}
             />
           ) : (
             <TableWrap minWidth={860}>

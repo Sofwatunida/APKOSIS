@@ -228,7 +228,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Saldo Awal"
-          subtitle="Set saldo awal kas OSIS. Nilai konstan sampai di-edit kembali."
+          subtitle="Set saldo awal kas OSIS"
         />
         <CardContent>
           {!editingSaldo ? (

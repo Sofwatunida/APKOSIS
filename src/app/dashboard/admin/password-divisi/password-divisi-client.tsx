@@ -63,7 +63,7 @@ export function PasswordDivisiClient({
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [baruDisimpan, setBaruDisimpan] = useState<string | null>(null);
 
-function mintaKonfirmasi(row: DivisiPasswordRow) {
+  function mintaKonfirmasi(row: DivisiPasswordRow) {
     const value = values[row.id] ?? "";
 
     if (readOnly) {
@@ -138,8 +138,8 @@ function mintaKonfirmasi(row: DivisiPasswordRow) {
   const sudahDiatur = Object.values(status).filter((d) => d.hasPassword).length;
 
   return (
-    <div className="space-y-5">
-<PageHeader
+    <div className="space-y-6">
+      <PageHeader
         title="Pengaturan Password Divisi"
         description="Anda yang menentukan password setiap divisi. Password di-hash (bcrypt) di server sebelum disimpan dan tidak pernah ditampilkan kembali."
       />
@@ -166,7 +166,7 @@ function mintaKonfirmasi(row: DivisiPasswordRow) {
       <Card>
         <CardHeader
           title="Daftar Divisi"
-          subtitle="Isi password baru lalu tekan Simpan. Password yang sudah tersimpan tidak bisa dibaca kembali — catat atau bagikan langsung kepada=user divisi."
+          subtitle="Isi password baru lalu tekan Simpan. Password yang sudah tersimpan tidak bisa dibaca kembali — catat atau bagikan langsung kepada user divisi."
           icon={<KeyRound className="h-4 w-4" />}
         />
         <CardContent>
@@ -189,7 +189,7 @@ function mintaKonfirmasi(row: DivisiPasswordRow) {
                     key={row.id}
                     className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 lg:flex-row lg:items-center lg:gap-5"
                   >
-                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3 lg:justify-start">
+                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-900 dark:text-white">
                           {label(row.nomorDivisi)}

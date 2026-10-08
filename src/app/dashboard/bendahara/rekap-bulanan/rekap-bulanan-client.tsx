@@ -142,7 +142,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
             <p className={`mt-1 text-2xl font-bold ${saldoSekarang >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600 dark:text-red-400"}`}>
               {formatRupiah(saldoSekarang)}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Saldo Awal + Pemasukan - Pengeluaran</p>
+            <p className="mt-1 text-xs text-slate-400">git</p>
           </CardContent>
         </Card>
       </div>

@@ -65,28 +65,6 @@ export function validateTransaksi(input: {
   return errors;
 }
 
-/** Baris kebutuhan pada form laporan harian divisi. */
-export function validateKebutuhanRows(
-  rows: { nama_kebutuhan: string; jumlah: string }[]
-): Record<string, string> {
-  const errors: Record<string, string> = {};
-  const adaIsi = rows.some(
-    (r) => r.nama_kebutuhan.trim() || r.jumlah.trim() !== ""
-  );
-  if (!adaIsi) return errors;
-
-  rows.forEach((r, i) => {
-    if (!r.nama_kebutuhan.trim()) {
-      errors[`kebutuhan_${i}`] = "Nama kebutuhan wajib diisi.";
-      return;
-    }
-    if (r.jumlah !== "" && (isNaN(parseInt(r.jumlah)) || parseInt(r.jumlah) < 0)) {
-      errors[`kebutuhan_${i}`] = "Jumlah harus >= 0.";
-    }
-  });
-  return errors;
-}
-
 /** Form pengajuan dana (Admin Divisi / Bendahara). */
 export function validatePengajuanDana(input: {
   divisi_id: string;

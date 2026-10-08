@@ -1,8 +1,6 @@
 import { requireProfile, requireAdminAccess } from "@/lib/guard";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getPeriods } from "@/lib/period";
 import { AdminDivisiClient } from "./admin-divisi-client";
@@ -23,28 +21,33 @@ export default async function AdminDivisiPage() {
 
   return (
     <AppShell profile={profile}>
-      <PageHeader
-        title="Kelola Divisi Periode"
-        description="Siapkan divisi untuk periode yang sedang Anda kelola."
-      />
+      <div className="space-y-6">
+        <PageHeader
+          title="Kelola Divisi Periode"
+          description="Siapkan divisi untuk periode yang sedang Anda kelola."
+        />
 
-      <Card>
-        <CardHeader title="Daftar Divisi" />
-        <CardContent>
-          <AdminDivisiClient
-            divisi={(divisi ?? []).map((d) => ({
-              id: d.id,
-              nomorDivisi: d.nomor_divisi,
-              namaDivisi: d.nama_divisi,
-            }))}
-            periods={periods.map((p) => ({
-              id: p.id,
-              namaPeriode: p.namaPeriode,
-              status: p.status,
-            }))}
+        <Card>
+          <CardHeader
+            title="Daftar Divisi"
+            subtitle="Tentukan periode yang menaungi setiap divisi. Perubahan langsung tersimpan."
           />
-        </CardContent>
-      </Card>
+          <CardContent>
+            <AdminDivisiClient
+              divisi={(divisi ?? []).map((d) => ({
+                id: d.id,
+                nomorDivisi: d.nomor_divisi,
+                namaDivisi: d.nama_divisi,
+              }))}
+              periods={periods.map((p) => ({
+                id: p.id,
+                namaPeriode: p.namaPeriode,
+                status: p.status,
+              }))}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </AppShell>
   );
 }

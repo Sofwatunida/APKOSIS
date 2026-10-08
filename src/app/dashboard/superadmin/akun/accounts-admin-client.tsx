@@ -4,10 +4,14 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  CalendarRange,
   CheckCircle2,
+  Filter,
   KeyRound,
   Save,
   ShieldCheck,
+  UserCog,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,10 +70,26 @@ const ASSIGNABLE_ROLES: Role[] = [
   "sekretaris",
 ];
 
+/** Ikon kecil di dalam badge role supaya role mudah dikenali sekilas. */
 function roleBadge(role: string) {
-  if (role === "super_admin") return <Badge color="indigo">Super Admin</Badge>;
-  if (role === "admin") return <Badge color="blue">Admin Periode</Badge>;
-  if (role === "division_admin") return <Badge color="green">Admin Divisi</Badge>;
+  if (role === "super_admin")
+    return (
+      <Badge color="indigo">
+        <ShieldCheck className="h-3 w-3" /> Super Admin
+      </Badge>
+    );
+  if (role === "admin")
+    return (
+      <Badge color="blue">
+        <CalendarRange className="h-3 w-3" /> Admin Periode
+      </Badge>
+    );
+  if (role === "division_admin")
+    return (
+      <Badge color="green">
+        <UserCog className="h-3 w-3" /> Admin Divisi
+      </Badge>
+    );
   return <Badge color="slate">{ROLE_LABELS[role as Role] ?? role}</Badge>;
 }
 
@@ -179,7 +199,11 @@ export function AccountsAdminClient({
       </div>
 
       <Card>
-        <CardHeader title="Filter Periode" />
+        <CardHeader
+          title="Filter Periode"
+          subtitle="Sembunyikan akun dari periode lain tanpa mengubah data."
+          icon={<Filter className="h-5 w-5" />}
+        />
         <CardContent>
           <Field label="Tampilkan akun periode">
             <Select
@@ -198,7 +222,11 @@ export function AccountsAdminClient({
       </Card>
 
       <Card>
-        <CardHeader title={`Akun (${visible.length})`} />
+        <CardHeader
+          title={`Akun (${visible.length})`}
+          subtitle="Ubah role dan periode tugas tiap pengguna dari kolom Aksi."
+          icon={<Users className="h-5 w-5" />}
+        />
         <CardContent>
           {visible.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -284,6 +312,7 @@ export function AccountsAdminClient({
         <CardHeader
           title="Password Divisi"
           subtitle="Password di-hash (bcrypt) di server sebelum disimpan dan tidak pernah ditampilkan kembali."
+          icon={<KeyRound className="h-5 w-5" />}
         />
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">

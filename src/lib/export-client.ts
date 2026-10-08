@@ -271,35 +271,58 @@ const COLOR_HEADER_BORDER: RGB = [0.26, 0.22, 0.79]; // #4338ca
 const COLOR_TOTAL_BG: RGB = [0.94, 0.96, 1.0]; // #eef2ff
 
 function num(n: number): string {
-  return n.toFixed(2).replace(/\.?0+$/, "").replace(/\.$/, "");
+  const s = n.toFixed(2);
+  // "0.00" harus jadi "0", bukan string kosong (akan merusak operator PDF).
+  return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 }
+
+// Pemetaan karakter typographic Unicode -> ASCII aman.
+// Tanpa ini, tanda seperti – — " " ' ' … berubah jadi "?" (teks "gajelas").
+// Dipetakan ke ASCII (bukan byte WinAnsi 0x80-0x9F) supaya pasti tampil
+// benar di ALL PDF viewer dan teksnya tetap bisa dicari/disalin.
+const WINANSI_MAP: Record<string, string> = {
+  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-",
+  "\u2015": "-", "\u2212": "-",
+  "\u2018": "'", "\u2019": "'", "\u201A": "'",
+  "\u201C": '"', "\u201D": '"', "\u201E": '"',
+  "\u2026": "...", "\u2022": "-", "\u2023": "-",
+  "\u2039": "<", "\u203A": ">",
+  "\u20AC": "EUR", "\u2122": "(TM)", "\u00D7": "x",
+  "\u2219": "-",
+  "\u00A0": " ", "\u2007": " ", "\u2009": " ", "\u200B": "",
+  "\u00AD": "",
+};
 
 function escapePdfText(s: string): string {
   let out = "";
-  for (const ch of s) {
-    const code = ch.codePointAt(0) ?? 0;
-    if (code > 255) {
-      out += "?";
-      continue;
+  for (const raw of s) {
+    // Nilai map bisa multi-karakter ("...", "(TM)"), jadi escape per-karakter.
+    const mapped = WINANSI_MAP[raw] ?? raw;
+    for (const ch of mapped) {
+      const code = ch.codePointAt(0) ?? 0;
+      if (code > 255) {
+        out += "?";
+        continue;
+      }
+      if (code === 0x28) {
+        out += "\\(";
+        continue;
+      }
+      if (code === 0x29) {
+        out += "\\)";
+        continue;
+      }
+      if (code === 0x5c) {
+        out += "\\\\";
+        continue;
+      }
+      if (code === 0x0a || code === 0x0d) {
+        out += " ";
+        continue;
+      }
+      if (code < 32 || code === 127) continue;
+      out += ch;
     }
-    if (code === 0x28) {
-      out += "\\(";
-      continue;
-    }
-    if (code === 0x29) {
-      out += "\\)";
-      continue;
-    }
-    if (code === 0x5c) {
-      out += "\\\\";
-      continue;
-    }
-    if (code === 0x0a || code === 0x0d) {
-      out += " ";
-      continue;
-    }
-    if (code < 32 || code === 127) continue;
-    out += ch;
   }
   return out;
 }
@@ -457,49 +480,84 @@ function buildPdfBlob(input: ExportInput): Blob {
     drawHeaderRow();
   }
 
-  function rowValue(r: Record<string, unknown>, c: ExportColumn): string {
-    return cellValue(r, c.key);
-  }
-
-  input.rows.forEach((r) => {
-    const isTotal = Boolean((r as Record<string, unknown>).__total);
-    const wrapped = input.columns.map((c) =>
-      wrapText(rowValue(r, c), 9, widths[input.columns.indexOf(c)] - ROW_PAD_X * 2)
-    );
-    const lineCount = Math.max(...wrapped.map((l) => l.length), 1);
-    const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + 3;
-
-    ensureSpace(rowHeight);
-
+  // Gambar sebagian baris (from..from+count baris teks) mulai dari topY.
+  // Dipakai untuk memecah baris yang terlalu tinggi agar tidak terpotong
+  // tepi bawah halaman (yang membuat isi "hilang" dan halaman boros).
+  function drawRowChunk(
+    isTotal: boolean,
+    wrapped: string[][],
+    from: number,
+    count: number,
+    height: number
+  ) {
     input.columns.forEach((c, i) => {
       const x = MARGIN + widths.slice(0, i).reduce((a, b) => a + b, 0);
-      if (isTotal) fillRect(x, topY, widths[i], rowHeight, COLOR_TOTAL_BG);
-      strokeRect(x, topY, widths[i], rowHeight);
+      if (isTotal) fillRect(x, topY, widths[i], height, COLOR_TOTAL_BG);
+      strokeRect(x, topY, widths[i], height);
       const lines = wrapped[i];
-      lines.forEach((line, j) => {
+      for (let j = from; j < from + count; j++) {
+        if (j >= lines.length) break;
         drawText(
-          line,
+          lines[j],
           9,
           isTotal,
           x + ROW_PAD_X,
-          topY + ROW_PAD_TOP + j * ROW_LINE_H,
+          topY + ROW_PAD_TOP + (j - from) * ROW_LINE_H,
           COLOR_TEXT,
           widths[i] - ROW_PAD_X * 2,
           cellAlign(c)
         );
-      });
+      }
     });
+    topY += height;
+  }
 
-    topY += rowHeight;
+  const MAX_ROW_HEIGHT = PAGE_H - BOTTOM - (MARGIN + HEADER_H);
+
+  input.rows.forEach((r) => {
+    const isTotal = Boolean((r as Record<string, unknown>).__total);
+    const wrapped = input.columns.map((c, i) =>
+      wrapText(cellValue(r, c.key), 9, widths[i] - ROW_PAD_X * 2)
+    );
+    const lineCount = Math.max(...wrapped.map((l) => l.length), 1);
+    const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + 3;
+
+    // Baris normal: cukup pindah halaman bila tidak muat di sisa halaman.
+    if (rowHeight <= MAX_ROW_HEIGHT) {
+      ensureSpace(rowHeight);
+      drawRowChunk(isTotal, wrapped, 0, lineCount, rowHeight);
+      return;
+    }
+
+    // Baris "raksasa" (lebih tinggi dari satu halaman): pecah berkelanjutan
+    // di beberapa halaman. Header kolom diulang di tiap halaman lanjutan.
+    let from = 0;
+    while (from < lineCount) {
+      const room = PAGE_H - BOTTOM - topY - ROW_PAD_TOP - 3;
+      const fit = Math.floor(room / ROW_LINE_H);
+      if (fit < 2) {
+        beginPage();
+        drawHeaderRow();
+        continue;
+      }
+      const take = Math.min(fit, lineCount - from);
+      const h = take * ROW_LINE_H + ROW_PAD_TOP + 3;
+      drawRowChunk(isTotal, wrapped, from, take, h);
+      from += take;
+      if (from < lineCount) {
+        beginPage();
+        drawHeaderRow();
+      }
+    }
   });
 
   // ---------- assemble pdf ----------
   const objects: string[] = [];
 
   const f1 = objects.length + 1;
-  objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica>>");
+  objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>");
   const f2 = objects.length + 1;
-  objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold>>");
+  objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding>>");
 
   const pageCount = pages.length;
 

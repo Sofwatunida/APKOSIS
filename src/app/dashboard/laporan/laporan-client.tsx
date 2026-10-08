@@ -11,8 +11,6 @@ import type {
   KebutuhanStatus,
 } from "@/lib/types";
 import { formatDate, todayISO } from "@/lib/date";
-import { validateKebutuhanRows } from "@/lib/validation";
-import { isKebutuhanBaru, STATUS_KEBUTUHAN_LABEL } from "@/lib/kebutuhan";
 import { KebutuhanStatusBadge } from "@/components/kebutuhan-status-badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,25 +33,11 @@ import {
   X,
   Check,
   ShoppingBag,
-  Lock,
 } from "lucide-react";
 
 interface KendalaRow {
   kendala: string;
   solusi: string;
-}
-
-/**
- * Baris kebutuhan di dalam form laporan.
- * `id` terisi = data sudah tersimpan di tabel `kebutuhan`.
- * `status` hanya dibaca (tidak bisa diubah dari sisi divisi).
- */
-interface KebutuhanRow {
-  id?: string;
-  nama_kebutuhan: string;
-  jumlah: string;
-  keterangan: string;
-  status?: KebutuhanStatus;
 }
 
 const emptyForm = {
@@ -86,9 +70,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   // form state - starts empty
   const [form, setForm] = useState(emptyForm);
   const [kendalaRows, setKendalaRows] = useState<KendalaRow[]>([]);
-  // Kebutuhan dibuat dari laporan ini, otomatis tersimpan ke tabel `kebutuhan`
-  // sehingga tidak ada duplikasi antara "Laporan Harian" dan "Kebutuhan Divisi".
-  const [kebutuhanRows, setKebutuhanRows] = useState<KebutuhanRow[]>([]);
   const [editingReport, setEditingReport] = useState<LaporanHarian | null>(null);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -236,8 +217,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     if (!form.kegiatan_hari_ini.trim()) e.kegiatan_hari_ini = "Kegiatan wajib diisi.";
     if (!form.pelapor_id) e.pelapor_id = "Pilih nama pelapor.";
     if (!form.penerima_laporan) e.penerima_laporan = "Pilih penerima laporan.";
-    // Kebutuhan opsional, tapi bila diisi harus lengkap.
-    Object.assign(e, validateKebutuhanRows(kebutuhanRows));
     setFormErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -393,66 +372,12 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       }
     }
 
-    // Sinkronkan kebutuhan ke tabel `kebutuhan` (sumber data tunggal).
-    // - Baris baru      : insert dengan laporan_id + tanggal laporan.
-    // - Baris dihapus   : delete (hanya yang status masih "belum"; kalau sudah
-    //                     diproses Bendahara, DB akan menolak dan pesannya
-    //                     ditampilkan ke user).
-    // - `status` TIDAK pernah dikirim dari sini: hanya Bendahara yang boleh
-    //   mengubahnya (RLS + trigger).
-    if (targetReportId) {
-      const isi = kebutuhanRows.filter((r) => r.nama_kebutuhan.trim());
-
-      const existingIds = new Set(
-        kebutuhanRows.filter((r) => r.id).map((r) => r.id as string)
-      );
-      const { data: lama } = await supabase
-        .from("kebutuhan")
-        .select("id, nama_kebutuhan, status")
-        .eq("laporan_id", targetReportId);
-      const dihapus = (lama ?? []).filter((k) => !existingIds.has(k.id));
-
-      // Jalankan hapus per baris agar data yang sudah diproses tidak hilang diam-diam.
-      for (const k of dihapus) {
-        const { error: delErr } = await supabase
-          .from("kebutuhan")
-          .delete()
-          .eq("id", k.id);
-        if (delErr) {
-          success(
-            `Laporan tersimpan, tetapi kebutuhan "${k.nama_kebutuhan}" tidak bisa dihapus (sudah berstatus ${STATUS_KEBUTUHAN_LABEL[k.status as KebutuhanStatus] ?? k.status}).`
-          );
-        }
-      }
-
-      const baru = isi.filter((r) => !r.id);
-      if (baru.length > 0) {
-        const { error: insErr } = await supabase.from("kebutuhan").insert(
-          baru.map((r) => ({
-            divisi_id: divisiId,
-            laporan_id: targetReportId,
-            nama_kebutuhan: r.nama_kebutuhan.trim(),
-            jumlah: r.jumlah === "" ? null : parseInt(r.jumlah),
-            keterangan: r.keterangan.trim() || null,
-            tanggal: form.tanggal,
-            created_by: profile.id,
-          }))
-        );
-        if (insErr) {
-          setSaving(false);
-          error("Laporan tersimpan, tetapi gagal menyimpan kebutuhan: " + insErr.message);
-          return;
-        }
-      }
-    }
-
     setSaving(false);
     success(editingReport ? "Laporan berhasil diperbarui." : "Laporan berhasil disimpan.");
 
     // Clear form completely after save (Requirement 2)
     setForm(emptyForm);
     setKendalaRows([]);
-    setKebutuhanRows([]);
     setEditingReport(null);
     setFormErrors({});
 
@@ -471,21 +396,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       penerima_laporan: report.penerima_laporan ?? "",
     });
 
-    const { data: ks } = await supabase
-      .from("kebutuhan")
-      .select("*")
-      .eq("laporan_id", report.id)
-      .order("created_at", { ascending: true });
-    setKebutuhanRows(
-      (ks ?? []).map((k) => ({
-        id: k.id,
-        nama_kebutuhan: k.nama_kebutuhan,
-        jumlah: k.jumlah != null ? String(k.jumlah) : "",
-        keterangan: k.keterangan ?? "",
-        status: k.status,
-      }))
-    );
-
     const { data: ks2 } = await supabase
       .from("kendala_solusi")
       .select("*")
@@ -499,7 +409,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     setEditingReport(null);
     setForm(emptyForm);
     setKendalaRows([]);
-    setKebutuhanRows([]);
     setFormErrors({});
   }
 
@@ -796,115 +705,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 </div>
               )}
             </Field>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <Label>Kebutuhan Divisi (Opsional)</Label>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() =>
-                    setKebutuhanRows([
-                      ...kebutuhanRows,
-                      { nama_kebutuhan: "", jumlah: "", keterangan: "" },
-                    ])
-                  }
-                >
-                  + Tambah Kebutuhan
-                </Button>
-              </div>
-              <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                Kebutuhan yang diisi di sini otomatis tersimpan di{" "}
-                <strong>Kebutuhan Divisi</strong> dan langsung terlihat oleh
-                Bendahara. Statusnya nanti ditentukan Bendahara.
-              </p>
-              <div className="space-y-2">
-                {kebutuhanRows.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-400 dark:border-slate-700">
-                    Tidak ada kebutuhan pada laporan ini. Klik &quot;+ Tambah
-                    Kebutuhan&quot; bila divisi butuh dukungan dana/barang.
-                  </p>
-                ) : (
-                  kebutuhanRows.map((row, idx) => {
-                    const terkunci = Boolean(row.status && !isKebutuhanBaru(row.status));
-                    return (
-                      <div
-                        key={row.id ?? `baru-${idx}`}
-                        className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-700 dark:bg-slate-900/60"
-                      >
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_7rem_auto]">
-                          <Input
-                            placeholder="Nama kebutuhan (mis. Alat presentasi)"
-                            value={row.nama_kebutuhan}
-                            disabled={terkunci}
-                            onChange={(e) => {
-                              const next = [...kebutuhanRows];
-                              next[idx] = { ...next[idx], nama_kebutuhan: e.target.value };
-                              setKebutuhanRows(next);
-                            }}
-                          />
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Jumlah"
-                            value={row.jumlah}
-                            disabled={terkunci}
-                            onChange={(e) => {
-                              const next = [...kebutuhanRows];
-                              next[idx] = { ...next[idx], jumlah: e.target.value };
-                              setKebutuhanRows(next);
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setKebutuhanRows(kebutuhanRows.filter((_, i) => i !== idx))
-                            }
-                            className="shrink-0 rounded-lg border border-slate-300 px-2.5 text-slate-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:text-slate-400"
-                            title="Hapus baris kebutuhan"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <Input
-                            placeholder="Keterangan (opsional)"
-                            value={row.keterangan}
-                            disabled={terkunci}
-                            onChange={(e) => {
-                              const next = [...kebutuhanRows];
-                              next[idx] = { ...next[idx], keterangan: e.target.value };
-                              setKebutuhanRows(next);
-                            }}
-                            className="flex-1"
-                          />
-                          {row.status && (
-                            <span className="inline-flex items-center gap-1.5">
-                              {terkunci && (
-                                <Lock className="h-3 w-3 text-slate-400" aria-hidden />
-                              )}
-                              <KebutuhanStatusBadge status={row.status} />
-                            </span>
-                          )}
-                        </div>
-                        {formErrors[`kebutuhan_${idx}`] && (
-                          <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">
-                            {formErrors[`kebutuhan_${idx}`]}
-                          </p>
-                        )}
-                        {terkunci && (
-                          <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                            Kebutuhan ini sudah diproses Bendahara sehingga isinya
-                            dikunci. Hapus baris bila memang tidak diperlukan.
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
 
             <div>
               <div className="mb-2 flex items-center justify-between">
