@@ -238,3 +238,25 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Cetak area laporan (hanya aktif saat `body.print-report` dipasang oleh
+   tombol Cetak di halaman Cetak Laporan). Tidak memengaruhi halaman lain. */
+@media print {
+  body.print-report > * {
+    visibility: hidden;
+  }
+  body.print-report #report-print,
+  body.print-report #report-print * {
+    visibility: visible;
+  }
+  body.print-report #report-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 16px;
+  }
+  body.print-report .no-print {
+    display: none !important;
+  }
+}

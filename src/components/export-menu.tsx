@@ -8,6 +8,7 @@ import {
   type ExportColumn,
   type ExportFormat,
 } from "@/lib/export-client";
+import { DEFAULT_SCHOOL_KOP, type SchoolKop } from "@/lib/school-config";
 import { usePeriode } from "@/lib/periode-context";
 import {
   Download,
@@ -26,6 +27,8 @@ interface ExportMenuProps {
   filename?: string;
   disabled?: boolean;
   size?: "sm" | "md";
+  /** KOP surat; default memakai identitas sekolah dari `school-config`. */
+  kop?: SchoolKop;
 }
 
 const FORMATS: {
@@ -70,6 +73,7 @@ export function ExportMenu({
   filename,
   disabled,
   size = "sm",
+  kop = DEFAULT_SCHOOL_KOP,
 }: ExportMenuProps) {
   const { success, error } = useToast();
   // Phase 11: setiap file export harus menyebut periode asalnya supaya
@@ -106,6 +110,8 @@ export function ExportMenu({
           .join(" · "),
         columns,
         rows,
+        // KOP surat sekolah (bisa diganti lewat prop `kop`).
+        kop,
         // Nama file memuat periode agar tidak tertukar antar periode.
         filename: `${filename ?? title}-${periodeLabel.replace(/[^\w-]+/g, "-")}`,
       });

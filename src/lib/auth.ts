@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "./supabase/server";
+import { getImpersonation } from "./impersonation";
 import type { Profile } from "./types";
 
 export const getCurrentUser = cache(async () => {
@@ -10,7 +11,13 @@ export const getCurrentUser = cache(async () => {
   return user;
 });
 
-export const getProfile = cache(async (): Promise<Profile | null> => {
+/**
+ * Profil ASLI dari tabel `profiles` — tanpa overlay penyamaran.
+ *
+ * Dipakai audit log dan aksi Super Admin supaya identitas asli tidak
+ * pernah tertutup oleh Mode Penyamaran.
+ */
+export const getRealProfile = cache(async (): Promise<Profile | null> => {
   const user = await getCurrentUser();
 
   if (!user) return null;
@@ -49,4 +56,41 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     created_at: data.created_at,
     updated_at: data.updated_at,
   };
+});
+
+/**
+ * Profil yang dipakai seluruh aplikasi.
+ *
+ * Sama dengan `getRealProfile`, kecuali bila Mode Penyamaran aktif:
+ * role (dan divisi) ditimpa oleh pilihan Super Admin sehingga seluruh
+ * guard, sidebar, dan query melihat sistem sebagai role tujuan.
+ *
+ * PENJAGA KEAMANAN: overlay HANYA diterapkan bila profil asli adalah
+ * `super_admin`. Akun lain mengabaikan cookie penyamaran sepenuhnya,
+ * jadi tidak ada role yang bisa menaikkan hak aksesnya lewat cookie.
+ */
+export const getProfile = cache(async (): Promise<Profile | null> => {
+  const real = await getRealProfile();
+  if (!real || real.role !== "super_admin") return real;
+
+  const imp = await getImpersonation();
+  if (!imp) return real;
+
+  return {
+    ...real,
+    role: imp.role,
+    divisi_id: imp.role === "division_admin" ? imp.divisiId : real.divisi_id,
+  };
+});
+
+/**
+ * State penyamaran AKTIF, tapi hanya untuk akun Super Admin sungguhan.
+ *
+ * Mengembalikan null untuk semua non-super_admin sehingga cookie
+ * penyamaran buatan user lain tidak pernah dihormati.
+ */
+export const getActiveImpersonation = cache(async () => {
+  const real = await getRealProfile();
+  if (!real || real.role !== "super_admin") return null;
+  return getImpersonation();
 });

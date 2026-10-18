@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +9,7 @@ import { endDivisionSessionAction } from "@/app/pilih-divisi/actions";
 import { PeriodeProvider } from "@/lib/periode-context";
 import { NAV_STRUCTURE } from "@/lib/nav";
 import type { PeriodeOption } from "@/lib/period";
-import type { Profile } from "@/lib/types";
+import type { Profile, Role } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/role";
 import { ToastProvider, useToast } from "@/components/ui/toast";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,7 +37,12 @@ import {
   ShieldCheck,
   Settings2,
   Archive,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShieldAlert,
 } from "lucide-react";
+import { RealtimeClock } from "@/components/realtime-clock";
+import { stopImpersonationAction } from "@/app/dashboard/actions/impersonation-actions";
 
 function getNavIcon(href: string) {
   if (href === "/dashboard") return LayoutDashboard;
@@ -60,12 +65,20 @@ function getNavIcon(href: string) {
   return LayoutDashboard;
 }
 
+/** State Mode Penyamaran yang diteruskan dari server ke shell. */
+interface ImpersonationState {
+  role: Role;
+  divisiId: string | null;
+  startedAt: string;
+}
+
 function ShellInner({
   profile,
   periods,
   allPeriodsMode,
   readOnly,
   selectedPeriodId,
+  impersonation,
   children,
 }: {
   profile: Profile;
@@ -73,6 +86,7 @@ function ShellInner({
   allPeriodsMode: boolean;
   readOnly: boolean;
   selectedPeriodId: string | null;
+  impersonation: ImpersonationState | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -81,12 +95,58 @@ function ShellInner({
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Sidebar bisa diciutkan agar konten lebih lega. State disimpan di
+  // localStorage supaya konsisten antar halaman. Default: terbuka (expanded),
+  // sehingga tampilan role lain tidak berubah sama sekali.
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("apkosis-sidebar") === "collapsed") {
+        setCollapsed(true);
+      }
+    } catch {
+      /* localStorage tidak tersedia — abaikan. */
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        window.localStorage.setItem(
+          "apkosis-sidebar",
+          next ? "collapsed" : "expanded"
+        );
+      } catch {
+        /* abaikan */
+      }
+      return next;
+    });
+  }
+
   const role = profile.role ?? "division_admin";
 
   const sections = NAV_STRUCTURE.map((section) => ({
     ...section,
     items: section.items.filter((item) => item.roles.includes(role)),
   })).filter((section) => section.items.length > 0);
+
+  // Kumpulkan href semua menu yang terlihat untuk menentukan menu aktif.
+  const allHrefs = sections.flatMap((s) => s.items.map((i) => i.href));
+
+  /**
+   * Menu aktif = href paling spesifik (terpanjang) yang cocok dengan path
+   * saat ini. Tanpa ini, `/dashboard/superadmin/periode` membuat BOTH
+   * "Ringkasan Sistem" (`/dashboard/superadmin`) DAN "Kelola Periode"
+   * aktif sekaligus — menimbulkan menu ganda.
+   */
+  const activeHref = allHrefs
+    .filter((href) => {
+      if (href === "/dashboard") return pathname === "/dashboard";
+      return pathname === href || pathname.startsWith(href + "/");
+    })
+    .sort((a, b) => b.length - a.length)[0];
 
   async function handleLogout() {
     clearDivisionTokenCookie();
@@ -107,8 +167,12 @@ function ShellInner({
   }
 
   function isActive(href: string) {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
+    if (!activeHref) return href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
+    // Hindari highlight ganda: jika ada yang lebih spesifik, yang lain non-aktif.
+    if (href === "/dashboard" && activeHref === "/dashboard") return pathname === "/dashboard";
+    if (href !== "/dashboard" && activeHref.startsWith(href) && activeHref.length === href.length) return true;
+    if (href !== "/dashboard" && activeHref === href) return true;
+    return false;
   }
 
   // User initials
@@ -134,36 +198,49 @@ function ShellInner({
     periods[0]?.tahunMulai ??
     "-";
 
-  const sidebarContent = (
+  const buildSidebar = (v: boolean) => (
     <div className="sidebar-surface flex h-full flex-col overflow-hidden">
       {/* Bagian atas: brand + menu navigasi (menu panjang discroll sendiri) */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Brand Header - identitas hanya tulisan "APKOSIS", tanpa logo/icon tambahan */}
-        <div className="flex h-16 shrink-0 items-center border-b border-slate-200/80 px-5 dark:border-slate-800/80">
-          <Link href="/dashboard" className="group flex min-w-0 flex-col justify-center">
-            <div className="flex items-center gap-2">
-              <span className="sidebar-brand-text text-xl font-extrabold leading-none tracking-[-0.02em]">
-                APKOSIS
+        <div className={`flex h-16 shrink-0 items-center border-b border-slate-200/80 dark:border-slate-800/80 ${v ? "justify-center px-3" : "px-5"}`}>
+          <Link
+            href="/dashboard"
+            className={`group flex min-w-0 flex-col justify-center ${v ? "items-center" : ""}`}
+          >
+            {v ? (
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-indigo-600 text-sm font-extrabold text-white shadow-xs">
+                A
               </span>
-              <span className="rounded-md border border-brand-500/20 bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 dark:text-brand-400">
-                {activePeriodBadge}
-              </span>
-            </div>
-            <p className="sidebar-subtle mt-1 text-[10px] font-medium leading-none">
-              Portal Laporan OSIS
-            </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="sidebar-brand-text text-xl font-extrabold leading-none tracking-[-0.02em]">
+                    APKOSIS
+                  </span>
+                  <span className="rounded-md border border-brand-500/20 bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 dark:text-brand-400">
+                    {activePeriodBadge}
+                  </span>
+                </div>
+                <p className="sidebar-subtle mt-1 text-[10px] font-medium leading-none">
+                  Portal Laporan OSIS
+                </p>
+              </>
+            )}
           </Link>
         </div>
 
         {/* Navigation Sections — `min-h-0` + `flex-1` membuat nav benar-benar
             bisa discroll saat menu banyak, tanpa mendorong kartu user di bawah
             keluar layar. Antar kelompok menu diberi jarak (space-y-8). */}
-        <nav className="min-h-0 flex-1 space-y-8 overflow-y-auto px-3.5 py-5">
+        <nav className={`min-h-0 flex-1 overflow-y-auto py-5 ${v ? "space-y-2 px-2.5" : "space-y-8 px-3.5"}`}>
           {sections.map((section) => (
             <div key={section.title}>
-              <p className="sidebar-section-title mb-2.5 px-3 text-[11px] font-bold uppercase tracking-wider">
-                {section.title}
-              </p>
+              {!v && (
+                <p className="sidebar-section-title mb-2.5 px-3 text-[11px] font-bold uppercase tracking-wider">
+                  {section.title}
+                </p>
+              )}
               <ul className="space-y-1">
                 {section.items.map((item) => {
                   const IconComponent = getNavIcon(item.href);
@@ -172,10 +249,11 @@ function ShellInner({
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        title={v ? item.label : undefined}
                         onClick={() => setMobileOpen(false)}
-                        className={`group flex items-center gap-3 rounded-xl py-2.5 pl-3 pr-3 text-xs font-medium transition-all duration-150 ${
-                          active ? "sidebar-link-active font-semibold" : "sidebar-link"
-                        }`}
+                        className={`group flex items-center rounded-xl py-2.5 text-xs font-medium transition-all duration-150 ${
+                          v ? "justify-center px-2" : "gap-3 px-3"
+                        } ${active ? "sidebar-link-active font-semibold" : "sidebar-link"}`}
                       >
                         <IconComponent
                           className={`h-4 w-4 shrink-0 transition-colors ${
@@ -184,7 +262,7 @@ function ShellInner({
                               : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-200"
                           }`}
                         />
-                        <span className="truncate">{item.label}</span>
+                        {!v && <span className="truncate">{item.label}</span>}
                       </Link>
                     </li>
                   );
@@ -197,19 +275,21 @@ function ShellInner({
 
       {/* User Info & Logout — `shrink-0` agar selalu menempel di dasar
           sidebar (tidak ikut terdorong keluar layar saat menu panjang). */}
-      <div className="shrink-0 border-t border-slate-200/80 p-3 dark:border-slate-800/80">
-        <div className="sidebar-user-card flex items-center gap-3 rounded-xl border p-2.5">
+      <div className={`shrink-0 border-t border-slate-200/80 p-3 dark:border-slate-800/80 ${v ? "flex flex-col items-center gap-2" : ""}`}>
+        <div className={`sidebar-user-card flex items-center rounded-xl border p-2.5 ${v ? "justify-center gap-0" : "gap-3"}`}>
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-xs">
             {initials}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="sidebar-brand-text truncate text-xs font-semibold">
-              {displayName}
-            </p>
-            <p className="sidebar-subtle truncate text-[11px]">{ROLE_LABELS[role]}</p>
-          </div>
-          {role === "division_admin" && (
+          {!v && (
+            <div className="min-w-0 flex-1">
+              <p className="sidebar-brand-text truncate text-xs font-semibold">
+                {displayName}
+              </p>
+              <p className="sidebar-subtle truncate text-[11px]">{ROLE_LABELS[role]}</p>
+            </div>
+          )}
+          {!v && role === "division_admin" && !impersonation && (
             <button
               onClick={handleKeluarDivisi}
               title="Keluar & pilih divisi lain"
@@ -222,15 +302,18 @@ function ShellInner({
         </div>
 
         {/* Tombol Keluar di paling bawah untuk role selain ketua/wakil divisi
-            (Bendahara, Sekretaris, Monitoring, Admin, Super Admin). Memakai
-            sistem logout yang sama: hapus sesi divisi + signOut + ke /login. */}
-        {role !== "division_admin" && (
+            (Bendahara, Sekretaris, Monitoring, Admin, Super Admin) — dan juga
+            tampil saat Mode Penyamaran sebagai Admin Divisi, supaya footer
+            sidebar tetap punya tombol keluar. Memakai sistem logout yang
+            sama: hapus sesi divisi + signOut + ke /login. */}
+        {(role !== "division_admin" || impersonation) && (
           <button
             onClick={handleLogout}
-            className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.99] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.99] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20 ${v ? "mt-0 p-2" : "mt-2.5 px-3 py-2"}`}
+            title={v ? "Keluar" : undefined}
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span>Keluar</span>
+            {!v && <span>Keluar</span>}
           </button>
         )}
       </div>
@@ -240,8 +323,8 @@ function ShellInner({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r shadow-card lg:block dark:shadow-elevated">
-        {sidebarContent}
+      <aside className={`fixed inset-y-0 left-0 z-30 hidden lg:block transition-[width] duration-300 border-r shadow-card dark:shadow-elevated ${collapsed ? "w-16" : "w-64"}`}>
+        {buildSidebar(collapsed)}
       </aside>
 
       {/* Mobile Drawer */}
@@ -252,7 +335,7 @@ function ShellInner({
             onClick={() => setMobileOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 w-64 border-r shadow-2xl animate-slide-up">
-            {sidebarContent}
+            {buildSidebar(false)}
           </aside>
           <button
             onClick={() => setMobileOpen(false)}
@@ -265,9 +348,35 @@ function ShellInner({
       )}
 
       {/* Main Content Area */}
-      <div className="min-w-0 lg:pl-64">
-        {/* Sticky Top Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/85">
+      <div className={`min-w-0 transition-[padding-left] duration-300 ${collapsed ? "lg:pl-16" : "lg:pl-64"}`}>
+        {/* Sticky Top Header — banner Mode Penyamaran (jika aktif) ikut
+            menempel di atas, supaya indikator "MODE PENYAMARAN AKTIF"
+            selalu terlihat di setiap halaman. */}
+        <div className="sticky top-0 z-20">
+          {impersonation && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 bg-amber-50 px-4 py-2 lg:px-8 dark:border-amber-500/40 dark:bg-amber-950/70">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-xs">
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  Mode Penyamaran Aktif
+                </span>
+                <span className="text-amber-800 dark:text-amber-300">
+                  Anda sedang melihat sistem sebagai{" "}
+                  <strong>{ROLE_LABELS[impersonation.role]}</strong>
+                </span>
+              </div>
+              <form action={stopImpersonationAction}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-xs transition hover:bg-amber-100 active:scale-[0.98] dark:border-amber-500/50 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>Kembali ke Super Admin</span>
+                </button>
+              </form>
+            </div>
+          )}
+          <header className="flex h-16 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/85">
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
@@ -276,6 +385,14 @@ function ShellInner({
             >
               <Menu className="h-5 w-5" />
             </button>
+            <button
+              onClick={toggleCollapsed}
+              className="hidden rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:flex dark:text-slate-300 dark:hover:bg-slate-800"
+              aria-label="Tampilkan/sembunyikan sidebar"
+              title={collapsed ? "Perluas sidebar" : "Ciutkan sidebar"}
+            >
+              {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            </button>
             <div className="hidden min-w-0 items-center gap-2 text-xs text-slate-500 sm:flex dark:text-slate-400">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <span className="truncate">{formattedDate}</span>
@@ -283,6 +400,7 @@ function ShellInner({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {profile.role === "super_admin" && <RealtimeClock />}
             <PeriodePicker canSelectAllPeriods={profile.role === "super_admin"} />
             <ThemeToggle />
 
@@ -292,8 +410,9 @@ function ShellInner({
             </div>
 
             {/* Tombol Keluar khusus ketua/wakil divisi: kembali ke
-                /pilih-divisi untuk memilih divisi lain. */}
-            {role === "division_admin" && (
+                /pilih-divisi untuk memilih divisi lain. Disembunyikan saat
+                Mode Penyamaran — divisi tujuan sudah ditentukan cookie. */}
+            {role === "division_admin" && !impersonation && (
               <button
                 onClick={handleKeluarDivisi}
                 title="Keluar & pilih divisi lain"
@@ -304,7 +423,7 @@ function ShellInner({
               </button>
             )}
 
-            {role !== "division_admin" && (
+            {(role !== "division_admin" || impersonation) && (
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
@@ -314,7 +433,8 @@ function ShellInner({
               </button>
             )}
           </div>
-        </header>
+          </header>
+        </div>
 
         {/* Content Body
             `min-w-0` + `overflow-x-hidden` menjaga tabel/konten lebar tetap
@@ -346,6 +466,7 @@ export function DashboardShell({
   allPeriodsMode,
   readOnly,
   selectedPeriodId,
+  impersonation = null,
   children,
 }: {
   profile: Profile;
@@ -353,6 +474,7 @@ export function DashboardShell({
   allPeriodsMode: boolean;
   readOnly: boolean;
   selectedPeriodId: string | null;
+  impersonation?: ImpersonationState | null;
   children: React.ReactNode;
 }) {
   return (
@@ -375,6 +497,7 @@ export function DashboardShell({
           allPeriodsMode={allPeriodsMode}
           readOnly={readOnly}
           selectedPeriodId={selectedPeriodId}
+          impersonation={impersonation}
         >
           {children}
         </ShellInner>

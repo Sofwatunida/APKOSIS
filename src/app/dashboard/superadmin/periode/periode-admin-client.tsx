@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { activatePeriodeAction, archivePeriodeAction } from "../../actions/periode-actions";
@@ -28,6 +30,18 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
   const { success, error } = useToast();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const visible = useMemo(() => {
+    if (!debounced) return periods;
+    return periods.filter((p) => p.nama_periode.toLowerCase().includes(debounced));
+  }, [periods, debounced]);
 
   function activate(id: string, nama: string) {
     if (
@@ -73,6 +87,15 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
 
   return (
     <div className="space-y-4">
+      <div className="relative w-full max-w-xs">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari nama periode..."
+          className="pl-9"
+        />
+      </div>
       <TableWrap>
         <THead>
           <TR>
@@ -85,7 +108,7 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
           </TR>
         </THead>
         <TBody>
-          {periods.map((p) => (
+          {visible.map((p) => (
             <TR key={p.id}>
               <TD>
                 <p className="font-medium">{p.nama_periode}</p>
@@ -126,6 +149,13 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
               </TD>
             </TR>
           ))}
+          {visible.length === 0 && (
+            <TR>
+              <TD colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                Tidak ada periode yang cocok dengan pencarian.
+              </TD>
+            </TR>
+          )}
         </TBody>
       </TableWrap>
     </div>

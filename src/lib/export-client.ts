@@ -1,5 +1,7 @@
 "use client";
 
+import type { SchoolKop } from "./school-config";
+
 export interface ExportColumn {
   header: string;
   key: string;
@@ -13,6 +15,8 @@ export interface ExportInput {
   columns: ExportColumn[];
   rows: Record<string, unknown>[];
   filename: string;
+  /** KOP surat sekolah;opsional, dicetak di atas judul. */
+  kop?: SchoolKop;
 }
 
 export type ExportFormat = "pdf" | "doc" | "excel";
@@ -67,6 +71,27 @@ function todayLabel(): string {
   return `${date}, ${time}`;
 }
 
+/** Baris KOP yang tidak kosong (substansi, alamat, kontak). */
+interface KopLine {
+  text: string;
+  size: number;
+  bold: boolean;
+}
+
+function kopLines(kop?: SchoolKop): KopLine[] {
+  if (!kop) return [];
+  const lines: KopLine[] = [];
+  if (kop.namaSekolah?.trim())
+    lines.push({ text: kop.namaSekolah.trim(), size: 15, bold: true });
+  if (kop.substansi?.trim())
+    lines.push({ text: kop.substansi.trim(), size: 11, bold: false });
+  if (kop.alamat?.trim())
+    lines.push({ text: kop.alamat.trim(), size: 9.5, bold: false });
+  if (kop.kontak?.trim())
+    lines.push({ text: kop.kontak.trim(), size: 8.5, bold: false });
+  return lines;
+}
+
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -115,22 +140,48 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
     right: { style: "thin" as const, color: { argb: "FF4338CA" } },
   };
 
+  let rowIdx = 0;
+
+  // KOP surat (nama sekolah + alamat + kontak), bila dikonfigurasi.
+  const kop = kopLines(input.kop);
+  kop.forEach((line, i) => {
+    rowIdx += 1;
+    const r = ws.addRow([line.text]);
+    ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
+    const cell = r.getCell(1);
+    cell.font = { bold: line.bold, size: line.size, color: { argb: "FF0F172A" } };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    r.height = i === 0 ? 22 : 15;
+  });
+  if (kop.length > 0) {
+    rowIdx += 1;
+    // Garis pemisah KOP.
+    const rule = ws.addRow([""]);
+    ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
+    rule.getCell(1).border = {
+      bottom: { style: "medium", color: { argb: "FF0F172A" } },
+    };
+    rule.height = 6;
+  }
+
+  rowIdx += 1;
   const titleRow = ws.addRow([input.title]);
-  ws.mergeCells(1, 1, 1, input.columns.length);
+  ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
   const titleCell = titleRow.getCell(1);
   titleCell.font = { bold: true, size: 14 };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
   titleRow.height = 26;
 
-  let headerIndex = 2;
+  let headerIndex = rowIdx + 1;
   if (input.subtitle) {
+    rowIdx += 1;
     const subRow = ws.addRow([input.subtitle]);
-    ws.mergeCells(2, 1, 2, input.columns.length);
+    ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
     subRow.getCell(1).value = input.subtitle;
     subRow.getCell(1).font = { size: 10, italic: true, color: { argb: "FF64748B" } };
     subRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
     subRow.height = 16;
-    headerIndex = 3;
+    headerIndex = rowIdx + 1;
   }
 
   const headerRow = ws.addRow(input.columns.map((c) => c.header));
@@ -219,6 +270,18 @@ function buildDocBlob(input: ExportInput): Blob {
     ? `<p class="subtitle">${escapeHtml(input.subtitle)}</p>`
     : "";
 
+  const kopArr = kopLines(input.kop);
+  let kopHtml = "";
+  if (kopArr.length > 0) {
+    kopHtml = `<div class="kop">`;
+    kopArr.forEach((line) => {
+      kopHtml += `<p class="kop-line" style="font-size:${line.size}pt;font-weight:${
+        line.bold ? "bold" : "normal"
+      };margin:0;">${escapeHtml(line.text)}</p>`;
+    });
+    kopHtml += `</div><div class="kop-rule"></div>`;
+  }
+
   const doc = `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head>
@@ -231,12 +294,15 @@ function buildDocBlob(input: ExportInput): Blob {
   h1 { font-size: 16pt; text-align: center; margin: 0 0 4pt; }
   .subtitle { text-align: center; font-size: 10pt; color: #64748b; margin: 0 0 2pt; }
   .meta { text-align: center; font-size: 8.5pt; color: #94a3b8; margin: 0 0 12pt; }
+  .kop { text-align: center; margin: 0 0 2pt; }
+  .kop-rule { border-bottom: 2.5pt solid #0f172a; margin: 3pt 0 12pt; }
   table { border-collapse: collapse; width: 100%; table-layout: fixed; mso-table-layout-alt: fixed; }
   td, th { mso-padding-alt: 0in 0in 0in 0in; }
   tr.total td { font-weight: bold; background-color: #eef2ff; }
 </style>
 </head>
 <body>
+${kopHtml}
 <h1>${escapeHtml(input.title)}</h1>
 ${subtitleHtml}
 <p class="meta">Dicetak pada ${escapeHtml(todayLabel())}</p>
@@ -459,6 +525,18 @@ function buildPdfBlob(input: ExportInput): Blob {
     topY += HEADER_H;
   }
 
+  // KOP surat sekolah (nama + alamat + kontak), bila dikonfigurasi.
+  const kopArr = kopLines(input.kop);
+  if (kopArr.length > 0) {
+    kopArr.forEach((line) => {
+      drawText(line.text, line.size, line.bold, MARGIN, topY, COLOR_TEXT, CONTENT_W, "center");
+      topY += line.size + 4;
+    });
+    // Garis pemisah KOP.
+    fillRect(MARGIN, topY, CONTENT_W, 1.2, COLOR_TEXT);
+    topY += 12;
+  }
+
   drawText(input.title, 16, true, MARGIN, topY, COLOR_TEXT, CONTENT_W, "center");
   topY += 24;
   if (input.subtitle) {
@@ -614,8 +692,8 @@ function buildPdfBlob(input: ExportInput): Blob {
 /* -------------------------------- downloader -------------------------------- */
 
 export async function downloadExport(options: DownloadOptions): Promise<void> {
-  const { format, title, subtitle, columns, rows, filename } = options;
-  const input: ExportInput = { title, subtitle, columns, rows, filename };
+  const { format, title, subtitle, columns, rows, filename, kop } = options;
+  const input: ExportInput = { title, subtitle, columns, rows, filename, kop };
   const base = slugify(filename || title);
 
   let blob: Blob;

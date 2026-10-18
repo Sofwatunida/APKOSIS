@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, getProfile } from "@/lib/auth";
+import { getCurrentUser, getProfile, getActiveImpersonation } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getDivisionSession } from "@/lib/division-session";
 import { PilihDivisiClient } from "./pilih-divisi-client";
@@ -11,6 +11,9 @@ export default async function PilihDivisiPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
   if (profile.role !== "division_admin") redirect("/dashboard");
+  // Mode Penyamaran: divisi tujuan sudah ditentukan dari cookie, dan
+  // RPC sesi divisi menolak akun non-divisi — jadi kembali ke dashboard.
+  if (await getActiveImpersonation()) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: divisi } = await supabase

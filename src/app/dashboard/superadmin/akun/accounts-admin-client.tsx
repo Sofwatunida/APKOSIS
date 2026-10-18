@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   Filter,
   KeyRound,
   Save,
+  Search,
   ShieldCheck,
   UserCog,
   Users,
@@ -112,11 +113,31 @@ export function AccountsAdminClient({
   const { success, error } = useToast();
   const [pending, startTransition] = useTransition();
   const [periodeFilter, setPeriodeFilter] = useState(selectedPeriodeId);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce pencarian realtime (email / nama / role).
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const visible = useMemo(() => {
-    if (!periodeFilter) return accounts;
-    return accounts.filter((a) => a.periodeId === periodeFilter);
-  }, [accounts, periodeFilter]);
+    let list = accounts;
+    if (periodeFilter) list = list.filter((a) => a.periodeId === periodeFilter);
+    if (debouncedSearch) {
+      list = list.filter((a) => {
+        const roleLabel = (ROLE_LABELS[a.role as Role] ?? a.role).toLowerCase();
+        return (
+          a.email.toLowerCase().includes(debouncedSearch) ||
+          a.nama.toLowerCase().includes(debouncedSearch) ||
+          roleLabel.includes(debouncedSearch) ||
+          a.periodeNama.toLowerCase().includes(debouncedSearch)
+        );
+      });
+    }
+    return list;
+  }, [accounts, periodeFilter, debouncedSearch]);
 
   function run(action: () => Promise<{ ok: boolean; message: string }>) {
     startTransition(async () => {
@@ -200,46 +221,60 @@ export function AccountsAdminClient({
 
       <Card>
         <CardHeader
-          title="Filter Periode"
-          subtitle="Sembunyikan akun dari periode lain tanpa mengubah data."
+          title="Filter & Pencarian"
+          subtitle="Saring akun berdasarkan periode atau kata kunci (email, nama, role)."
           icon={<Filter className="h-5 w-5" />}
         />
         <CardContent>
-          <Field label="Tampilkan akun periode">
-            <Select
-              value={periodeFilter}
-              onChange={(e) => setPeriodeFilter(e.target.value)}
-            >
-              <option value="">Seluruh periode</option>
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.namaPeriode}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Tampilkan akun periode">
+              <Select
+                value={periodeFilter}
+                onChange={(e) => setPeriodeFilter(e.target.value)}
+              >
+                <option value="">Seluruh periode</option>
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.namaPeriode}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Cari akun">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Email, nama, atau role..."
+                  className="pl-9"
+                />
+              </div>
+            </Field>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader
           title={`Akun (${visible.length})`}
-          subtitle="Ubah role dan periode tugas tiap pengguna dari kolom Aksi."
+          subtitle="Ubah role dan periode tugas tiap pengguna langsung dari kolom ROLE dan PERIODE."
           icon={<Users className="h-5 w-5" />}
         />
         <CardContent>
           {visible.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Belum ada akun pada periode ini.
+              {debouncedSearch || periodeFilter
+                ? "Tidak ada akun yang cocok dengan filter."
+                : "Belum ada akun pada periode ini."}
             </p>
           ) : (
-            <TableWrap>
+            <TableWrap minWidth={720}>
               <THead>
                 <TR>
                   <TH>Pengguna</TH>
                   <TH>Role</TH>
                   <TH>Periode Ditugaskan</TH>
-                  <TH className="text-right">Aksi</TH>
                 </TR>
               </THead>
               <TBody>
@@ -251,25 +286,16 @@ export function AccountsAdminClient({
                         <p className="font-medium">{a.nama}</p>
                         <p className="text-xs text-muted-foreground">{a.email}</p>
                       </TD>
-                      <TD className="whitespace-nowrap">{roleBadge(a.role)}</TD>
                       <TD className="whitespace-nowrap">
-                        {a.periodeId ? (
-                          <span className="text-sm">{a.periodeNama}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            Belum ditugaskan
-                          </span>
-                        )}
-                      </TD>
-                      <TD className="text-right">
-                        {isSelf ? (
-                          <span className="text-xs text-muted-foreground">
-                            Akun Anda sendiri
-                          </span>
-                        ) : (
-                          <div className="flex flex-wrap justify-end gap-2">
+                        <div className="flex flex-col gap-1.5">
+                          {roleBadge(a.role)}
+                          {isSelf ? (
+                            <span className="text-[11px] text-muted-foreground">
+                              Akun Anda sendiri
+                            </span>
+                          ) : (
                             <Select
-                              className="w-auto"
+                              className="w-auto min-w-36"
                               value={a.role}
                               disabled={pending}
                               onChange={(e) => handleRole(a.id, e.target.value)}
@@ -283,8 +309,21 @@ export function AccountsAdminClient({
                                 </option>
                               ))}
                             </Select>
+                          )}
+                        </div>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        <div className="flex flex-col gap-1.5">
+                          {a.periodeId ? (
+                            <span className="text-sm">{a.periodeNama}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Belum ditugaskan
+                            </span>
+                          )}
+                          {!isSelf && (
                             <Select
-                              className="w-auto"
+                              className="w-auto min-w-36"
                               value={a.periodeId}
                               disabled={pending}
                               onChange={(e) => handleAssign(a.id, e.target.value)}
@@ -296,8 +335,8 @@ export function AccountsAdminClient({
                                 </option>
                               ))}
                             </Select>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </TD>
                     </TR>
                   );

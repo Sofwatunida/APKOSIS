@@ -800,6 +800,51 @@ Relationships: [
           }
         ];
       };
+      audit_logs: {
+        Row: {
+          id: string;
+          actor_id: string | null;
+          actor_email: string | null;
+          actor_role: string | null;
+          action: string;
+          target_type: string | null;
+          target_id: string | null;
+          detail: string | null;
+          success: boolean;
+          ip: string | null;
+          device: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id?: string | null;
+          actor_email?: string | null;
+          actor_role?: string | null;
+          action: string;
+          target_type?: string | null;
+          target_id?: string | null;
+          detail?: string | null;
+          success?: boolean;
+          ip?: string | null;
+          device?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor_id?: string | null;
+          actor_email?: string | null;
+          actor_role?: string | null;
+          action?: string;
+          target_type?: string | null;
+          target_id?: string | null;
+          detail?: string | null;
+          success?: boolean;
+          ip?: string | null;
+          device?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {
@@ -974,6 +1019,18 @@ Relationships: [
       admin_divisi_set_period: {
         Args: { p_divisi_id: string; p_periode_id: string | null };
         Returns: undefined;
+      };
+      admin_divisi_create: {
+        Args: { p_nomor: number; p_nama: string; p_periode_id?: string | null };
+        Returns: string;
+      };
+      admin_reset_periode_data: {
+        Args: { p_periode_id: string };
+        Returns: Json;
+      };
+      admin_restore_backup: {
+        Args: { p_payload: Json };
+        Returns: Json;
       };
     };
     Enums: {};

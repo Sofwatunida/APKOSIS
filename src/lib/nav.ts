@@ -59,6 +59,21 @@ export const NAV_STRUCTURE: NavSection[] = [
         href: "/dashboard/superadmin/divisi",
         roles: ["super_admin"],
       },
+      {
+        label: "Log Aktivitas",
+        href: "/dashboard/superadmin/audit",
+        roles: ["super_admin"],
+      },
+      {
+        label: "Cetak Laporan",
+        href: "/dashboard/superadmin/laporan",
+        roles: ["super_admin"],
+      },
+      {
+        label: "Backup & Reset",
+        href: "/dashboard/superadmin/backup",
+        roles: ["super_admin"],
+      },
     ],
   },
   {

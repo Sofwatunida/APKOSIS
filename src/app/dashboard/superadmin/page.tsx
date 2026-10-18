@@ -5,6 +5,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { getPeriodeContext } from "@/lib/period";
 import { ALL_PERIODS_VALUE } from "@/lib/period-constants";
+import { createClient } from "@/lib/supabase/server";
+import { PenyamaranClient } from "./penyamaran-client";
 import {
   AlertTriangle,
   Archive,
@@ -29,6 +31,17 @@ export default async function SuperAdminDashboard() {
 
   const archived = ctx.options.filter((p) => p.status === "archived").length;
   const upcoming = ctx.options.filter((p) => p.status !== "active").length;
+
+  // Daftar divisi untuk formulir Mode Penyamaran (Admin Divisi).
+  const supabase = await createClient();
+  const { data: divisiRows } = await supabase
+    .from("divisi")
+    .select("id, nomor_divisi, nama_divisi")
+    .order("nomor_divisi", { ascending: true });
+  const divisiOptions = (divisiRows ?? []).map((d) => ({
+    id: d.id,
+    label: `${d.nomor_divisi} — ${d.nama_divisi}`,
+  }));
 
   return (
     <AppShell profile={profile}>
@@ -133,6 +146,10 @@ export default async function SuperAdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Mode Penyamaran — panel khusus Super Admin untuk melihat
+            sistem dari sudut pandang role lain. */}
+        <PenyamaranClient divisi={divisiOptions} />
 
         <Card>
           <CardHeader

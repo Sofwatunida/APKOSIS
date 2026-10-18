@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, getProfile } from "@/lib/auth";
+import { getCurrentUser, getProfile, getActiveImpersonation } from "@/lib/auth";
 import {
   getDivisionSession,
   withActiveDivisi,
@@ -20,8 +20,14 @@ export default async function DashboardPage() {
   if (profile.role === "admin") redirect("/dashboard/admin");
 
   if (profile.role === "division_admin") {
-    const session = await getDivisionSession();
-    if (!session) redirect("/pilih-divisi");
+    // Saat Mode Penyamaran, divisi tujuan sudah ditentukan lewat cookie
+    // sehingga tidak perlu memilih divisi (Super Admin tidak punya
+    // token sesi divisi).
+    const impersonating = await getActiveImpersonation();
+    if (!impersonating) {
+      const session = await getDivisionSession();
+      if (!session) redirect("/pilih-divisi");
+    }
   }
 
   const scopedProfile = await withActiveDivisi(profile);

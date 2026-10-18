@@ -2,7 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
-import { getProfile } from "./auth";
+import { getProfile, getActiveImpersonation } from "./auth";
 import type { Profile } from "./types";
 import {
   DIVISI_TOKEN_COOKIE,
@@ -39,6 +39,10 @@ export const getDivisionSession = cache(
 export const requireDivisionSelection = cache(async (): Promise<void> => {
   const profile = await getProfile();
   if (!profile || profile.role !== "division_admin") return;
+  // Mode Penyamaran: Super Admin sudah menentukan divisi tujuan lewat
+  // cookie, jadi tidak perlu memilih divisi (dan tidak punya token
+  // sesi divisi yang diminta RPC).
+  if (await getActiveImpersonation()) return;
   const session = await getDivisionSession();
   if (!session) redirect("/pilih-divisi");
 });

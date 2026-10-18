@@ -1,0 +1,970 @@
+MASTER PROMPT — PERBAIKAN & PENGEMBANGAN SUPER ADMIN APKOSIS
+
+Saya sedang mengembangkan aplikasi APKOSIS (Aplikasi Laporan Harian OSIS).
+
+TUGAS INI HANYA UNTUK ROLE SUPER ADMIN.
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+⚠️ JANGAN OTAK-ATIK ROLE LAIN SEDIKITPUN.
+
+Role yang TIDAK BOLEH berubah:
+- Admin Periode
+- Monitoring
+- Bendahara
+- Sekretaris
+- Division Admin / Admin Divisi
+- Ketua Divisi
+- Wakil Divisi
+- role lain yang sudah ada
+
+Jangan mengubah:
+- permission role lain
+- route role lain
+- tampilan dashboard role lain
+- workflow role lain
+- query/data yang digunakan role lain
+- fitur monitoring
+- fitur bendahara
+- fitur sekretaris
+- fitur laporan divisi
+- sistem pengajuan dana
+- sistem laporan harian
+- sistem keuangan yang sudah berjalan
+
+Jika membutuhkan perubahan database, API, service, middleware, atau component yang digunakan bersama oleh beberapa role, pastikan perubahan tersebut TIDAK mengubah perilaku role lain.
+
+Prioritaskan membuat logic/component khusus Super Admin jika memungkinkan.
+
+Sebelum coding:
+1. Periksa struktur project.
+2. Identifikasi route Super Admin.
+3. Identifikasi layout/sidebar Super Admin.
+4. Identifikasi middleware/auth/authorization.
+5. Identifikasi tabel database yang berkaitan dengan user, role, periode, divisi, laporan, keuangan, dan aktivitas.
+6. Identifikasi fitur yang sudah berjalan.
+7. Jangan menghapus fitur lama yang masih digunakan.
+8. Jangan membuat data dummy yang merusak data asli.
+9. Jangan mengubah desain utama APKOSIS secara drastis.
+
+Gunakan desain yang sudah ada sebagai dasar.
+
+Referensi tampilan Super Admin saat ini adalah screenshot yang saya berikan.
+
+==================================================
+1. SIDEBAR SUPER ADMIN
+==================================================
+
+Perbaiki sidebar Super Admin.
+
+Kebutuhan:
+
+- Sidebar harus bisa:
+  - dibuka
+  - disembunyikan/collapse
+  - ditampilkan kembali
+- Saat sidebar disembunyikan, area konten harus otomatis melebar.
+- Jangan membuat sidebar menutupi konten secara tidak rapi.
+- Tambahkan tombol/menu toggle yang jelas.
+- State sidebar harus konsisten ketika berpindah halaman.
+- Tampilan desktop harus tetap nyaman.
+- Pastikan responsive.
+
+Jangan mengubah sidebar role lain.
+
+==================================================
+2. JAM REALTIME
+==================================================
+
+Tambahkan jam realtime pada header Super Admin.
+
+Posisi:
+- di sekitar area "Periode Aktif"
+- jangan mengganggu dropdown periode
+- jangan membuat header terlalu penuh
+
+Tampilkan:
+- jam realtime
+- format jam Indonesia, misalnya:
+  12:05:32
+- jika memungkinkan tambahkan WIB
+- tanggal tetap ditampilkan sesuai desain sekarang
+
+Jam harus:
+- berjalan realtime
+- update otomatis setiap detik
+- tidak membutuhkan reload halaman
+- menggunakan waktu client/browser secara aman
+
+Contoh:
+
+Sabtu, 17 Oktober 2026
+12:05:32 WIB
+
+2026/2027 (Aktif)
+Periode Aktif: 2026/2027
+
+==================================================
+3. PERBAIKI TATA LETAK
+==================================================
+
+Tampilan halaman Super Admin saat ini terlalu banyak whitespace dan jarak antar elemen terlalu jauh.
+
+Perbaiki spacing/layout agar:
+- lebih compact
+- lebih profesional
+- informasi lebih banyak terlihat dalam satu layar
+- tabel tidak terlalu renggang
+- card tidak terlalu tinggi
+- header tidak terlalu besar
+- padding dan margin lebih proporsional
+
+Jangan membuat tampilan terlalu padat.
+
+Gunakan prinsip:
+- clean
+- modern
+- compact
+- mudah dibaca
+- profesional
+- tetap konsisten dengan desain APKOSIS
+
+Jangan mengubah identitas visual APKOSIS secara total.
+
+==================================================
+4. PERBAIKI HALAMAN KELOLA AKUN
+==================================================
+
+Saat ini terdapat:
+
+PENGGUNA | ROLE | PERIODE DITUGASKAN | AKSI
+
+dan dropdown berada di kolom AKSI.
+
+UBAH menjadi:
+
+PENGGUNA | ROLE | PERIODE DITUGASKAN
+
+HAPUS kolom "AKSI".
+
+Dropdown langsung ditempatkan pada kolom masing-masing.
+
+Contoh:
+
+PENGGUNA
+admin.apkosis@gmail.com
+
+ROLE
+[ Admin Periode ▼ ]
+
+PERIODE DITUGASKAN
+[ 2026/2027 ▼ ]
+
+Jadi:
+- dropdown role berada langsung di kolom ROLE
+- dropdown periode berada langsung di kolom PERIODE DITUGASKAN
+- tidak ada kolom AKSI
+
+Perubahan role/periode tetap tersimpan ke database.
+
+Tambahkan konfirmasi sebelum perubahan penting jika diperlukan.
+
+Jangan mengubah sistem role selain yang dapat dikelola Super Admin.
+
+==================================================
+5. FITUR PENCARIAN
+==================================================
+
+Tambahkan search pada halaman Super Admin yang relevan, terutama:
+
+- Kelola Akun
+- Kelola Divisi
+- Kelola Periode
+- Log Aktivitas
+- Backup/Restore jika memiliki daftar data
+
+Search harus dapat mencari berdasarkan data yang relevan.
+
+Contoh Kelola Akun:
+- email
+- nama pengguna
+- role
+
+Contoh Kelola Divisi:
+- nama divisi
+- nomor divisi
+
+Search harus:
+- realtime atau menggunakan debounce
+- tidak menyebabkan reload halaman jika tidak diperlukan
+- tetap cepat
+- memiliki empty state jika data tidak ditemukan
+
+Contoh:
+
+[ 🔍 Cari akun, email, atau role... ]
+
+==================================================
+6. KELOLA DIVISI — KHUSUS SUPER ADMIN
+==================================================
+
+Tambahkan fitur Super Admin:
+
+"Tambah Divisi"
+
+Super Admin dapat:
+- melihat daftar divisi
+- menambah divisi
+- mengubah data divisi jika memang sesuai struktur database
+- melihat status divisi
+- mengelola data divisi
+
+Tambahkan tombol:
+
+[ + Tambah Divisi ]
+
+Form minimal:
+- nomor/kode divisi
+- nama divisi
+- informasi lain yang memang sudah digunakan oleh sistem
+
+Validasi:
+- nomor divisi tidak boleh duplikat
+- nama divisi tidak boleh kosong
+- validasi input
+- tampilkan feedback berhasil/gagal
+
+⚠️ Jangan mengubah workflow Division Admin/Ketua/Wakil Divisi yang sudah ada.
+
+Jika divisi sudah memiliki relasi dengan data lain, jangan menghapus data secara sembarangan.
+
+==================================================
+7. EXPORT & IMPORT DATA
+==================================================
+
+Tambahkan fitur Super Admin untuk:
+
+- Export
+- Import
+
+Data yang dapat diekspor harus disesuaikan dengan data yang memang sudah ada di sistem.
+
+Format minimal:
+- Excel (.xlsx)
+- PDF
+- DOCX
+
+Jika sistem memungkinkan:
+- CSV
+
+Export harus memiliki struktur yang rapi.
+
+==================================================
+8. KOP SURAT
+==================================================
+
+Hasil export PDF/DOCX/laporan harus memiliki kop surat resmi.
+
+Jangan membuat kop surat asal-asalan.
+
+Buat struktur yang mudah dikonfigurasi, misalnya:
+
+[NAMA SEKOLAH]
+[ALAMAT SEKOLAH]
+[INFORMASI KONTAK]
+
+GARIS PEMBATAS
+
+JUDUL LAPORAN
+
+Isi laporan
+
+Footer:
+- tanggal cetak
+- periode
+- nomor halaman jika memungkinkan
+
+Gunakan data sekolah yang SUDAH tersedia di database/config.
+
+Jika data kop surat belum tersedia:
+- buat konfigurasi khusus Super Admin
+- jangan hardcode secara sembarangan
+- jangan mengganggu role lain
+
+==================================================
+9. PERBAIKI BUG NAVIGASI / LOADING
+==================================================
+
+Saat berpindah menu/fitur Super Admin saat ini:
+- loading terlalu lama
+- kadang terasa nge-bug
+- ada dua menu yang terlihat aktif
+- state menu aktif tidak konsisten
+
+Perbaiki.
+
+Target:
+
+Ketika berada di:
+ /dashboard/superadmin/akun
+
+hanya:
+"Kelola Akun"
+
+yang aktif.
+
+Ketika pindah ke:
+ /dashboard/superadmin/divisi
+
+hanya:
+"Kelola Divisi"
+
+yang aktif.
+
+Pastikan:
+- tidak ada dua menu aktif
+- active state berdasarkan route yang benar
+- tidak terjadi flicker
+- loading state jelas
+- tidak terjadi double fetch yang tidak perlu
+- tidak terjadi render berulang yang tidak diperlukan
+- navigasi terasa cepat
+
+Gunakan loading/skeleton yang ringan jika diperlukan.
+
+Jangan merusak navigasi role lain.
+
+==================================================
+10. BACKUP
+==================================================
+
+Tambahkan fitur khusus Super Admin:
+
+"Backup Data"
+
+Super Admin dapat membuat backup data aplikasi.
+
+Minimal backup mencakup data penting yang memang dimiliki sistem, seperti:
+- akun/user
+- profile
+- role
+- periode
+- divisi
+- laporan
+- keuangan
+- kendala
+- data terkait lainnya
+
+Jangan melakukan backup password dalam bentuk plaintext.
+
+Backup harus aman.
+
+Berikan:
+- tanggal backup
+- waktu backup
+- pembuat backup
+- status backup
+- ukuran/file jika tersedia
+
+==================================================
+11. RESET DATA
+==================================================
+
+Tambahkan fitur:
+
+"Reset Data"
+
+⚠️ FITUR INI SANGAT BERBAHAYA.
+
+Hanya Super Admin yang boleh mengakses.
+
+Jangan langsung menjalankan reset ketika tombol diklik.
+
+Harus ada:
+1. warning
+2. konfirmasi
+3. penjelasan data yang akan terpengaruh
+4. konfirmasi kedua untuk tindakan destruktif
+5. validasi Super Admin
+6. audit log
+
+Jika memungkinkan, wajib membuat backup sebelum reset.
+
+Jangan membuat reset yang menghapus:
+- akun Super Admin
+- struktur sistem penting
+- migration
+- konfigurasi aplikasi
+
+Jika reset hanya untuk periode tertentu, pastikan periode lain tidak ikut terhapus.
+
+==================================================
+12. RESTORE
+==================================================
+
+Tambahkan:
+
+"Restore Backup"
+
+Super Admin dapat memilih backup yang valid kemudian melakukan restore.
+
+Sebelum restore:
+- tampilkan informasi backup
+- tanggal backup
+- periode
+- sumber backup
+- data yang akan dipulihkan
+
+Harus ada konfirmasi.
+
+Jika restore berpotensi menimpa data:
+- tampilkan warning
+- lakukan backup kondisi saat ini terlebih dahulu jika memungkinkan
+
+Jangan melakukan restore sebagian secara diam-diam.
+
+Pastikan integritas foreign key dan relasi database tetap terjaga.
+
+==================================================
+13. AUTO LOG / AUDIT LOG
+==================================================
+
+Tambahkan sistem:
+
+"Log Aktivitas"
+
+Super Admin dapat melihat aktivitas pengguna.
+
+Contoh:
+
+[17-10-2026 11:52]
+admin.apkosis@gmail.com
+Mengubah role akun
+dari Monitoring → Admin Periode
+
+[17-10-2026 11:55]
+bendahara.apkosis@gmail.com
+Memperbarui data keuangan
+
+[17-10-2026 12:00]
+Super Admin
+Membuat backup
+
+Minimal log:
+- waktu
+- user
+- email/user identifier
+- role
+- aktivitas
+- target/data yang diubah jika relevan
+- status berhasil/gagal
+- IP/device jika memang aman dan tersedia
+
+Super Admin dapat:
+- mencari log
+- filter berdasarkan user
+- filter role
+- filter tanggal
+- melihat detail aktivitas
+
+Audit log harus append-only sebisa mungkin.
+
+Jangan memberikan kemampuan menghapus/mengubah log secara sembarangan.
+
+==================================================
+14. MODE PENYAMARAN / IMPERSONATION
+==================================================
+
+Tambahkan fitur khusus Super Admin:
+
+"Mode Penyamaran"
+
+Tujuannya:
+Super Admin dapat memilih role untuk melihat dan mengelola tampilan/workflow role tersebut untuk kebutuhan pengecekan sistem.
+
+Contoh:
+
+[ Mode Penyamaran ]
+
+Pilih role:
+- Admin Periode
+- Monitoring
+- Bendahara
+- Sekretaris
+- Admin Divisi
+
+Kemudian:
+[ Masuk sebagai role ]
+
+PENTING:
+
+Ini harus dibuat SECARA AMAN.
+
+Jangan mengubah password user.
+Jangan menghapus session asli Super Admin.
+Jangan membuat Super Admin benar-benar kehilangan identitas aslinya.
+
+Sistem harus tetap mengetahui:
+
+Original User:
+Super Admin
+
+Acting As:
+Monitoring
+
+Tambahkan indikator jelas di layar:
+
+"MODE PENYAMARAN AKTIF"
+"Anda sedang melihat sistem sebagai Monitoring"
+
+Tambahkan:
+
+[ Kembali ke Super Admin ]
+
+Setiap aktivitas selama impersonation harus tercatat di audit log sebagai:
+
+Dilakukan oleh:
+Super Admin
+
+Bertindak sebagai:
+Monitoring
+
+Jangan gunakan impersonation untuk melewati permission secara sembarangan.
+
+Jika role yang dipilih memiliki batasan akses, jangan mengubah permission permanen.
+
+Setelah keluar dari mode penyamaran, session Super Admin kembali seperti semula.
+
+==================================================
+15. FITUR CETAK LAPORAN
+==================================================
+
+Tambahkan fitur cetak laporan khusus Super Admin.
+
+Super Admin dapat mencetak/menghasilkan laporan berdasarkan:
+
+- periode
+- divisi
+- tanggal
+- jenis laporan
+
+Minimal jenis laporan:
+
+A. LAPORAN HARIAN
+- tanggal
+- divisi
+- pelapor
+- kegiatan
+- kendala
+- solusi
+- inventaris
+- kebutuhan
+
+B. LAPORAN KEUANGAN
+- pemasukan
+- pengeluaran
+- saldo
+- tanggal
+- keterangan
+- divisi
+- periode
+
+C. LAPORAN KENDALA
+- tanggal
+- divisi
+- kendala
+- solusi
+- status
+
+D. LAPORAN INVENTARIS
+- barang
+- jumlah
+- kondisi
+- divisi
+
+E. LAPORAN PROGRAM KERJA
+- divisi
+- program
+- status
+- keterangan
+
+F. REKAP SELURUH DIVISI
+- Divisi 01
+- Divisi 02
+- dst sesuai data sistem
+
+Semua laporan dapat:
+- preview
+- print
+- PDF
+- DOCX
+- Excel jika relevan
+
+==================================================
+16. FILTER LAPORAN
+==================================================
+
+Untuk laporan, sediakan filter:
+
+Periode:
+[ 2026/2027 ▼ ]
+
+Divisi:
+[ Semua Divisi ▼ ]
+
+Tanggal:
+[ Dari ] — [ Sampai ]
+
+Jenis:
+[ Laporan Harian ▼ ]
+
+Tombol:
+
+[ Tampilkan ]
+[ Cetak ]
+[ PDF ]
+[ Excel ]
+[ DOCX ]
+
+Jangan membuat laporan menggunakan data dummy.
+
+Gunakan data database yang sebenarnya.
+
+==================================================
+17. KOP SURAT UNTUK SEMUA LAPORAN
+==================================================
+
+Semua hasil laporan resmi harus konsisten.
+
+Struktur:
+
+================================================
+NAMA SEKOLAH
+ALAMAT
+KONTAK
+================================================
+
+JUDUL LAPORAN
+
+Periode:
+Divisi:
+Tanggal:
+
+------------------------------------------------
+
+ISI LAPORAN
+
+------------------------------------------------
+
+Dicetak oleh:
+Super Admin
+
+Tanggal cetak:
+
+==================================================
+
+Gunakan kop surat yang sudah ada jika aplikasi sudah memilikinya.
+
+==================================================
+18. SECURITY
+==================================================
+
+Semua fitur baru harus dilindungi authorization.
+
+Hanya:
+
+role = super_admin
+
+yang dapat mengakses:
+- Kelola Akun
+- Kelola Periode
+- Kelola Divisi
+- Backup
+- Restore
+- Reset
+- Audit Log
+- Mode Penyamaran
+- Export/Import sistem
+- Cetak laporan administrasi
+
+Jangan hanya menyembunyikan tombol.
+
+Authorization harus dilakukan di:
+- server/backend
+- route
+- API/action
+- database policy jika digunakan
+
+Jangan mengandalkan frontend saja.
+
+==================================================
+19. DATABASE
+==================================================
+
+Sebelum membuat tabel baru:
+- cek apakah tabel yang dibutuhkan sudah ada
+- gunakan tabel yang sudah ada jika memungkinkan
+- jangan membuat tabel duplikat
+
+Jika perlu tabel baru, gunakan penamaan yang konsisten.
+
+Contoh konsep:
+- audit_logs
+- system_backups
+- system_settings
+
+Tetapi jangan langsung membuat tabel tersebut jika sebenarnya sudah tersedia.
+
+Periksa schema terlebih dahulu.
+
+Jangan mengubah struktur database role lain kecuali benar-benar diperlukan.
+
+Jika migration diperlukan:
+- buat migration baru
+- jangan merusak migration lama
+- jangan menghapus data existing
+
+==================================================
+20. UI/UX
+==================================================
+
+Gunakan style APKOSIS yang sudah ada.
+
+Target:
+- modern
+- profesional
+- clean
+- compact
+- responsive
+- mudah dipahami
+- tidak terlalu banyak whitespace
+
+Pertahankan:
+- warna utama APKOSIS
+- typography
+- card style
+- button style
+- icon style
+
+Jangan membuat UI baru yang tidak konsisten.
+
+Untuk tindakan berbahaya seperti:
+- reset
+- restore
+- delete
+- perubahan role
+
+gunakan confirmation modal.
+
+Untuk loading:
+gunakan skeleton/loading indicator yang tidak mengganggu.
+
+Untuk sukses:
+gunakan toast/alert yang sudah digunakan aplikasi.
+
+Jangan memasang library baru jika fitur tersebut bisa dibuat menggunakan library yang sudah tersedia.
+
+==================================================
+21. PERFORMANCE
+==================================================
+
+Perbaiki masalah loading Super Admin.
+
+Perhatikan:
+- duplicate request
+- unnecessary fetch
+- unnecessary re-render
+- query database
+- pagination
+- debounce search
+- caching jika sesuai
+- loading state
+
+Jangan mengorbankan keamanan hanya demi performa.
+
+==================================================
+22. RESPONSIVE
+==================================================
+
+Super Admin harus tetap nyaman digunakan pada:
+- desktop
+- laptop
+- tablet
+- layar kecil
+
+Tabel yang lebar boleh menggunakan horizontal scroll.
+
+Jangan sampai:
+- teks terpotong
+- dropdown keluar layar
+- sidebar menutupi seluruh konten
+- header berantakan
+
+==================================================
+23. ACCEPTANCE CRITERIA
+==================================================
+
+Anggap tugas BELUM SELESAI jika salah satu hal berikut terjadi:
+
+❌ Role lain berubah perilakunya
+❌ Permission role lain berubah
+❌ Dashboard role lain berubah
+❌ Data lama hilang
+❌ Migration lama rusak
+❌ Ada dua menu Super Admin yang aktif bersamaan
+❌ Sidebar tidak bisa collapse
+❌ Jam tidak realtime
+❌ Search tidak berfungsi
+❌ Dropdown masih berada di kolom AKSI
+❌ Tidak ada fitur tambah divisi
+❌ Export tidak memiliki kop surat
+❌ Backup tidak berjalan
+❌ Restore merusak relasi data
+❌ Reset bisa dilakukan tanpa konfirmasi
+❌ Aktivitas penting tidak masuk audit log
+❌ Mode penyamaran menghilangkan identitas Super Admin
+❌ Cetak laporan tidak mengambil data database asli
+❌ Ada error console yang ditimbulkan oleh perubahan ini
+❌ Ada route Super Admin yang rusak
+❌ Loading/navigasi masih mengalami active-state bug
+
+==================================================
+24. TESTING WAJIB
+==================================================
+
+Setelah implementasi:
+
+1. Login sebagai Super Admin.
+2. Tes Dashboard.
+3. Tes Kelola Akun.
+4. Tes perubahan role.
+5. Tes perubahan periode.
+6. Tes pencarian.
+7. Tes Kelola Divisi.
+8. Tes Tambah Divisi.
+9. Tes Export.
+10. Tes Import.
+11. Tes Backup.
+12. Tes Restore pada data uji/aman.
+13. Tes Reset secara aman tanpa merusak production data.
+14. Tes Audit Log.
+15. Tes Mode Penyamaran.
+16. Tes kembali dari Mode Penyamaran.
+17. Tes cetak laporan.
+18. Tes PDF.
+19. Tes DOCX.
+20. Tes Excel.
+21. Tes sidebar collapse.
+22. Tes realtime clock.
+23. Tes responsive.
+24. Tes navigasi antar halaman Super Admin.
+
+Kemudian pastikan role lain masih bekerja seperti SEBELUM perubahan.
+
+==================================================
+25. ATURAN SAAT CODING
+==================================================
+
+Jangan langsung mengubah banyak file tanpa memahami project.
+
+Ikuti workflow:
+
+STEP 1
+Audit project dan struktur file.
+
+STEP 2
+Identifikasi seluruh kode yang berhubungan dengan Super Admin.
+
+STEP 3
+Identifikasi shared component yang juga digunakan role lain.
+
+STEP 4
+Buat rencana perubahan.
+
+STEP 5
+Implementasikan perubahan Super Admin secara terisolasi.
+
+STEP 6
+Perbaiki database/migration jika benar-benar diperlukan.
+
+STEP 7
+Test.
+
+STEP 8
+Perbaiki error.
+
+STEP 9
+Pastikan role lain tidak berubah.
+
+STEP 10
+Berikan ringkasan file yang diubah.
+
+==================================================
+HASIL AKHIR YANG DIINGINKAN
+==================================================
+
+Super Admin APKOSIS harus memiliki:
+
+✓ Sidebar bisa hidden/show
+✓ Realtime clock
+✓ Layout lebih compact
+✓ Kelola akun tanpa kolom AKSI
+✓ Dropdown role langsung di kolom ROLE
+✓ Dropdown periode langsung di kolom PERIODE
+✓ Search
+✓ Tambah/kelola divisi
+✓ Export
+✓ Import
+✓ Kop surat
+✓ Backup
+✓ Reset dengan keamanan
+✓ Restore
+✓ Auto audit log
+✓ Mode penyamaran/impersonation yang aman
+✓ Cetak laporan
+✓ Laporan keuangan
+✓ Laporan kendala
+✓ Laporan harian
+✓ Laporan inventaris
+✓ Rekap semua divisi
+✓ Navigasi/loading diperbaiki
+✓ Active menu tidak double
+✓ Responsive
+✓ Security authorization
+✓ Tidak mengubah role lain sedikitpun
+
+==================================================
+PERINTAH TERAKHIR
+==================================================
+
+JANGAN hanya membuat mockup.
+
+Implementasikan fitur sampai benar-benar terhubung dengan sistem yang sudah ada.
+
+Gunakan database dan data existing.
+
+Jangan mengganti framework atau arsitektur utama project.
+
+Jangan menghapus fitur lama.
+
+Jangan membuat ulang aplikasi dari nol.
+
+Fokus hanya pada SUPER ADMIN.
+
+Jika menemukan bagian shared code yang berpotensi memengaruhi role lain, berhenti dan cari pendekatan yang lebih terisolasi.
+
+Setelah selesai, tampilkan:
+
+1. File yang diubah
+2. File yang ditambahkan
+3. Migration yang dibuat jika ada
+4. Fitur yang berhasil dibuat
+5. Bug yang diperbaiki
+6. Testing yang dilakukan
+7. Konfirmasi bahwa role selain Super Admin tidak diubah
+8. Jika ada bagian yang belum bisa diimplementasikan, jelaskan alasannya secara jujur.
+
+MULAI DENGAN AUDIT PROJECT TERLEBIH DAHULU.
+JANGAN LANGSUNG CODING SEBELUM MEMAHAMI STRUKTUR PROJECT.
