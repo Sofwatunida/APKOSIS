@@ -208,6 +208,13 @@
   }
 }
 
+/* Sembunyikan ikon reveal (mata) bawaan browser pada input password.
+   Aplikasi sudah menyediakan satu tombol Show/Hide sendiri, sehingga ikon
+   bawaan tidak boleh tampil bersamaan (dua ikon mata). */
+input[type="password"]::-ms-reveal {
+  display: none !important;
+}
+
 /* 2026 Sleek modern scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   CalendarRange,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Filter,
   KeyRound,
   Save,
@@ -412,6 +414,7 @@ function PasswordRow({
     division.periodeId || periods.find((p) => p.status === "active")?.id || ""
   );
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rowError, setRowError] = useState("");
 
@@ -477,18 +480,35 @@ function PasswordRow({
       </div>
 
       <Field label="Password Baru">
-        <Input
-          type="password"
-          value={password}
-          maxLength={128}
-          autoComplete="new-password"
-          placeholder="Masukkan password baru"
-          disabled={saving || disabled}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (rowError) setRowError("");
-          }}
-        />
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            maxLength={128}
+            autoComplete="new-password"
+            placeholder="Masukkan password baru"
+            disabled={saving || disabled}
+            className="pr-10"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (rowError) setRowError("");
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+            aria-label={
+              showPassword ? "Sembunyikan password" : "Tampilkan password"
+            }
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
       </Field>
 
       <Field label="Periode">

@@ -198,12 +198,22 @@ function ShellInner({
     periods[0]?.tahunMulai ??
     "-";
 
-  const buildSidebar = (v: boolean) => (
+  const buildSidebar = (
+    v: boolean,
+    options?: { collapsible?: boolean; onClose?: () => void }
+  ) => (
     <div className="sidebar-surface flex h-full flex-col overflow-hidden">
       {/* Bagian atas: brand + menu navigasi (menu panjang discroll sendiri) */}
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Brand Header - identitas hanya tulisan "APKOSIS", tanpa logo/icon tambahan */}
-        <div className={`flex h-16 shrink-0 items-center border-b border-slate-200/80 dark:border-slate-800/80 ${v ? "justify-center px-3" : "px-5"}`}>
+        {/* Brand Header - identitas hanya tulisan "APKOSIS", tanpa logo/icon tambahan.
+            Tombol ciutkan/perluas sidebar diletakkan DI DALAM sidebar. */}
+        <div
+          className={`flex shrink-0 items-center border-b border-slate-200/80 dark:border-slate-800/80 ${
+            v
+              ? "flex-col justify-center gap-1.5 px-2 py-2.5"
+              : "h-16 justify-between gap-2 px-5"
+          }`}
+        >
           <Link
             href="/dashboard"
             className={`group flex min-w-0 flex-col justify-center ${v ? "items-center" : ""}`}
@@ -228,6 +238,33 @@ function ShellInner({
               </>
             )}
           </Link>
+
+          {options?.collapsible && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="hidden shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:inline-flex dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              aria-label="Tampilkan/sembunyikan sidebar"
+              title={v ? "Perluas sidebar" : "Ciutkan sidebar"}
+            >
+              {v ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+          )}
+
+          {options?.onClose && (
+            <button
+              type="button"
+              onClick={options.onClose}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              aria-label="Tutup menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Sections — `min-h-0` + `flex-1` membuat nav benar-benar
@@ -324,7 +361,7 @@ function ShellInner({
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-30 hidden lg:block transition-[width] duration-300 border-r shadow-card dark:shadow-elevated ${collapsed ? "w-16" : "w-64"}`}>
-        {buildSidebar(collapsed)}
+        {buildSidebar(collapsed, { collapsible: true })}
       </aside>
 
       {/* Mobile Drawer */}
@@ -335,15 +372,8 @@ function ShellInner({
             onClick={() => setMobileOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 w-64 border-r shadow-2xl animate-slide-up">
-            {buildSidebar(false)}
+            {buildSidebar(false, { onClose: () => setMobileOpen(false) })}
           </aside>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="fixed right-4 top-4 rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-card transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-            aria-label="Tutup menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
       )}
 
@@ -384,14 +414,6 @@ function ShellInner({
               aria-label="Buka menu navigasi"
             >
               <Menu className="h-5 w-5" />
-            </button>
-            <button
-              onClick={toggleCollapsed}
-              className="hidden rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:flex dark:text-slate-300 dark:hover:bg-slate-800"
-              aria-label="Tampilkan/sembunyikan sidebar"
-              title={collapsed ? "Perluas sidebar" : "Ciutkan sidebar"}
-            >
-              {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </button>
             <div className="hidden min-w-0 items-center gap-2 text-xs text-slate-500 sm:flex dark:text-slate-400">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
