@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { ExportMenu } from "@/components/export-menu";
 
 const ALLOWED = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 
@@ -32,6 +33,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notesList, setNotesList] = useState<string[]>([]);
   const [newNote, setNewNote] = useState("");
+  const [namaDivisi, setNamaDivisi] = useState("");
 
   const [unggulanItems, setUnggulanItems] = useState<ProgramKerja[]>([]);
   const [unggulanOpen, setUnggulanOpen] = useState(false);
@@ -50,16 +52,34 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   async function load() {
     if (!profile.divisi_id) {
+      setItems([]);
+      setUnggulanItems([]);
+      setNamaDivisi("");
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from("program_kerja")
-      .select("*")
-      .eq("divisi_id", profile.divisi_id)
-      .order("created_at", { ascending: false });
-    setItems((data ?? []).filter((p) => !p.deskripsi?.startsWith("[UNGGULAN]")));
-    setUnggulanItems((data ?? []).filter((p) => p.deskripsi?.startsWith("[UNGGULAN]") ?? false));
+    const [programResult, divisiResult] = await Promise.all([
+      supabase
+        .from("program_kerja")
+        .select("*")
+        .eq("divisi_id", profile.divisi_id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("divisi")
+        .select("nama_divisi")
+        .eq("id", profile.divisi_id)
+        .maybeSingle(),
+    ]);
+    if (programResult.error) {
+      error("Gagal memuat program kerja.");
+      setLoading(false);
+      return;
+    }
+    if (divisiResult.error) error("Gagal memuat identitas divisi.");
+    setNamaDivisi(divisiResult.data?.nama_divisi ?? "");
+    const data = programResult.data ?? [];
+    setItems(data.filter((p) => !p.deskripsi?.startsWith("[UNGGULAN]")));
+    setUnggulanItems(data.filter((p) => p.deskripsi?.startsWith("[UNGGULAN]") ?? false));
     setLoading(false);
   }
 
@@ -344,6 +364,27 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   if (loading) return <Spinner />;
 
+  const exportRows = [
+    ...items.map((program) => ({
+      jenis: "Program Kerja",
+      program: program.nama_program,
+      keterangan: program.deskripsi ?? "-",
+      lampiran: program.file_name ?? "-",
+    })),
+    ...unggulanItems.map((program) => ({
+      jenis: "Program Unggulan",
+      program: program.nama_program,
+      keterangan: program.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") ?? "-",
+      lampiran: program.file_name ?? "-",
+    })),
+    ...notesList.map((note) => ({
+      jenis: "Belum Terlaksana",
+      program: note,
+      keterangan: "-",
+      lampiran: "-",
+    })),
+  ].map((row, idx) => ({ no: idx + 1, ...row }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -351,7 +392,24 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Program Kerja Divisi</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Kelola dan monitor program kerja divisi</p>
         </div>
-        <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            title={`Program Kerja${namaDivisi ? ` - ${namaDivisi}` : ""}`}
+            subtitle="Program kerja, program unggulan, dan catatan belum terlaksana"
+            filename={`program-kerja-${namaDivisi || "divisi"}`}
+            orientation="landscape"
+            disabled={exportRows.length === 0}
+            columns={[
+              { header: "No", key: "no", width: 6, align: "center" },
+              { header: "Jenis", key: "jenis", width: 20 },
+              { header: "Program", key: "program", width: 28 },
+              { header: "Deskripsi / Catatan", key: "keterangan", width: 36 },
+              { header: "Lampiran", key: "lampiran", width: 22 },
+            ]}
+            rows={exportRows}
+          />
+          <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
+        </div>
       </div>
 
       <Card>

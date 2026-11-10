@@ -50,13 +50,8 @@ export const NAV_STRUCTURE: NavSection[] = [
         roles: ["super_admin"],
       },
       {
-        label: "Kelola Akun",
+        label: "Pengelolaan Akun & Divisi",
         href: "/dashboard/superadmin/akun",
-        roles: ["super_admin"],
-      },
-      {
-        label: "Kelola Divisi",
-        href: "/dashboard/superadmin/divisi",
         roles: ["super_admin"],
       },
       {

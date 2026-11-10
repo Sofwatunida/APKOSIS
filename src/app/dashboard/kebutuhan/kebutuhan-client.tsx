@@ -40,6 +40,7 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
   const { success, error } = useToast();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<KebutuhanDetail[]>([]);
+  const [namaDivisi, setNamaDivisi] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<KebutuhanDetail | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -56,6 +57,16 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
         divisiId: profile.divisi_id,
       });
       setItems(rows);
+      if (rows.length > 0 && rows[0]?.nama_divisi) {
+        setNamaDivisi(rows[0].nama_divisi);
+      } else {
+        const { data: d } = await supabase
+          .from("divisi")
+          .select("nama_divisi")
+          .eq("id", profile.divisi_id)
+          .maybeSingle();
+        if (d?.nama_divisi) setNamaDivisi(d.nama_divisi);
+      }
     } catch {
       error("Gagal memuat data kebutuhan.");
     }
@@ -178,20 +189,23 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
         <div className="flex flex-wrap items-center gap-2">
           <ExportMenu
             title="Kebutuhan Divisi"
-            filename="kebutuhan-divisi"
-            disabled={items.length === 0}
+            subtitle={namaDivisi ? `Divisi: ${namaDivisi}` : undefined}
+            filename={namaDivisi ? `kebutuhan-${namaDivisi.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "kebutuhan-divisi"}
+            orientation="portrait"
             columns={[
-              { header: "Tanggal", key: "tanggal", width: 14 },
-              { header: "Kebutuhan", key: "nama_kebutuhan", width: 25 },
-              { header: "Jumlah", key: "jumlah", width: 10 },
-              { header: "Status", key: "status", width: 18 },
-              { header: "Keterangan", key: "keterangan", width: 30 },
+              { header: "No", key: "no", width: 6, align: "center" },
+              { header: "Tanggal", key: "tanggal", width: 14, align: "center" },
+              { header: "Kebutuhan", key: "nama_kebutuhan", width: 28, align: "left" },
+              { header: "Jumlah", key: "jumlah", width: 10, align: "center" },
+              { header: "Status", key: "status", width: 16, align: "center" },
+              { header: "Keterangan", key: "keterangan", width: 26, align: "left" },
             ]}
-            rows={items.map((k) => ({
+            rows={items.map((k, idx) => ({
+              no: idx + 1,
               tanggal: formatDate(k.tanggal_efektif),
               nama_kebutuhan: k.nama_kebutuhan,
               jumlah: k.jumlah ?? "-",
-              status: STATUS_KEBUTUHAN_LABEL[k.status],
+              status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
               keterangan: k.keterangan ?? "-",
             }))}
           />

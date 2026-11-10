@@ -19,15 +19,27 @@ export default async function SuperAdminAkunPage({
   const supabase = await createClient();
   const params = await searchParams;
 
-  // Tanpa parameter -> seluruh akun. Dengan parameter -> akun periode itu.
-  const { data: accounts, error: accountsError } = await supabase.rpc(
-    "admin_accounts_list",
-    params.periode ? { p_periode_id: params.periode } : { p_periode_id: null }
-  );
+  // Akun dibaca langsung dari profiles supaya `divisi_id` ikut terbawa dan
+  // tabel akun + divisi bisa digabung menjadi satu tampilan.
+  const { data: accounts, error: accountsError } = await supabase
+    .from("profiles")
+    .select("id, nama, email, role, divisi_id, periode_id")
+    .order("nama");
 
   const { data: divisions, error: divisionsError } = await supabase.rpc(
     "admin_division_account_list",
     { p_periode_id: params.periode ?? null }
+  );
+
+  // RPC di atas mengembalikan periode efektif untuk kredensial (bisa ikut
+  // filter), bukan periode asli divisi. Ambil periode asli langsung dari
+  // tabel divisi supaya dropdown periode menampilkan data yang benar.
+  const { data: divisiBase, error: divisiBaseError } = await supabase
+    .from("divisi")
+    .select("id, periode_id");
+
+  const actualPeriodeById = new Map(
+    (divisiBase ?? []).map((d) => [d.id, d.periode_id ?? ""])
   );
 
   const periods = await getPeriods();
@@ -36,8 +48,9 @@ export default async function SuperAdminAkunPage({
   // menampilkan nama RPC + kode + pesan PostgreSQL apa adanya,
   // bukan hanya menampilkan daftar kosong yang menyesatkan.
   const dbErrors = [
-    ["admin_accounts_list", accountsError],
+    ["profiles", accountsError],
     ["admin_division_account_list", divisionsError],
+    ["divisi", divisiBaseError],
   ]
     .filter(([, e]) => Boolean(e))
     .map(([nama, e]) => {
@@ -51,8 +64,8 @@ export default async function SuperAdminAkunPage({
     <AppShell profile={profile}>
       <div className="space-y-6">
         <PageHeader
-          title="Kelola Akun"
-          description="Tentukan Admin setiap periode, ubah role, dan reset kredensial divisi."
+          title="Pengelolaan Akun & Divisi"
+          description="Kelola akun, role, periode, divisi, dan kredensial dalam satu halaman."
         />
 
         <AccountsAdminClient
@@ -72,7 +85,7 @@ export default async function SuperAdminAkunPage({
             periodeId: a.periode_id ?? "",
             periodeNama:
               periods.find((p) => p.id === a.periode_id)?.namaPeriode ?? "—",
-            assignedAt: a.assigned_at,
+            divisiId: a.divisi_id ?? "",
           }))}
           divisions={(divisions ?? []).map((d) => ({
             divisiId: d.divisi_id,
@@ -81,11 +94,11 @@ export default async function SuperAdminAkunPage({
             accountCount: d.account_count,
             hasPassword: d.has_password,
             updatedAt: d.updated_at,
-            periodeId: d.periode_id ?? "",
+            periodeId: actualPeriodeById.get(d.divisi_id) ?? "",
             periodeNama:
-              d.periode_nama ??
-              periods.find((p) => p.id === d.periode_id)?.namaPeriode ??
-              "—",
+              periods.find(
+                (p) => p.id === (actualPeriodeById.get(d.divisi_id) ?? "")
+              )?.namaPeriode ?? "—",
           }))}
         />
 

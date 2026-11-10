@@ -15,8 +15,10 @@ export interface ExportInput {
   columns: ExportColumn[];
   rows: Record<string, unknown>[];
   filename: string;
-  /** KOP surat sekolah;opsional, dicetak di atas judul. */
+  /** KOP surat sekolah; opsional, dicetak di atas judul. */
   kop?: SchoolKop;
+  /** Orientasi kertas PDF: portrait, landscape, atau auto (default). */
+  orientation?: "portrait" | "landscape" | "auto";
 }
 
 export type ExportFormat = "pdf" | "doc" | "excel";
@@ -27,9 +29,9 @@ interface DownloadOptions extends ExportInput {
 
 /* ------------------------------ shared values ------------------------------ */
 
-const BRAND_HEX = "#4f46e5";
-const BRAND_ARGB = "FF4F46E5";
-const HEADER_BORDER_HEX = "#4338ca";
+const BRAND_HEX = "#4338ca"; // Indigo-700 profesional APKOSIS
+const BRAND_ARGB = "FF4338CA";
+const HEADER_BORDER_HEX = "#3730a3";
 const BODY_BORDER_HEX = "#cbd5e1";
 
 function escapeHtml(value: string): string {
@@ -42,7 +44,10 @@ function escapeHtml(value: string): string {
 
 // Normalisasi teks supaya konsisten di semua format (bullet, newline, dll)
 function prepText(value: string): string {
-  return value.replace(/[•▪◦●]/g, "-").replace(/\r\n?/g, "\n").replace(/\t/g, " ");
+  return value
+    .replace(/[•▪◦●]/g, "-")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\t/g, " ");
 }
 
 function cellValue(row: Record<string, unknown> | undefined, key: string): string {
@@ -82,13 +87,13 @@ function kopLines(kop?: SchoolKop): KopLine[] {
   if (!kop) return [];
   const lines: KopLine[] = [];
   if (kop.namaSekolah?.trim())
-    lines.push({ text: kop.namaSekolah.trim(), size: 15, bold: true });
+    lines.push({ text: kop.namaSekolah.trim(), size: 14, bold: true });
   if (kop.substansi?.trim())
-    lines.push({ text: kop.substansi.trim(), size: 11, bold: false });
+    lines.push({ text: kop.substansi.trim(), size: 10, bold: false });
   if (kop.alamat?.trim())
-    lines.push({ text: kop.alamat.trim(), size: 9.5, bold: false });
+    lines.push({ text: kop.alamat.trim(), size: 8.5, bold: false });
   if (kop.kontak?.trim())
-    lines.push({ text: kop.kontak.trim(), size: 8.5, bold: false });
+    lines.push({ text: kop.kontak.trim(), size: 8, bold: false });
   return lines;
 }
 
@@ -123,7 +128,7 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
 
   ws.columns = input.columns.map((c, i) => ({
     key: c.key,
-    width: Math.min(Math.max(Math.round(ratios[i] * 42), 12), 52),
+    width: Math.min(Math.max(Math.round(ratios[i] * 48), 12), 56),
   }));
 
   const bodyBorder = {
@@ -134,10 +139,10 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
   };
 
   const headerBorder = {
-    top: { style: "thin" as const, color: { argb: "FF4338CA" } },
-    left: { style: "thin" as const, color: { argb: "FF4338CA" } },
-    bottom: { style: "thin" as const, color: { argb: "FF4338CA" } },
-    right: { style: "thin" as const, color: { argb: "FF4338CA" } },
+    top: { style: "thin" as const, color: { argb: "FF3730A3" } },
+    left: { style: "thin" as const, color: { argb: "FF3730A3" } },
+    bottom: { style: "thin" as const, color: { argb: "FF3730A3" } },
+    right: { style: "thin" as const, color: { argb: "FF3730A3" } },
   };
 
   let rowIdx = 0;
@@ -185,7 +190,7 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
   }
 
   const headerRow = ws.addRow(input.columns.map((c) => c.header));
-  headerRow.height = 22;
+  headerRow.height = 24;
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BRAND_ARGB } };
@@ -194,32 +199,47 @@ async function buildExcelBlob(input: ExportInput): Promise<Blob> {
   });
 
   const keys = input.columns.map((c) => c.key);
-  input.rows.forEach((r) => {
-    const isTotal = Boolean((r as Record<string, unknown>).__total);
-    const row = ws.addRow(keys.map((k) => cellValue(r, k)));
-    let maxLines = 1;
-    row.eachCell((cell, col) => {
-      const colIdx = col - 1;
-      cell.alignment = {
-        vertical: "top",
-        wrapText: true,
-        horizontal: cellAlign(input.columns[colIdx] ?? { header: "", key: "" }),
-      };
-      cell.border = bodyBorder;
-      if (isTotal) {
-        cell.font = { bold: true, color: { argb: "FF1E293B" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
-      }
-      const width = ws.columns[colIdx]?.width ?? 20;
-      const text = String(cell.value ?? "");
-      let lines = 1;
-      text.split("\n").forEach((seg) => {
-        lines += Math.ceil(seg.length / Math.max(width * 1.2, 8));
+
+  if (input.rows.length === 0) {
+    rowIdx = ws.rowCount + 1;
+    const emptyRow = ws.addRow(["Belum ada data yang tercatat untuk laporan / periode ini."]);
+    ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
+    const cell = emptyRow.getCell(1);
+    cell.font = { italic: true, size: 10, color: { argb: "FF64748B" } };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = bodyBorder;
+    emptyRow.height = 26;
+  } else {
+    input.rows.forEach((r, idx) => {
+      const isTotal = Boolean((r as Record<string, unknown>).__total);
+      const isEven = idx % 2 === 1;
+      const row = ws.addRow(keys.map((k) => cellValue(r, k)));
+      let maxLines = 1;
+      row.eachCell((cell, col) => {
+        const colIdx = col - 1;
+        cell.alignment = {
+          vertical: "top",
+          wrapText: true,
+          horizontal: cellAlign(input.columns[colIdx] ?? { header: "", key: "" }),
+        };
+        cell.border = bodyBorder;
+        if (isTotal) {
+          cell.font = { bold: true, color: { argb: "FF1E1B4B" } };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
+        } else if (isEven) {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+        }
+        const width = ws.columns[colIdx]?.width ?? 20;
+        const text = String(cell.value ?? "");
+        let lines = 1;
+        text.split("\n").forEach((seg) => {
+          lines += Math.ceil(seg.length / Math.max(width * 1.2, 8));
+        });
+        maxLines = Math.max(maxLines, lines);
       });
-      maxLines = Math.max(maxLines, lines);
+      row.height = Math.max(20, maxLines * 15 + 6);
     });
-    row.height = Math.max(18, maxLines * 15 + 6);
-  });
+  }
 
   ws.views = [{ state: "frozen", ySplit: headerIndex }];
 
@@ -248,23 +268,30 @@ function buildDocBlob(input: ExportInput): Blob {
     )
     .join("");
 
-  const bodyRows = input.rows
-    .map((r) => {
-      const isTotal = Boolean((r as Record<string, unknown>).__total);
-      const tds = input.columns
-        .map((c, i) => {
-          const html = cellValue(r, c.key)
-            .split("\n")
-            .map((line) => escapeHtml(line))
-            .join("<br/>");
-          return `<td width="${pct[i]}%" style="border:1pt solid ${BODY_BORDER_HEX};padding:5pt 8pt;text-align:${cellAlign(
-            c
-          )};vertical-align:top;">${html ? html : "&nbsp;"}</td>`;
-        })
-        .join("");
-      return `<tr${isTotal ? ' class="total"' : ""}>${tds}</tr>`;
-    })
-    .join("");
+  let bodyRows = "";
+  if (input.rows.length === 0) {
+    bodyRows = `<tr><td colspan="${input.columns.length}" style="border:1pt solid ${BODY_BORDER_HEX};padding:12pt 8pt;text-align:center;font-style:italic;color:#64748b;background-color:#f8fafc;">Belum ada data yang tercatat untuk laporan / periode ini.</td></tr>`;
+  } else {
+    bodyRows = input.rows
+      .map((r, idx) => {
+        const isTotal = Boolean((r as Record<string, unknown>).__total);
+        const isEven = idx % 2 === 1;
+        const bg = isTotal ? "background-color:#eef2ff;font-weight:bold;" : isEven ? "background-color:#f8fafc;" : "";
+        const tds = input.columns
+          .map((c, i) => {
+            const html = cellValue(r, c.key)
+              .split("\n")
+              .map((line) => escapeHtml(line))
+              .join("<br/>");
+            return `<td width="${pct[i]}%" style="border:1pt solid ${BODY_BORDER_HEX};${bg}padding:5pt 8pt;text-align:${cellAlign(
+              c
+            )};vertical-align:top;">${html ? html : "&nbsp;"}</td>`;
+          })
+          .join("");
+        return `<tr${isTotal ? ' class="total"' : ""}>${tds}</tr>`;
+      })
+      .join("");
+  }
 
   const subtitleHtml = input.subtitle
     ? `<p class="subtitle">${escapeHtml(input.subtitle)}</p>`
@@ -289,16 +316,16 @@ function buildDocBlob(input: ExportInput): Blob {
 <title>${escapeHtml(input.title)}</title>
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
 <style>
-  @page { size: 21cm 29.7cm; margin: 2cm; }
-  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #0f172a; }
-  h1 { font-size: 16pt; text-align: center; margin: 0 0 4pt; }
-  .subtitle { text-align: center; font-size: 10pt; color: #64748b; margin: 0 0 2pt; }
-  .meta { text-align: center; font-size: 8.5pt; color: #94a3b8; margin: 0 0 12pt; }
+  @page { size: 21cm 29.7cm; margin: 1.8cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 10pt; color: #0f172a; }
+  h1 { font-size: 15pt; text-align: center; margin: 0 0 4pt; }
+  .subtitle { text-align: center; font-size: 9.5pt; color: #475569; margin: 0 0 2pt; }
+  .meta { text-align: center; font-size: 8pt; color: #64748b; margin: 0 0 10pt; }
   .kop { text-align: center; margin: 0 0 2pt; }
-  .kop-rule { border-bottom: 2.5pt solid #0f172a; margin: 3pt 0 12pt; }
+  .kop-rule { border-bottom: 2pt solid #0f172a; border-top: 0.5pt solid #0f172a; height: 2pt; margin: 3pt 0 10pt; }
   table { border-collapse: collapse; width: 100%; table-layout: fixed; mso-table-layout-alt: fixed; }
   td, th { mso-padding-alt: 0in 0in 0in 0in; }
-  tr.total td { font-weight: bold; background-color: #eef2ff; }
+  tr.total td { font-weight: bold; background-color: #eef2ff; color: #1e1b4b; }
 </style>
 </head>
 <body>
@@ -321,31 +348,23 @@ ${subtitleHtml}
 
 /* ------------------------------------ pdf ------------------------------------ */
 
-const PAGE_W = 595.28; // A4 portrait
-const PAGE_H = 841.89;
-const MARGIN = 60; // margin atas/kiri/kanan (±21 mm)
-const BOTTOM = 60; // margin bawah (±21 mm)
-const CONTENT_W = PAGE_W - MARGIN * 2;
-
 type RGB = [number, number, number];
 
-const COLOR_TEXT: RGB = [0.13, 0.14, 0.16];
-const COLOR_MUTED: RGB = [0.45, 0.47, 0.51];
-const COLOR_HEADER_BG: RGB = [0.31, 0.27, 0.9]; // #4f46e5 (sama dengan DOC/Excel)
+const COLOR_TEXT: RGB = [0.06, 0.09, 0.16]; // slate-900
+const COLOR_MUTED: RGB = [0.38, 0.44, 0.52]; // slate-500
+const COLOR_HEADER_BG: RGB = [0.263, 0.220, 0.792]; // #4338ca (Brand Indigo-700)
+const COLOR_HEADER_BORDER: RGB = [0.216, 0.188, 0.639]; // #3730a3
 const COLOR_BORDER: RGB = [0.796, 0.835, 0.882]; // #cbd5e1
-const COLOR_HEADER_BORDER: RGB = [0.26, 0.22, 0.79]; // #4338ca
-const COLOR_TOTAL_BG: RGB = [0.94, 0.96, 1.0]; // #eef2ff
+const COLOR_ZEBRA_BG: RGB = [0.973, 0.980, 0.988]; // #f8fafc
+const COLOR_TOTAL_BG: RGB = [0.933, 0.949, 1.0]; // #eef2ff
+const COLOR_FOOTER_LINE: RGB = [0.886, 0.910, 0.941]; // #e2e8f0
 
 function num(n: number): string {
   const s = n.toFixed(2);
-  // "0.00" harus jadi "0", bukan string kosong (akan merusak operator PDF).
   return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 }
 
-// Pemetaan karakter typographic Unicode -> ASCII aman.
-// Tanpa ini, tanda seperti – — " " ' ' … berubah jadi "?" (teks "gajelas").
-// Dipetakan ke ASCII (bukan byte WinAnsi 0x80-0x9F) supaya pasti tampil
-// benar di ALL PDF viewer dan teksnya tetap bisa dicari/disalin.
+// Pemetaan karakter typographic Unicode -> ASCII aman
 const WINANSI_MAP: Record<string, string> = {
   "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-",
   "\u2015": "-", "\u2212": "-",
@@ -362,7 +381,6 @@ const WINANSI_MAP: Record<string, string> = {
 function escapePdfText(s: string): string {
   let out = "";
   for (const raw of s) {
-    // Nilai map bisa multi-karakter ("...", "(TM)"), jadi escape per-karakter.
     const mapped = WINANSI_MAP[raw] ?? raw;
     for (const ch of mapped) {
       const code = ch.codePointAt(0) ?? 0;
@@ -393,26 +411,26 @@ function escapePdfText(s: string): string {
   return out;
 }
 
-function textWidth(s: string, size: number): number {
+function textWidth(s: string, size: number, bold: boolean = false): number {
   let w = 0;
   for (const ch of s) {
     const c = ch.charCodeAt(0);
     if (c === 32) w += 0.28;
     else if (c >= 65 && c <= 90) w += 0.62;
-    else if (c >= 48 && c <= 57) w += 0.5;
+    else if (c >= 48 && c <= 57) w += 0.52;
     else if ("ilj.,'`:;|!".includes(ch)) w += 0.3;
-    else if ("mwMW@%@".includes(ch)) w += 0.62;
+    else if ("mwMW@%@".includes(ch)) w += 0.68;
     else if (c > 127) w += 0.55;
     else w += 0.5;
   }
-  return w * size;
+  return w * size * (bold ? 1.08 : 1);
 }
 
-function hardSplit(word: string, size: number, maxWidth: number): string[] {
+function hardSplit(word: string, size: number, maxWidth: number, bold: boolean = false): string[] {
   const lines: string[] = [];
   let cur = "";
   for (const ch of word) {
-    if (cur && textWidth(cur + ch, size) > maxWidth) {
+    if (cur && textWidth(cur + ch, size, bold) > maxWidth) {
       lines.push(cur);
       cur = ch;
     } else {
@@ -423,7 +441,7 @@ function hardSplit(word: string, size: number, maxWidth: number): string[] {
   return lines.length > 0 ? lines : [word];
 }
 
-function wrapSegment(str: string, size: number, maxWidth: number): string[] {
+function wrapSegment(str: string, size: number, maxWidth: number, bold: boolean = false): string[] {
   const tokens = str.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return [""];
   const lines: string[] = [];
@@ -436,9 +454,9 @@ function wrapSegment(str: string, size: number, maxWidth: number): string[] {
 
   tokens.forEach((token) => {
     let piece = token;
-    while (piece && textWidth(line ? `${line} ${piece}` : piece, size) > maxWidth) {
+    while (piece && textWidth(line ? `${line} ${piece}` : piece, size, bold) > maxWidth) {
       if (!line) {
-        const split = hardSplit(piece, size, maxWidth);
+        const split = hardSplit(piece, size, maxWidth, bold);
         lines.push(split[0]);
         piece = split.slice(1).join("");
         continue;
@@ -453,27 +471,41 @@ function wrapSegment(str: string, size: number, maxWidth: number): string[] {
   return lines.length > 0 ? lines : [""];
 }
 
-// Membungkus teks, termasuk menghormati baris baru (untuk list)
-function wrapText(str: string, size: number, maxWidth: number): string[] {
+function wrapText(str: string, size: number, maxWidth: number, bold: boolean = false): string[] {
   const out: string[] = [];
   str.split("\n").forEach((seg) => {
-    wrapSegment(seg, size, maxWidth).forEach((l) => out.push(l));
+    wrapSegment(seg, size, maxWidth, bold).forEach((l) => out.push(l));
   });
   return out.length > 0 ? out : [""];
 }
 
 function buildPdfBlob(input: ExportInput): Blob {
+  // Tentukan orientasi: jika kolom >= 6 atau diminta landscape -> gunakan Landscape.
+  const isLandscape =
+    input.orientation === "landscape" ||
+    (input.orientation !== "portrait" && input.columns.length >= 6);
+
+  // A4 dalam points: Portrait 595.28 x 841.89 | Landscape 841.89 x 595.28
+  const PAGE_W = isLandscape ? 841.89 : 595.28;
+  const PAGE_H = isLandscape ? 595.28 : 841.89;
+
+  const MARGIN_LEFT = isLandscape ? 36 : 40;
+  const MARGIN_RIGHT = isLandscape ? 36 : 40;
+  const MARGIN_TOP = isLandscape ? 34 : 38;
+  const BOTTOM = isLandscape ? 36 : 40;
+  const CONTENT_W = PAGE_W - MARGIN_LEFT - MARGIN_RIGHT;
+
   const rawWidths = input.columns.map((c) => c.width ?? 1);
   const sum = rawWidths.reduce((a, b) => a + b, 0) || 1;
   const widths = rawWidths.map((w) => (w / sum) * CONTENT_W);
 
   const pages: string[][] = [];
   let ops: string[] = [];
-  let topY = MARGIN;
+  let topY = MARGIN_TOP;
 
   function beginPage() {
     ops = [];
-    topY = MARGIN;
+    topY = MARGIN_TOP;
     pages.push(ops);
   }
   beginPage();
@@ -486,14 +518,19 @@ function buildPdfBlob(input: ExportInput): Blob {
     yTop: number,
     color: RGB,
     maxWidth: number,
-    align: "left" | "center" | "right" = "left"
+    align: "left" | "center" | "right" = "left",
+    fontCode?: "F1" | "F2" | "F3"
   ) {
     const baseline = PAGE_H - yTop - size * 0.82;
-    const w = textWidth(text, size);
+    const font = fontCode ?? (bold ? "F2" : "F1");
+    const isFontBold = font === "F2";
+    const w = textWidth(text, size, isFontBold);
     let tx = x;
-    if (align === "center") tx = x + (maxWidth - w) / 2;
-    else if (align === "right") tx = x + maxWidth - w;
-    const font = bold ? "F2" : "F1";
+    if (align === "center") {
+      tx = x + Math.max(0, (maxWidth - w) / 2);
+    } else if (align === "right") {
+      tx = x + Math.max(0, maxWidth - w);
+    }
     ops.push(`${num(color[0])} ${num(color[1])} ${num(color[2])} rg`);
     ops.push(
       `BT /${font} ${num(size)} Tf 1 0 0 1 ${num(tx)} ${num(baseline)} Tm (${escapePdfText(text)}) Tj ET`
@@ -506,127 +543,230 @@ function buildPdfBlob(input: ExportInput): Blob {
     ops.push(`${num(x)} ${num(y)} ${num(w)} ${num(h)} re f`);
   }
 
-  function strokeRect(x: number, yTop: number, w: number, h: number, color: RGB = COLOR_BORDER) {
+  function strokeRect(
+    x: number,
+    yTop: number,
+    w: number,
+    h: number,
+    color: RGB = COLOR_BORDER,
+    lineWidth: number = 0.5
+  ) {
     const y = PAGE_H - yTop - h;
-    ops.push("0.6 w RG");
+    ops.push(`${num(lineWidth)} w`);
     ops.push(`${num(color[0])} ${num(color[1])} ${num(color[2])} RG`);
     ops.push(`${num(x)} ${num(y)} ${num(w)} ${num(h)} re S`);
   }
 
-  const HEADER_H = 18;
+  const HEADER_LINE_H = 10;
+  const HEADER_PAD_TOP = 5;
+  const HEADER_PAD_BOTTOM = 5;
+  const wrappedHeaders = input.columns.map((column, i) =>
+    wrapText(column.header, 8.5, widths[i] - 8, true)
+  );
+  const headerHeight =
+    Math.max(...wrappedHeaders.map((lines) => lines.length), 1) *
+      HEADER_LINE_H +
+    HEADER_PAD_TOP +
+    HEADER_PAD_BOTTOM;
 
   function drawHeaderRow() {
-    fillRect(MARGIN, topY, CONTENT_W, HEADER_H, COLOR_HEADER_BG);
+    fillRect(MARGIN_LEFT, topY, CONTENT_W, headerHeight, COLOR_HEADER_BG);
     input.columns.forEach((c, i) => {
-      const x = MARGIN + widths.slice(0, i).reduce((a, b) => a + b, 0);
-      drawText(c.header, 9, true, x + 4, topY + 2, [1, 1, 1], widths[i] - 7, "center");
+      const x = MARGIN_LEFT + widths.slice(0, i).reduce((a, b) => a + b, 0);
+      wrappedHeaders[i].forEach((line, lineIdx) => {
+        drawText(
+          line,
+          8.5,
+          true,
+          x + 4,
+          topY + HEADER_PAD_TOP + lineIdx * HEADER_LINE_H,
+          [1, 1, 1],
+          widths[i] - 8,
+          "center",
+          "F2"
+        );
+      });
     });
-    strokeRect(MARGIN, topY, CONTENT_W, HEADER_H, COLOR_HEADER_BORDER);
-    topY += HEADER_H;
+    strokeRect(MARGIN_LEFT, topY, CONTENT_W, headerHeight, COLOR_HEADER_BORDER, 0.7);
+    topY += headerHeight;
   }
 
   // KOP surat sekolah (nama + alamat + kontak), bila dikonfigurasi.
   const kopArr = kopLines(input.kop);
   if (kopArr.length > 0) {
     kopArr.forEach((line) => {
-      drawText(line.text, line.size, line.bold, MARGIN, topY, COLOR_TEXT, CONTENT_W, "center");
-      topY += line.size + 4;
+      drawText(
+        line.text,
+        line.size,
+        line.bold,
+        MARGIN_LEFT,
+        topY,
+        line.bold ? COLOR_TEXT : COLOR_MUTED,
+        CONTENT_W,
+        "center"
+      );
+      topY += line.size + 3.5;
     });
-    // Garis pemisah KOP.
-    fillRect(MARGIN, topY, CONTENT_W, 1.2, COLOR_TEXT);
-    topY += 12;
+    // Garis ganda KOP resmi
+    topY += 2;
+    fillRect(MARGIN_LEFT, topY, CONTENT_W, 1.4, COLOR_TEXT);
+    fillRect(MARGIN_LEFT, topY + 2.4, CONTENT_W, 0.5, COLOR_TEXT);
+    topY += 10;
   }
 
-  drawText(input.title, 16, true, MARGIN, topY, COLOR_TEXT, CONTENT_W, "center");
-  topY += 24;
+  drawText(input.title, 13.5, true, MARGIN_LEFT, topY, COLOR_TEXT, CONTENT_W, "center", "F2");
+  topY += 17;
   if (input.subtitle) {
-    drawText(input.subtitle, 11, false, MARGIN, topY, COLOR_MUTED, CONTENT_W, "center");
-    topY += 16;
+    drawText(input.subtitle, 9, false, MARGIN_LEFT, topY, COLOR_MUTED, CONTENT_W, "center");
+    topY += 13;
   }
-  drawText(`Dicetak pada ${todayLabel()}`, 9, false, MARGIN, topY, COLOR_MUTED, CONTENT_W, "center");
-  topY += 20;
+  drawText(`Dicetak pada ${todayLabel()}`, 7.5, false, MARGIN_LEFT, topY, COLOR_MUTED, CONTENT_W, "center");
+  topY += 15;
 
   drawHeaderRow();
 
-  const ROW_PAD_X = 4;
+  const ROW_PAD_X = 5;
   const ROW_PAD_TOP = 4;
+  const ROW_PAD_BOTTOM = 4;
   const ROW_LINE_H = 10.5;
 
-  function ensureSpace(rowHeight: number) {
-    if (topY + rowHeight <= PAGE_H - BOTTOM) return;
-    beginPage();
-    drawHeaderRow();
-  }
-
-  // Gambar sebagian baris (from..from+count baris teks) mulai dari topY.
-  // Dipakai untuk memecah baris yang terlalu tinggi agar tidak terpotong
-  // tepi bawah halaman (yang membuat isi "hilang" dan halaman boros).
-  function drawRowChunk(
+  function drawRowCells(
     isTotal: boolean,
+    isEven: boolean,
     wrapped: string[][],
-    from: number,
-    count: number,
     height: number
   ) {
+    // Fill background baris
+    if (isTotal) {
+      fillRect(MARGIN_LEFT, topY, CONTENT_W, height, COLOR_TOTAL_BG);
+    } else if (isEven) {
+      fillRect(MARGIN_LEFT, topY, CONTENT_W, height, COLOR_ZEBRA_BG);
+    }
+
+    // Tulis teks & border per sel
     input.columns.forEach((c, i) => {
-      const x = MARGIN + widths.slice(0, i).reduce((a, b) => a + b, 0);
-      if (isTotal) fillRect(x, topY, widths[i], height, COLOR_TOTAL_BG);
-      strokeRect(x, topY, widths[i], height);
+      const x = MARGIN_LEFT + widths.slice(0, i).reduce((a, b) => a + b, 0);
+      strokeRect(x, topY, widths[i], height, COLOR_BORDER, 0.45);
       const lines = wrapped[i];
-      for (let j = from; j < from + count; j++) {
-        if (j >= lines.length) break;
+      lines.forEach((lineText, lineIdx) => {
         drawText(
-          lines[j],
-          9,
+          lineText,
+          8.2,
           isTotal,
           x + ROW_PAD_X,
-          topY + ROW_PAD_TOP + (j - from) * ROW_LINE_H,
-          COLOR_TEXT,
+          topY + ROW_PAD_TOP + lineIdx * ROW_LINE_H,
+          isTotal ? [0.12, 0.11, 0.29] : COLOR_TEXT,
           widths[i] - ROW_PAD_X * 2,
-          cellAlign(c)
+          cellAlign(c),
+          isTotal ? "F2" : "F1"
         );
-      }
+      });
     });
     topY += height;
   }
 
-  const MAX_ROW_HEIGHT = PAGE_H - BOTTOM - (MARGIN + HEADER_H);
-
-  input.rows.forEach((r) => {
-    const isTotal = Boolean((r as Record<string, unknown>).__total);
-    const wrapped = input.columns.map((c, i) =>
-      wrapText(cellValue(r, c.key), 9, widths[i] - ROW_PAD_X * 2)
+  // Jika baris kosong: tampilkan "Belum ada data" secara wajar, bukan halaman kosong
+  if (input.rows.length === 0) {
+    const emptyH = 26;
+    fillRect(MARGIN_LEFT, topY, CONTENT_W, emptyH, COLOR_ZEBRA_BG);
+    strokeRect(MARGIN_LEFT, topY, CONTENT_W, emptyH, COLOR_BORDER, 0.5);
+    drawText(
+      "Belum ada data yang tercatat untuk laporan / periode ini.",
+      8.5,
+      false,
+      MARGIN_LEFT,
+      topY + 7,
+      COLOR_MUTED,
+      CONTENT_W,
+      "center",
+      "F3"
     );
-    const lineCount = Math.max(...wrapped.map((l) => l.length), 1);
-    const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + 3;
+    topY += emptyH;
+  } else {
+    // Render setiap baris data secara utuh (tidak memotong baris menjadi dua halaman)
+    input.rows.forEach((r, rowIdx) => {
+      const isTotal = Boolean((r as Record<string, unknown>).__total);
+      const isEven = rowIdx % 2 === 1;
+      const wrapped = input.columns.map((c, i) =>
+        wrapText(cellValue(r, c.key), 8.2, widths[i] - ROW_PAD_X * 2, isTotal)
+      );
+      const lineCount = Math.max(...wrapped.map((l) => l.length), 1);
+      const rowHeight = lineCount * ROW_LINE_H + ROW_PAD_TOP + ROW_PAD_BOTTOM;
+      const freshPageSpace =
+        PAGE_H - BOTTOM - MARGIN_TOP - headerHeight - 14;
+      let lineOffset = 0;
 
-    // Baris normal: cukup pindah halaman bila tidak muat di sisa halaman.
-    if (rowHeight <= MAX_ROW_HEIGHT) {
-      ensureSpace(rowHeight);
-      drawRowChunk(isTotal, wrapped, 0, lineCount, rowHeight);
-      return;
-    }
-
-    // Baris "raksasa" (lebih tinggi dari satu halaman): pecah berkelanjutan
-    // di beberapa halaman. Header kolom diulang di tiap halaman lanjutan.
-    let from = 0;
-    while (from < lineCount) {
-      const room = PAGE_H - BOTTOM - topY - ROW_PAD_TOP - 3;
-      const fit = Math.floor(room / ROW_LINE_H);
-      if (fit < 2) {
-        beginPage();
-        drawHeaderRow();
-        continue;
-      }
-      const take = Math.min(fit, lineCount - from);
-      const h = take * ROW_LINE_H + ROW_PAD_TOP + 3;
-      drawRowChunk(isTotal, wrapped, from, take, h);
-      from += take;
-      if (from < lineCount) {
+      // Jaga baris tetap utuh bila muat pada halaman baru; baris yang lebih
+      // panjang dari satu halaman akan dibagi tanpa menghilangkan teks.
+      if (
+        rowHeight > PAGE_H - BOTTOM - topY - 14 &&
+        rowHeight <= freshPageSpace
+      ) {
         beginPage();
         drawHeaderRow();
       }
-    }
+
+      while (lineOffset < lineCount) {
+        const spaceRemaining = PAGE_H - BOTTOM - topY - 14;
+        const maxLines =
+          Math.floor(
+            (spaceRemaining - ROW_PAD_TOP - ROW_PAD_BOTTOM) / ROW_LINE_H
+          );
+        if (maxLines < 1) {
+          beginPage();
+          drawHeaderRow();
+          continue;
+        }
+
+        const chunkLineCount = Math.min(lineCount - lineOffset, maxLines);
+        const chunk = wrapped.map((lines) =>
+          lines.slice(lineOffset, lineOffset + chunkLineCount)
+        );
+        const chunkHeight =
+          chunkLineCount * ROW_LINE_H + ROW_PAD_TOP + ROW_PAD_BOTTOM;
+        drawRowCells(isTotal, isEven, chunk, chunkHeight);
+        lineOffset += chunkLineCount;
+
+        if (lineOffset < lineCount) {
+          beginPage();
+          drawHeaderRow();
+        }
+      }
+    });
+  }
+
+  // ---------- Assembly Footer & Nomor Halaman di SEMUA Halaman ----------
+  // Buang halaman terakhir jika kosong tanpa isi
+  if (pages.length > 1 && ops.length <= 1) {
+    pages.pop();
+  }
+
+  const totalPages = pages.length;
+  pages.forEach((pageOps, pageIdx) => {
+    // Garis tipis footer
+    const footerLineY = PAGE_H - BOTTOM + 12;
+    const yLine = PAGE_H - footerLineY;
+    pageOps.push("0.4 w");
+    pageOps.push(`${num(COLOR_FOOTER_LINE[0])} ${num(COLOR_FOOTER_LINE[1])} ${num(COLOR_FOOTER_LINE[2])} RG`);
+    pageOps.push(`${num(MARGIN_LEFT)} ${num(yLine)} m ${num(PAGE_W - MARGIN_RIGHT)} ${num(yLine)} l S`);
+
+    // Teks kiri footer: Identitas APKOSIS
+    const footerTextY = PAGE_H - BOTTOM + 18;
+    const baseline = PAGE_H - footerTextY - 7.5 * 0.82;
+    pageOps.push(`${num(COLOR_MUTED[0])} ${num(COLOR_MUTED[1])} ${num(COLOR_MUTED[2])} rg`);
+    pageOps.push(
+      `BT /F1 7.5 Tf 1 0 0 1 ${num(MARGIN_LEFT)} ${num(baseline)} Tm (${escapePdfText(
+        "APKOSIS - Sistem Informasi & Pelaporan OSIS"
+      )}) Tj ET`
+    );
+
+    // Teks kanan footer: Nomor Halaman
+    const pageNumText = `Halaman ${pageIdx + 1} dari ${totalPages}`;
+    const pageNumW = textWidth(pageNumText, 7.5, false);
+    const txRight = PAGE_W - MARGIN_RIGHT - pageNumW;
+    pageOps.push(
+      `BT /F1 7.5 Tf 1 0 0 1 ${num(txRight)} ${num(baseline)} Tm (${escapePdfText(pageNumText)}) Tj ET`
+    );
   });
 
   // ---------- assemble pdf ----------
@@ -636,6 +776,8 @@ function buildPdfBlob(input: ExportInput): Blob {
   objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>");
   const f2 = objects.length + 1;
   objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding>>");
+  const f3 = objects.length + 1;
+  objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding>>");
 
   const pageCount = pages.length;
 
@@ -652,7 +794,7 @@ function buildPdfBlob(input: ExportInput): Blob {
   pages.forEach((_, i) => {
     const id = objects.length + 1;
     objects.push(
-      `<</Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${num(PAGE_W)} ${num(PAGE_H)}] /Resources <</Font <</F1 ${f1} 0 R /F2 ${f2} 0 R>>>> /Contents ${contentIds[i]} 0 R>>`
+      `<</Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${num(PAGE_W)} ${num(PAGE_H)}] /Resources <</Font <</F1 ${f1} 0 R /F2 ${f2} 0 R /F3 ${f3} 0 R>>>> /Contents ${contentIds[i]} 0 R>>`
     );
     pageIds.push(id);
   });
@@ -692,8 +834,8 @@ function buildPdfBlob(input: ExportInput): Blob {
 /* -------------------------------- downloader -------------------------------- */
 
 export async function downloadExport(options: DownloadOptions): Promise<void> {
-  const { format, title, subtitle, columns, rows, filename, kop } = options;
-  const input: ExportInput = { title, subtitle, columns, rows, filename, kop };
+  const { format, title, subtitle, columns, rows, filename, kop, orientation } = options;
+  const input: ExportInput = { title, subtitle, columns, rows, filename, kop, orientation };
   const base = slugify(filename || title);
 
   let blob: Blob;

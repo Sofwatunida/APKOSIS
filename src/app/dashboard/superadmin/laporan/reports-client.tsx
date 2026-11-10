@@ -16,6 +16,8 @@ type JenisKey =
   | "keuangan"
   | "kendala"
   | "inventaris"
+  | "kebutuhan"
+  | "pengajuan"
   | "program"
   | "rekap";
 
@@ -24,6 +26,8 @@ const JENIS: { key: JenisKey; label: string }[] = [
   { key: "keuangan", label: "Keuangan" },
   { key: "kendala", label: "Kendala & Solusi" },
   { key: "inventaris", label: "Inventaris" },
+  { key: "kebutuhan", label: "Kebutuhan Divisi" },
+  { key: "pengajuan", label: "Pengajuan Dana" },
   { key: "program", label: "Program Kerja" },
   { key: "rekap", label: "Rekap Seluruh Divisi" },
 ];
@@ -47,6 +51,7 @@ function tgl(s: string): string {
 interface ReportResult {
   columns: ExportColumn[];
   rows: Record<string, unknown>[];
+  orientation?: "portrait" | "landscape" | "auto";
 }
 
 export function ReportsClient({
@@ -199,7 +204,7 @@ export function ReportsClient({
             title={judul}
             subtitle={subtitle}
             filename={judul}
-            disabled={loading || kosong}
+            orientation={result?.orientation ?? (result?.columns && result.columns.length >= 6 ? "landscape" : "portrait")}
             columns={result?.columns ?? []}
             rows={result?.rows ?? []}
           />
@@ -297,12 +302,13 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return {
+      orientation: "landscape",
       columns: [
-        { header: "Tanggal", key: "tanggal", width: 1.1 },
-        { header: "Divisi", key: "divisi", width: 1.3 },
-        { header: "Kegiatan Hari Ini", key: "kegiatan", width: 2.4 },
-        { header: "Informasi Lain", key: "informasi", width: 1.6 },
-        { header: "Penerima", key: "penerima", width: 1.2 },
+        { header: "Tanggal", key: "tanggal", width: 1.1, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.3, align: "left" },
+        { header: "Kegiatan Hari Ini", key: "kegiatan", width: 2.8, align: "left" },
+        { header: "Informasi Lain", key: "informasi", width: 1.8, align: "left" },
+        { header: "Penerima", key: "penerima", width: 1.2, align: "center" },
       ],
       rows: (data ?? []).map((r) => ({
         tanggal: tgl(r.tanggal),
@@ -355,18 +361,19 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .filter((r) => r.jenis_transaksi === "pengeluaran")
       .reduce((s, r) => s + r.nominal, 0);
     const summary: Record<string, unknown>[] = [
-      { tanggal: "", divisi: "", jenis: "TOTAL", untuk: "", keterangan: "Total Pemasukan", nominal: rupiah(totalMasuk) },
-      { tanggal: "", divisi: "", jenis: "", untuk: "", keterangan: "Total Pengeluaran", nominal: rupiah(totalKeluar) },
-      { tanggal: "", divisi: "", jenis: "", untuk: "", keterangan: "Saldo", nominal: rupiah(totalMasuk - totalKeluar) },
+      { tanggal: "", divisi: "", jenis: "TOTAL", untuk: "", keterangan: "Total Pemasukan", nominal: rupiah(totalMasuk), __total: true },
+      { tanggal: "", divisi: "", jenis: "", untuk: "", keterangan: "Total Pengeluaran", nominal: rupiah(totalKeluar), __total: true },
+      { tanggal: "", divisi: "", jenis: "", untuk: "", keterangan: "Saldo", nominal: rupiah(totalMasuk - totalKeluar), __total: true },
     ];
     return {
+      orientation: "landscape",
       columns: [
-        { header: "Tanggal", key: "tanggal", width: 1.1 },
-        { header: "Divisi", key: "divisi", width: 1.2 },
-        { header: "Jenis", key: "jenis", width: 1 },
-        { header: "Sumber / Untuk", key: "untuk", width: 1.4 },
-        { header: "Keterangan", key: "keterangan", width: 1.8 },
-        { header: "Nominal", key: "nominal", width: 1.2, align: "right" },
+        { header: "Tanggal", key: "tanggal", width: 1.1, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.3, align: "left" },
+        { header: "Jenis", key: "jenis", width: 1, align: "center" },
+        { header: "Sumber / Untuk", key: "untuk", width: 1.6, align: "left" },
+        { header: "Keterangan", key: "keterangan", width: 2.2, align: "left" },
+        { header: "Nominal", key: "nominal", width: 1.4, align: "right" },
       ],
       rows: [...clean, ...summary],
     };
@@ -386,15 +393,31 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       created_at: string;
       laporan_harian: { divisi_id?: string; tanggal?: string } | null;
     };
-    const list = (data ?? []) as unknown as KendalaRow[];
+    let list = (data ?? []) as unknown as KendalaRow[];
+    if (divisiId) {
+      list = list.filter((r) => r.laporan_harian?.divisi_id === divisiId);
+    }
+    if (dateFrom) {
+      list = list.filter(
+        (r) => (r.laporan_harian?.tanggal ?? r.created_at).slice(0, 10) >= dateFrom
+      );
+    }
+    if (dateTo) {
+      list = list.filter(
+        (r) => (r.laporan_harian?.tanggal ?? r.created_at).slice(0, 10) <= dateTo
+      );
+    }
     return {
+      orientation: "landscape",
       columns: [
-        { header: "Tanggal", key: "tanggal", width: 1.1 },
-        { header: "Divisi", key: "divisi", width: 1.3 },
-        { header: "Kendala", key: "kendala", width: 2.2 },
-        { header: "Solusi", key: "solusi", width: 2.2 },
+        { header: "No", key: "no", width: 0.6, align: "center" },
+        { header: "Tanggal", key: "tanggal", width: 1.1, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.4, align: "left" },
+        { header: "Kendala", key: "kendala", width: 2.5, align: "left" },
+        { header: "Solusi", key: "solusi", width: 2.5, align: "left" },
       ],
-      rows: list.map((r) => ({
+      rows: list.map((r, idx) => ({
+        no: idx + 1,
         tanggal: r.laporan_harian?.tanggal ? tgl(r.laporan_harian.tanggal) : tgl(r.created_at),
         divisi: r.laporan_harian?.divisi_id ? name(r.laporan_harian.divisi_id) : "-",
         kendala: r.kendala,
@@ -414,19 +437,111 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return {
+      orientation: "landscape",
       columns: [
-        { header: "Divisi", key: "divisi", width: 1.3 },
-        { header: "Nama Barang", key: "barang", width: 2 },
-        { header: "Jumlah", key: "jumlah", width: 0.8, align: "right" },
-        { header: "Kondisi", key: "kondisi", width: 1.1 },
-        { header: "Keterangan", key: "keterangan", width: 1.8 },
+        { header: "No", key: "no", width: 0.6, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.4, align: "left" },
+        { header: "Nama Barang", key: "barang", width: 2.2, align: "left" },
+        { header: "Jumlah", key: "jumlah", width: 0.8, align: "center" },
+        { header: "Kondisi", key: "kondisi", width: 1.2, align: "center" },
+        { header: "Keterangan", key: "keterangan", width: 2, align: "left" },
       ],
-      rows: (data ?? []).map((r) => ({
+      rows: (data ?? []).map((r, idx) => ({
+        no: idx + 1,
         divisi: name(r.divisi_id),
         barang: r.nama_barang,
         jumlah: r.jumlah ?? 0,
         kondisi: r.kondisi ?? "-",
         keterangan: r.keterangan ?? "-",
+      })),
+    };
+  }
+
+  if (jenis === "kebutuhan") {
+    let q = supabase
+      .from("kebutuhan")
+      .select("id, divisi_id, nama_kebutuhan, jumlah, keterangan, status, tanggal")
+      .order("tanggal", { ascending: true })
+      .limit(MAX_ROWS);
+    if (periodeId) q = q.eq("periode_id", periodeId);
+    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (dateFrom) q = q.gte("tanggal", dateFrom);
+    if (dateTo) q = q.lte("tanggal", dateTo);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const statusLabel: Record<string, string> = {
+      belum: "Belum Diproses",
+      disetujui: "Disetujui",
+      ditolak: "Ditolak",
+      sudah_dipenuhi: "Sudah Dipenuhi",
+    };
+
+    return {
+      orientation: "landscape",
+      columns: [
+        { header: "No", key: "no", width: 0.6, align: "center" },
+        { header: "Tanggal", key: "tanggal", width: 1.2, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.5, align: "left" },
+        { header: "Kebutuhan", key: "kebutuhan", width: 2.3, align: "left" },
+        { header: "Jumlah", key: "jumlah", width: 0.8, align: "center" },
+        { header: "Keterangan", key: "keterangan", width: 2.2, align: "left" },
+        { header: "Status", key: "status", width: 1.4, align: "center" },
+      ],
+      rows: (data ?? []).map((r, idx) => ({
+        no: idx + 1,
+        tanggal: tgl(r.tanggal),
+        divisi: name(r.divisi_id),
+        kebutuhan: r.nama_kebutuhan,
+        jumlah: r.jumlah ?? "-",
+        keterangan: r.keterangan ?? "-",
+        status: statusLabel[r.status] ?? r.status ?? "-",
+      })),
+    };
+  }
+
+  if (jenis === "pengajuan") {
+    let q = supabase
+      .from("pengajuan_dana")
+      .select("id, divisi_id, keperluan, nominal, status_persetujuan, status_pengambilan, tanggal_pengajuan")
+      .order("tanggal_pengajuan", { ascending: true })
+      .limit(MAX_ROWS);
+    if (periodeId) q = q.eq("periode_id", periodeId);
+    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (dateFrom) q = q.gte("tanggal_pengajuan", dateFrom);
+    if (dateTo) q = q.lte("tanggal_pengajuan", dateTo);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const statusPersetujuan: Record<string, string> = {
+      menunggu: "Menunggu",
+      disetujui: "Disetujui",
+      ditolak: "Ditolak",
+    };
+    const statusPengambilan: Record<string, string> = {
+      belum: "Belum Diambil",
+      sudah: "Sudah Diambil",
+    };
+
+    return {
+      orientation: "landscape",
+      columns: [
+        { header: "No", key: "no", width: 0.6, align: "center" },
+        { header: "Tanggal", key: "tanggal", width: 1.2, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.5, align: "left" },
+        { header: "Keperluan", key: "keperluan", width: 2.4, align: "left" },
+        { header: "Nominal", key: "nominal", width: 1.4, align: "right" },
+        { header: "Persetujuan", key: "persetujuan", width: 1.2, align: "center" },
+        { header: "Pengambilan", key: "pengambilan", width: 1.2, align: "center" },
+      ],
+      rows: (data ?? []).map((r, idx) => ({
+        no: idx + 1,
+        tanggal: tgl(r.tanggal_pengajuan),
+        divisi: name(r.divisi_id),
+        keperluan: r.keperluan,
+        nominal: rupiah(r.nominal),
+        persetujuan: statusPersetujuan[r.status_persetujuan] ?? r.status_persetujuan ?? "-",
+        pengambilan: statusPengambilan[r.status_pengambilan] ?? r.status_pengambilan ?? "-",
       })),
     };
   }
@@ -441,13 +556,16 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return {
+      orientation: "landscape",
       columns: [
-        { header: "Divisi", key: "divisi", width: 1.3 },
-        { header: "Nama Program", key: "program", width: 2.2 },
-        { header: "Deskripsi", key: "deskripsi", width: 2.4 },
-        { header: "Berkas", key: "file", width: 1.4 },
+        { header: "No", key: "no", width: 0.6, align: "center" },
+        { header: "Divisi", key: "divisi", width: 1.4, align: "left" },
+        { header: "Nama Program", key: "program", width: 2.4, align: "left" },
+        { header: "Deskripsi", key: "deskripsi", width: 2.6, align: "left" },
+        { header: "Berkas Lampiran", key: "file", width: 1.4, align: "center" },
       ],
-      rows: (data ?? []).map((r) => ({
+      rows: (data ?? []).map((r, idx) => ({
+        no: idx + 1,
         divisi: name(r.divisi_id),
         program: r.nama_program ?? "-",
         deskripsi: r.deskripsi ?? "-",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -15,54 +15,95 @@ import { ToastProvider, useToast } from "@/components/ui/toast";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PeriodePicker } from "@/components/periode-picker";
 import {
-  LayoutDashboard,
-  ClipboardList,
-  Users,
-  CalendarRange,
-  Package,
-  ShoppingBag,
-  Wallet,
-  Building2,
-  Layers,
-  Coins,
   AlertCircle,
-  CalendarDays,
-  CalendarCheck2,
-  LogOut,
-  Menu,
-  X,
+  AlertTriangle,
+  Archive,
+  ArrowLeftRight,
+  Banknote,
+  Boxes,
+  Building2,
   Calendar,
+  CalendarCheck2,
+  CalendarDays,
+  CalendarRange,
+  CircleHelp,
+  ClipboardList,
+  Coins,
+  Database,
+  FileSearch,
+  FileText,
+  FolderKanban,
+  Gauge,
   HandCoins,
   KeyRound,
-  ShieldCheck,
-  Settings2,
-  Archive,
+  Layers,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  Menu,
+  Network,
+  Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Printer,
+  ReceiptText,
+  ScrollText,
+  Send,
   ShieldAlert,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  UserCog,
+  UsersRound,
+  Wallet,
+  X,
 } from "lucide-react";
 import { RealtimeClock } from "@/components/realtime-clock";
 import { stopImpersonationAction } from "@/app/dashboard/actions/impersonation-actions";
 
+/**
+ * Ikon eksplisit per href. Jangan memakai pencocokan substring: beberapa
+ * fitur berbagi kata (mis. "laporan", "divisi", "keuangan") sehingga ikon
+ * lama bisa sama. Setiap fitur di sidebar harus punya ikon berbeda.
+ */
+const NAV_ICONS: Record<string, typeof LayoutDashboard> = {
+  "/dashboard": LayoutDashboard,
+  "/dashboard/superadmin": ShieldCheck,
+  "/dashboard/superadmin/periode": CalendarRange,
+  "/dashboard/superadmin/akun": UserCog,
+  "/dashboard/superadmin/audit": ScrollText,
+  "/dashboard/superadmin/laporan": Printer,
+  "/dashboard/superadmin/backup": Database,
+  "/dashboard/admin": Gauge,
+  "/dashboard/admin/password-divisi": KeyRound,
+  "/dashboard/admin/divisi": Layers,
+  "/dashboard/admin/program-kerja": ListChecks,
+  "/dashboard/laporan": ClipboardList,
+  "/dashboard/anggota": UsersRound,
+  "/dashboard/program-kerja": FolderKanban,
+  "/dashboard/inventaris": Package,
+  "/dashboard/kebutuhan": ShoppingBag,
+  "/dashboard/pengajuan-dana": HandCoins,
+  "/dashboard/keuangan": Wallet,
+  "/dashboard/profil-divisi": Building2,
+  "/dashboard/detail-keuangan": Coins,
+  "/dashboard/monitoring/divisi": Network,
+  "/dashboard/monitoring/laporan": FileSearch,
+  "/dashboard/monitoring/rekap-keuangan": Banknote,
+  "/dashboard/monitoring/rekap-kendala": AlertCircle,
+  "/dashboard/sekretaris/divisi": Boxes,
+  "/dashboard/sekretaris/laporan": FileText,
+  "/dashboard/sekretaris/rekap-keuangan": ReceiptText,
+  "/dashboard/sekretaris/rekap-kendala": AlertTriangle,
+  "/dashboard/bendahara/transaksi": ArrowLeftRight,
+  "/dashboard/bendahara/kebutuhan-divisi": ShoppingCart,
+  "/dashboard/bendahara/pengajuan-dana": Send,
+  "/dashboard/bendahara/rekap-bulanan": CalendarDays,
+  "/dashboard/bendahara/rekap-tahunan": CalendarCheck2,
+};
+
 function getNavIcon(href: string) {
-  if (href === "/dashboard") return LayoutDashboard;
-  if (href.includes("pengajuan-dana")) return HandCoins;
-  if (href.includes("laporan")) return ClipboardList;
-  if (href.includes("anggota")) return Users;
-  if (href.includes("program-kerja")) return CalendarRange;
-  if (href.includes("inventaris")) return Package;
-  if (href.includes("kebutuhan")) return ShoppingBag;
-  if (href.includes("keuangan") || href.includes("transaksi")) return Wallet;
-  if (href.includes("profil-divisi")) return Building2;
-  if (href.includes("password-divisi")) return KeyRound;
-  if (href.includes("superadmin") || href.includes("periode")) return ShieldCheck;
-  if (href.includes("pengaturan")) return Settings2;
-  if (href.includes("divisi")) return Layers;
-  if (href.includes("rekap-keuangan")) return Coins;
-  if (href.includes("rekap-kendala")) return AlertCircle;
-  if (href.includes("rekap-bulanan")) return CalendarDays;
-  if (href.includes("rekap-tahunan")) return CalendarCheck2;
-  return LayoutDashboard;
+  return NAV_ICONS[href] ?? CircleHelp;
 }
 
 /** State Mode Penyamaran yang diteruskan dari server ke shell. */
@@ -95,6 +136,11 @@ function ShellInner({
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Indikator perpindahan halaman. Navigasi App Router menunggu server,
+  // jadi beri umpan balik visual segera setelah link internal diklik.
+  const [navigating, setNavigating] = useState(false);
+  const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Sidebar bisa diciutkan agar konten lebih lega. State disimpan di
   // localStorage supaya konsisten antar halaman. Default: terbuka (expanded),
   // sehingga tampilan role lain tidak berubah sama sekali.
@@ -109,6 +155,64 @@ function ShellInner({
       /* localStorage tidak tersedia — abaikan. */
     }
   }, []);
+
+  useEffect(() => {
+    function clearTimer() {
+      if (navTimer.current) {
+        clearTimeout(navTimer.current);
+        navTimer.current = null;
+      }
+    }
+
+    function handleInternalNavigation(event: MouseEvent) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const link =
+        event.target instanceof Element
+          ? event.target.closest("a[href]")
+          : null;
+      if (!(link instanceof HTMLAnchorElement)) return;
+      if (link.target && link.target !== "_self") return;
+      if (link.hasAttribute("download")) return;
+
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      ) {
+        return;
+      }
+
+      setNavigating(true);
+      clearTimer();
+      // Pengaman bila navigasi dibatalkan atau gagal tanpa perubahan path.
+      navTimer.current = setTimeout(() => setNavigating(false), 8000);
+    }
+
+    document.addEventListener("click", handleInternalNavigation, true);
+    return () => {
+      document.removeEventListener("click", handleInternalNavigation, true);
+      clearTimer();
+    };
+  }, []);
+
+  useEffect(() => {
+    setNavigating(false);
+    if (navTimer.current) {
+      clearTimeout(navTimer.current);
+      navTimer.current = null;
+    }
+  }, [pathname]);
 
   function toggleCollapsed() {
     setCollapsed((c) => {
@@ -216,6 +320,7 @@ function ShellInner({
         >
           <Link
             href="/dashboard"
+            prefetch
             className={`group flex min-w-0 flex-col justify-center ${v ? "items-center" : ""}`}
           >
             {v ? (
@@ -286,8 +391,11 @@ function ShellInner({
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        prefetch
                         title={v ? item.label : undefined}
                         onClick={() => setMobileOpen(false)}
+                        onMouseEnter={() => router.prefetch(item.href)}
+                        onFocus={() => router.prefetch(item.href)}
                         className={`group flex items-center rounded-xl py-2.5 text-xs font-medium transition-all duration-150 ${
                           v ? "justify-center px-2" : "gap-3 px-3"
                         } ${active ? "sidebar-link-active font-semibold" : "sidebar-link"}`}
@@ -359,6 +467,16 @@ function ShellInner({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {navigating && (
+        <div
+          role="progressbar"
+          aria-label="Memuat halaman"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-0.5 overflow-hidden bg-brand-100 dark:bg-brand-950"
+        >
+          <div className="h-full w-1/3 animate-nav-progress bg-brand-600 dark:bg-brand-400" />
+        </div>
+      )}
+
       {/* Desktop Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-30 hidden lg:block transition-[width] duration-300 border-r shadow-card dark:shadow-elevated ${collapsed ? "w-16" : "w-64"}`}>
         {buildSidebar(collapsed, { collapsible: true })}

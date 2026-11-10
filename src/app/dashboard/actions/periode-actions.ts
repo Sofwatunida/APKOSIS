@@ -319,6 +319,7 @@ export async function setDivisiPeriodAction(formData: FormData): Promise<PeriodA
     return fail(error.message);
   }
   await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: periodeId ?? "lepas", success: true });
+  revalidatePath("/dashboard/superadmin/akun");
   revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/admin/divisi");
   return ok("Periode divisi diperbarui.");
@@ -359,6 +360,153 @@ export async function createDivisiAction(
   revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/superadmin/akun");
   return ok(`Divisi ${nama} (nomor ${nomor}) berhasil ditambahkan.`);
+}
+
+/** Mengubah nama tampilan sebuah akun (hanya Super Admin). */
+export async function updateAccountNameAction(
+  formData: FormData
+): Promise<PeriodActionResult> {
+  const auth = await requireSuperAdmin();
+  if ("error" in auth) return auth.error;
+
+  const userId = String(formData.get("user_id") ?? "");
+  const nama = String(formData.get("nama") ?? "").trim();
+
+  if (!userId) return fail("Akun tidak valid.");
+  if (!nama) return fail("Nama akun tidak boleh kosong.");
+  if (nama.length > 120) return fail("Nama akun maksimal 120 karakter.");
+
+  const { error } = await auth.supabase
+    .from("profiles")
+    .update({ nama })
+    .eq("id", userId);
+
+  if (error) {
+    await writeAuditLog({ action: "ubah_nama_akun", targetType: "user", targetId: userId, success: false });
+    return fail(pesanDb(error.message));
+  }
+
+  await writeAuditLog({ action: "ubah_nama_akun", targetType: "user", targetId: userId, detail: nama, success: true });
+  revalidatePath("/dashboard/superadmin/akun");
+  return ok("Nama akun diperbarui.");
+}
+
+/**
+ * Menghapus akun (hanya Super Admin).
+ *
+ * RPC `admin_account_delete` menghapus baris `auth.users` sehingga profil
+ * ikut terhapus lewat cascade. Bila migration belum diterapkan, fungsi
+ * tersebut belum ada; dalam kondisi itu baris `profiles` dihapus langsung
+ * supaya akun tetap kehilangan akses ke aplikasi.
+ */
+export async function deleteAccountAction(
+  formData: FormData
+): Promise<PeriodActionResult> {
+  const auth = await requireSuperAdmin();
+  if ("error" in auth) return auth.error;
+
+  const me = await getProfile();
+  const userId = String(formData.get("user_id") ?? "");
+
+  if (!userId) return fail("Akun tidak valid.");
+  if (me && userId === me.id) {
+    return fail("Anda tidak boleh menghapus akun Anda sendiri.");
+  }
+
+  const { error } = await auth.supabase.rpc("admin_account_delete", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    const functionMissing =
+      error.code === "PGRST202" ||
+      error.code === "42883" ||
+      /could not find the function/i.test(error.message);
+
+    if (!functionMissing) {
+      await writeAuditLog({ action: "hapus_akun", targetType: "user", targetId: userId, success: false });
+      return fail(pesanDb(error.message));
+    }
+
+    const { error: profileError } = await auth.supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
+    if (profileError) {
+      await writeAuditLog({ action: "hapus_akun", targetType: "user", targetId: userId, success: false });
+      return fail(pesanDb(profileError.message));
+    }
+  }
+
+  await writeAuditLog({ action: "hapus_akun", targetType: "user", targetId: userId, success: true });
+  revalidatePath("/dashboard/superadmin/akun");
+  return ok("Akun berhasil dihapus.");
+}
+
+/** Mengubah nomor, nama, dan periode sebuah divisi (hanya Super Admin). */
+export async function updateDivisiAction(
+  formData: FormData
+): Promise<PeriodActionResult> {
+  const auth = await requireSuperAdmin();
+  if ("error" in auth) return auth.error;
+
+  const divisiId = String(formData.get("divisi_id") ?? "");
+  const nomor = Number(formData.get("nomor_divisi"));
+  const nama = String(formData.get("nama_divisi") ?? "").trim();
+  const periodeId = String(formData.get("periode_id") ?? "") || null;
+
+  if (!divisiId) return fail("Divisi tidak valid.");
+  if (!Number.isInteger(nomor) || nomor < 1) {
+    return fail("Nomor divisi harus berupa angka lebih dari 0.");
+  }
+  if (!nama) return fail("Nama divisi tidak boleh kosong.");
+  if (nama.length > 120) return fail("Nama divisi maksimal 120 karakter.");
+
+  const { error } = await auth.supabase
+    .from("divisi")
+    .update({
+      nomor_divisi: nomor,
+      nama_divisi: nama,
+      periode_id: periodeId,
+    })
+    .eq("id", divisiId);
+
+  if (error) {
+    await writeAuditLog({ action: "ubah_divisi", targetType: "divisi", targetId: divisiId, success: false });
+    return fail(pesanDb(error.message));
+  }
+
+  await writeAuditLog({ action: "ubah_divisi", targetType: "divisi", targetId: divisiId, detail: `${nomor} - ${nama}`, success: true });
+  revalidatePath("/dashboard/superadmin/akun");
+  revalidatePath("/dashboard/superadmin/divisi");
+  return ok(`Divisi ${nama} berhasil diperbarui.`);
+}
+
+/** Menghapus divisi (hanya Super Admin). */
+export async function deleteDivisiAction(
+  formData: FormData
+): Promise<PeriodActionResult> {
+  const auth = await requireSuperAdmin();
+  if ("error" in auth) return auth.error;
+
+  const divisiId = String(formData.get("divisi_id") ?? "");
+  if (!divisiId) return fail("Divisi tidak valid.");
+
+  const { error } = await auth.supabase
+    .from("divisi")
+    .delete()
+    .eq("id", divisiId);
+
+  if (error) {
+    await writeAuditLog({ action: "hapus_divisi", targetType: "divisi", targetId: divisiId, success: false });
+    return fail(pesanDb(error.message));
+  }
+
+  await writeAuditLog({ action: "hapus_divisi", targetType: "divisi", targetId: divisiId, success: true });
+  revalidatePath("/dashboard/superadmin/akun");
+  revalidatePath("/dashboard/superadmin/divisi");
+  return ok("Divisi berhasil dihapus.");
 }
 
 /**

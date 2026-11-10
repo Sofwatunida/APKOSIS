@@ -32,6 +32,7 @@ module.exports = {
       animation: {
         'fade-in': 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        'nav-progress': 'navProgress 1.1s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -41,6 +42,10 @@ module.exports = {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        navProgress: {
+          '0%': { transform: 'translateX(-120%)' },
+          '100%': { transform: 'translateX(420%)' },
         },
       },
     },

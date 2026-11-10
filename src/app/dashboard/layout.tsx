@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, getProfile } from "@/lib/auth";
+import { getProfile } from "@/lib/auth";
+import { AppShellRoot } from "@/components/app-shell";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
   const profile = await getProfile();
 
-  if (!user) redirect("/login");
+  if (!profile || !profile.role) redirect("/login");
 
-  return <div className="min-h-screen">{children}</div>;
+  return <AppShellRoot profile={profile}>{children}</AppShellRoot>;
 }

@@ -136,7 +136,7 @@ export default async function SuperAdminDashboard() {
                           className="underline"
                           href={`/dashboard/superadmin/akun?periode=${p.id}`}
                         >
-                          Kelola akun
+                          Kelola akun & divisi
                         </a>
                       </td>
                     </tr>
@@ -166,15 +166,10 @@ export default async function SuperAdminDashboard() {
               </li>
               <li>
                 <a className="underline" href="/dashboard/superadmin/akun">
-                  Kelola Akun
+                  Pengelolaan Akun & Divisi
                 </a>{" "}
-                — tetapkan Admin periode, ubah role, dan reset password divisi.
-              </li>
-              <li>
-                <a className="underline" href="/dashboard/superadmin/divisi">
-                  Kelola Divisi
-                </a>{" "}
-                — hubungkan divisi ke periode yang sedang berjalan.
+                — tetapkan Admin periode, ubah role, kelola divisi, dan reset
+                password divisi.
               </li>
             </ul>
             {ctx.allPeriodsMode && (

@@ -29,6 +29,8 @@ interface ExportMenuProps {
   size?: "sm" | "md";
   /** KOP surat; default memakai identitas sekolah dari `school-config`. */
   kop?: SchoolKop;
+  /** Orientasi cetak PDF: portrait, landscape, atau auto (default). */
+  orientation?: "portrait" | "landscape" | "auto";
 }
 
 const FORMATS: {
@@ -74,6 +76,7 @@ export function ExportMenu({
   disabled,
   size = "sm",
   kop = DEFAULT_SCHOOL_KOP,
+  orientation,
 }: ExportMenuProps) {
   const { success, error } = useToast();
   // Phase 11: setiap file export harus menyebut periode asalnya supaya
@@ -112,6 +115,7 @@ export function ExportMenu({
         rows,
         // KOP surat sekolah (bisa diganti lewat prop `kop`).
         kop,
+        orientation,
         // Nama file memuat periode agar tidak tertukar antar periode.
         filename: `${filename ?? title}-${periodeLabel.replace(/[^\w-]+/g, "-")}`,
       });

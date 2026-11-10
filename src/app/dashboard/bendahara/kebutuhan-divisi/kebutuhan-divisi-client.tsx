@@ -238,21 +238,25 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
           title="Kebutuhan Divisi"
           subtitle="Rekap kebutuhan seluruh divisi"
           filename="kebutuhan-divisi-bendahara"
-          disabled={filtered.length === 0}
+          orientation="landscape"
           columns={[
-            { header: "Tanggal", key: "tanggal", width: 13 },
-            { header: "Divisi", key: "divisi", width: 18 },
-            { header: "Kebutuhan", key: "kebutuhan", width: 26 },
-            { header: "Jumlah", key: "jumlah", width: 9 },
-            { header: "Status", key: "status", width: 15 },
-            { header: "Pelapor", key: "pelapor", width: 19 },
+            { header: "No", key: "no", width: 5, align: "center" },
+            { header: "Tanggal", key: "tanggal", width: 12, align: "center" },
+            { header: "Divisi", key: "divisi", width: 16, align: "left" },
+            { header: "Kebutuhan", key: "kebutuhan", width: 22, align: "left" },
+            { header: "Jumlah", key: "jumlah", width: 8, align: "center" },
+            { header: "Keterangan", key: "keterangan", width: 24, align: "left" },
+            { header: "Status", key: "status", width: 13, align: "center" },
+            { header: "Pelapor", key: "pelapor", width: 15, align: "left" },
           ]}
-          rows={filtered.map((k) => ({
+          rows={filtered.map((k, idx) => ({
+            no: idx + 1,
             tanggal: formatDate(k.tanggal_efektif),
             divisi: k.nama_divisi,
             kebutuhan: k.nama_kebutuhan,
             jumlah: k.jumlah ?? "-",
-            status: STATUS_KEBUTUHAN_LABEL[k.status],
+            keterangan: k.keterangan ?? "-",
+            status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
             pelapor: k.pelapor,
           }))}
         />

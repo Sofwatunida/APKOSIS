@@ -1024,6 +1024,10 @@ Relationships: [
         Args: { p_nomor: number; p_nama: string; p_periode_id?: string | null };
         Returns: string;
       };
+      admin_account_delete: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
       admin_reset_periode_data: {
         Args: { p_periode_id: string };
         Returns: Json;
