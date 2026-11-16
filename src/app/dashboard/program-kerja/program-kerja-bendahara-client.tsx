@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, ProgramKerja } from "@/lib/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea, Select } from "@/components/ui/form";
@@ -378,16 +378,14 @@ export function ProgramKerjaBendaharaClient({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {canControl ? "Kontrol Semua Program Kerja" : "Program Kerja"}
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {canControl
+      <PageHeader
+        title={canControl ? "Kontrol Semua Program Kerja" : "Program Kerja"}
+        description={
+          canControl
             ? "Tambah, ubah, hapus, dan catat program kerja seluruh divisi"
-            : "Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)"}
-        </p>
-      </div>
+            : "Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)"
+        }
+      />
 
       <Card>
         <CardHeader title="Pilih Divisi" subtitle="Pilih divisi yang ingin dikelola program kerjanya" />

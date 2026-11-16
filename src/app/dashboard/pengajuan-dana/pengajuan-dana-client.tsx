@@ -14,7 +14,7 @@ import {
 import { validatePengajuanDana } from "@/lib/validation";
 import { formatDate, todayISO } from "@/lib/date";
 import { formatRupiah } from "@/lib/format";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
@@ -175,52 +175,48 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Pengajuan Dana
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Ajukan dana untuk kebutuhan {namaDivisi} yang sudah disetujui Bendahara
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportMenu
-            title="Pengajuan Dana"
-            subtitle={`${namaDivisi} - daftar pengajuan dana`}
-            filename="pengajuan-dana"
-            disabled={items.length === 0}
-            columns={[
-              { header: "Tanggal", key: "tanggal", width: 14 },
-              { header: "Kebutuhan", key: "kebutuhan", width: 30 },
-              { header: "Keperluan", key: "keperluan", width: 28 },
-              { header: "Nominal", key: "nominal", width: 16 },
-              { header: "Persetujuan", key: "persetujuan", width: 14 },
-              { header: "Pengambilan", key: "pengambilan", width: 14 },
-            ]}
-            rows={items.map((p) => ({
-              tanggal: formatDate(p.tanggal_pengajuan),
-              kebutuhan: p.nama_kebutuhan ?? "-",
-              keperluan: p.keperluan,
-              nominal: formatRupiah(p.nominal),
-              persetujuan: STATUS_PERSETUJUAN_LABEL[p.status_persetujuan],
-              pengambilan: STATUS_PENGAMBILAN_LABEL[p.status_pengambilan],
-            }))}
-          />
-          <Button
-            onClick={openAdd}
-            disabled={pilihanKebutuhan.length === 0}
-            title={
-              pilihanKebutuhan.length === 0
-                ? "Tidak ada kebutuhan berstatus \"Disetujui\" yang belum punya pengajuan"
-                : "Buat pengajuan dana baru"
-            }
-          >
-            <Plus className="h-4 w-4" />
-            Ajukan Dana
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Pengajuan Dana"
+        description={`Ajukan dana untuk kebutuhan ${namaDivisi} yang sudah disetujui Bendahara`}
+        action={
+          <>
+            <ExportMenu
+              title="Pengajuan Dana"
+              subtitle={`${namaDivisi} - daftar pengajuan dana`}
+              filename="pengajuan-dana"
+              disabled={items.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 14 },
+                { header: "Kebutuhan", key: "kebutuhan", width: 30 },
+                { header: "Keperluan", key: "keperluan", width: 28 },
+                { header: "Nominal", key: "nominal", width: 16 },
+                { header: "Persetujuan", key: "persetujuan", width: 14 },
+                { header: "Pengambilan", key: "pengambilan", width: 14 },
+              ]}
+              rows={items.map((p) => ({
+                tanggal: formatDate(p.tanggal_pengajuan),
+                kebutuhan: p.nama_kebutuhan ?? "-",
+                keperluan: p.keperluan,
+                nominal: formatRupiah(p.nominal),
+                persetujuan: STATUS_PERSETUJUAN_LABEL[p.status_persetujuan],
+                pengambilan: STATUS_PENGAMBILAN_LABEL[p.status_pengambilan],
+              }))}
+            />
+            <Button
+              onClick={openAdd}
+              disabled={pilihanKebutuhan.length === 0}
+              title={
+                pilihanKebutuhan.length === 0
+                  ? "Tidak ada kebutuhan berstatus \"Disetujui\" yang belum punya pengajuan"
+                  : "Buat pengajuan dana baru"
+              }
+            >
+              <Plus className="h-4 w-4" />
+              Ajukan Dana
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />

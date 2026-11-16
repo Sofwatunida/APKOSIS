@@ -8,7 +8,7 @@ import {
   isKebutuhanBaru,
   type KebutuhanDetail,
 } from "@/lib/kebutuhan";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea } from "@/components/ui/form";
@@ -177,41 +177,37 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Kebutuhan Divisi
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Daftar kebutuhan yang diajukan divisi
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportMenu
-            title="Kebutuhan Divisi"
-            subtitle={namaDivisi ? `Divisi: ${namaDivisi}` : undefined}
-            filename={namaDivisi ? `kebutuhan-${namaDivisi.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "kebutuhan-divisi"}
-            orientation="portrait"
-            columns={[
-              { header: "No", key: "no", width: 6, align: "center" },
-              { header: "Tanggal", key: "tanggal", width: 14, align: "center" },
-              { header: "Kebutuhan", key: "nama_kebutuhan", width: 28, align: "left" },
-              { header: "Jumlah", key: "jumlah", width: 10, align: "center" },
-              { header: "Status", key: "status", width: 16, align: "center" },
-              { header: "Keterangan", key: "keterangan", width: 26, align: "left" },
-            ]}
-            rows={items.map((k, idx) => ({
-              no: idx + 1,
-              tanggal: formatDate(k.tanggal_efektif),
-              nama_kebutuhan: k.nama_kebutuhan,
-              jumlah: k.jumlah ?? "-",
-              status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
-              keterangan: k.keterangan ?? "-",
-            }))}
-          />
-          <Button onClick={openAdd}>+ Tambah Kebutuhan</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Kebutuhan Divisi"
+        description="Daftar kebutuhan yang diajukan divisi"
+        action={
+          <>
+            <ExportMenu
+              title="Kebutuhan Divisi"
+              subtitle={namaDivisi ? `Divisi: ${namaDivisi}` : undefined}
+              filename={namaDivisi ? `kebutuhan-${namaDivisi.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "kebutuhan-divisi"}
+              orientation="portrait"
+              columns={[
+                { header: "No", key: "no", width: 6, align: "center" },
+                { header: "Tanggal", key: "tanggal", width: 14, align: "center" },
+                { header: "Kebutuhan", key: "nama_kebutuhan", width: 28, align: "left" },
+                { header: "Jumlah", key: "jumlah", width: 10, align: "center" },
+                { header: "Status", key: "status", width: 16, align: "center" },
+                { header: "Keterangan", key: "keterangan", width: 26, align: "left" },
+              ]}
+              rows={items.map((k, idx) => ({
+                no: idx + 1,
+                tanggal: formatDate(k.tanggal_efektif),
+                nama_kebutuhan: k.nama_kebutuhan,
+                jumlah: k.jumlah ?? "-",
+                status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
+                keterangan: k.keterangan ?? "-",
+              }))}
+            />
+            <Button onClick={openAdd}>+ Tambah Kebutuhan</Button>
+          </>
+        }
+      />
 
       <div className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />

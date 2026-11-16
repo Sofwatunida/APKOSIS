@@ -8,12 +8,48 @@ export interface FinanceSummary {
   totalSaldo: number;
 }
 
+export interface SaldoAwalEntry {
+  divisiId: string | null;
+  nominal: number;
+}
+
+/**
+ * Semua baris saldo awal periode terpilih.
+ *
+ * Periode sudah difilter otomatis oleh `src/lib/supabase/client.ts`,
+ * jadi tidak mungkin mencampur saldo awal antarperiode.
+ */
+export async function fetchSaldoAwalEntries(
+  supabase: SupabaseClient<Database>
+): Promise<SaldoAwalEntry[]> {
+  const { data } = await supabase
+    .from("saldo_awal")
+    .select("divisi_id, nominal");
+
+  return (data ?? []).map((row) => ({
+    divisiId: row.divisi_id,
+    nominal: Number(row.nominal) || 0,
+  }));
+}
+
+/** Peta `divisi_id` -> nominal saldo awal (baris umum lama tidak ikut). */
+export async function fetchSaldoAwalMap(
+  supabase: SupabaseClient<Database>
+): Promise<Map<string, number>> {
+  const entries = await fetchSaldoAwalEntries(supabase);
+  const map = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.divisiId) map.set(entry.divisiId, entry.nominal);
+  }
+  return map;
+}
+
 /**
  * Ringkasan kas untuk periode yang sedang dipilih.
  *
- * Periode sudah difilter oleh `src/lib/supabase/client.ts`
- * (query otomatis diberi `periode_id`), sehingga fungsi ini TIDAK
- * pernah menggabungkan data antarperiode.
+ * Saldo awal dijumlahkan dari seluruh divisi (plus baris umum lama
+ * bila masih ada), sehingga kartu ringkasan selalu konsisten dengan
+ * tabel saldo awal per divisi.
  */
 export async function fetchFinanceSummary(
   supabase: SupabaseClient<Database>
@@ -30,12 +66,7 @@ export async function fetchFinanceSummary(
     else pengeluaran += n;
   });
 
-  const { data: saldo } = await supabase
-    .from("saldo_awal")
-    .select("nominal")
-    .maybeSingle();
-
-  const saldoAwal = Number(saldo?.nominal) || 0;
+  const saldoAwal = await fetchSaldoAwal(supabase);
   return {
     saldoAwal,
     pemasukan,
@@ -44,32 +75,67 @@ export async function fetchFinanceSummary(
   };
 }
 
-/** Saldo awal KHUSUS periode terpilih (satu baris per periode). */
+/**
+ * Total saldo awal periode terpilih.
+ *
+ * Tanpa `divisiId`, hasilnya jumlah saldo awal seluruh divisi. Baris
+ * umum lama (tanpa divisi) hanya dipakai sebagai fallback bila belum
+ * ada satu pun saldo awal per divisi, sehingga tidak terjadi hitung
+ * ganda. Dengan `divisiId`, hasilnya saldo awal divisi tersebut saja.
+ */
 export async function fetchSaldoAwal(
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient<Database>,
+  divisiId?: string | null
 ): Promise<number> {
-  const { data: saldo } = await supabase
-    .from("saldo_awal")
-    .select("nominal")
-    .maybeSingle();
-  return Number(saldo?.nominal) || 0;
+  if (divisiId) {
+    const { data } = await supabase
+      .from("saldo_awal")
+      .select("nominal")
+      .eq("divisi_id", divisiId)
+      .maybeSingle();
+    return Number(data?.nominal) || 0;
+  }
+
+  const entries = await fetchSaldoAwalEntries(supabase);
+  const perDivisi = entries.filter((entry) => entry.divisiId);
+  const used = perDivisi.length > 0 ? perDivisi : entries;
+  return used.reduce((total, entry) => total + entry.nominal, 0);
 }
 
 /**
- * Menyimpan saldo awal periode terpilih.
- * `periode_id` diisi otomatis oleh period scope, dan unik per periode
- * sehingga saldo awal antarperiode tidak saling menimpa.
+ * Menyimpan saldo awal satu divisi pada periode terpilih.
+ *
+ * `periode_id` diisi otomatis oleh period scope. Unik per
+ * (periode_id, divisi_id) sehingga saldo awal antarperiode maupun
+ * antardivisi tidak saling menimpa. `divisiId = null` menulis baris
+ * umum lama (fallback) dan hanya dipakai untuk kompatibilitas.
  */
 export async function saveSaldoAwal(
   supabase: SupabaseClient<Database>,
   nominal: number,
-  userId: string | null
+  userId: string | null,
+  divisiId: string | null = null
 ): Promise<{ error: { message: string } | null }> {
-  const { error } = await supabase
-    .from("saldo_awal")
-    .upsert(
-      { nominal, updated_by: userId, updated_at: new Date().toISOString() },
-      { onConflict: "periode_id" }
-    );
+  const existingQuery = supabase.from("saldo_awal").select("id");
+  const { data: existing, error: findError } = divisiId
+    ? await existingQuery.eq("divisi_id", divisiId).maybeSingle()
+    : await existingQuery.is("divisi_id", null).maybeSingle();
+
+  if (findError) return { error: findError };
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("saldo_awal")
+      .update({ nominal, updated_by: userId, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    return { error };
+  }
+
+  const { error } = await supabase.from("saldo_awal").insert({
+    nominal,
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+    divisi_id: divisiId,
+  });
   return { error };
 }

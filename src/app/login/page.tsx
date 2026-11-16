@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ToastProvider } from "@/components/ui/toast";
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
@@ -50,15 +50,11 @@ export default function LoginPage() {
         <div className="relative w-full max-w-sm animate-fade-in">
           {/* Brand Header */}
           <div className="mb-10 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 px-3 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 mb-5 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
-              Portal OSIS Modern
-            </div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-950 dark:text-white">
               APKOSIS
             </h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-              Aplikasi Pencatatan & Monitoring Laporan Harian OSIS
+              Aplikasi Pencatatan Laporan Harian OSIS Berbasis Digital
             </p>
           </div>
 
@@ -130,7 +126,7 @@ export default function LoginPage() {
 
               {error && (
                 <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/20 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-500/20 dark:bg-rose-900/20 dark:text-rose-300" role="alert">
-                  <span className="font-bold">⚠️</span>
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
@@ -153,7 +149,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
-            APKOSIS &copy; 2026 &middot; Sistem Manajemen & Akuntabilitas OSIS
+            APKOSIS &copy; 2026
           </p>
         </div>
       </div>

@@ -563,22 +563,25 @@ Relationships: [
       };
       saldo_awal: {
         Row: {
-          id: number;
+          id: string;
           periode_id: string;
+          divisi_id: string | null;
           nominal: number;
           updated_by: string | null;
           updated_at: string;
         };
         Insert: {
-          id?: number;
+          id?: string;
           periode_id?: string;
+          divisi_id?: string | null;
           nominal?: number;
           updated_by?: string | null;
           updated_at?: string;
         };
         Update: {
-          id?: number;
+          id?: string;
           periode_id?: string;
+          divisi_id?: string | null;
           nominal?: number;
           updated_by?: string | null;
           updated_at?: string;
@@ -594,6 +597,12 @@ Relationships: [
             foreignKeyName: "saldo_awal_periode_id_fkey";
             columns: ["periode_id"];
             referencedRelation: "periods";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saldo_awal_divisi_id_fkey";
+            columns: ["divisi_id"];
+            referencedRelation: "divisi";
             referencedColumns: ["id"];
           }
         ];

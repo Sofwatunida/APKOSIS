@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { getPeriodeContext } from "@/lib/period";
 import { ALL_PERIODS_VALUE } from "@/lib/period-constants";
 import { createClient } from "@/lib/supabase/server";
@@ -111,39 +112,37 @@ export default async function SuperAdminDashboard() {
             icon={<CalendarDays className="h-5 w-5" />}
           />
           <CardContent>
-            <div className="table-scroll">
-              <table className="w-full min-w-[30rem] text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="p-2 text-left">Periode</th>
-                    <th className="p-2 text-left">Tahun</th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-left">Tautan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ctx.options.map((p) => (
-                    <tr key={p.id} className="border-b last:border-0">
-                      <td className="p-2 font-medium">{p.namaPeriode}</td>
-                      <td className="p-2">
-                        {p.tahunMulai}/{p.tahunSelesai}
-                      </td>
-                      <td className="whitespace-nowrap p-2">
-                        {periodBadge(p.status)}
-                      </td>
-                      <td className="p-2">
-                        <a
-                          className="underline"
-                          href={`/dashboard/superadmin/akun?periode=${p.id}`}
-                        >
-                          Kelola akun & divisi
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TableWrap minWidth={480}>
+              <THead>
+                <tr>
+                  <TH>Periode</TH>
+                  <TH>Tahun</TH>
+                  <TH>Status</TH>
+                  <TH>Tautan</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {ctx.options.map((p) => (
+                  <TR key={p.id}>
+                    <TD className="font-medium">{p.namaPeriode}</TD>
+                    <TD>
+                      {p.tahunMulai}/{p.tahunSelesai}
+                    </TD>
+                    <TD className="whitespace-nowrap">
+                      {periodBadge(p.status)}
+                    </TD>
+                    <TD>
+                      <a
+                        className="underline"
+                        href={`/dashboard/superadmin/akun?periode=${p.id}`}
+                      >
+                        Kelola akun & divisi
+                      </a>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </TableWrap>
           </CardContent>
         </Card>
 

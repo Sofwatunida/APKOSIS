@@ -14,7 +14,7 @@ import {
 import { formatDate } from "@/lib/date";
 import { formatRupiah } from "@/lib/format";
 import { buildDivisiOptions } from "@/lib/divisi-options";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
@@ -161,40 +161,36 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Pengajuan Dana
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Kelola persetujuan &amp; pengambilan dana seluruh divisi
-          </p>
-        </div>
-        <ExportMenu
-          title="Pengajuan Dana"
-          subtitle="Seluruh divisi"
-          filename="pengajuan-dana-bendahara"
-          disabled={filtered.length === 0}
-          columns={[
-            { header: "Tanggal", key: "tanggal", width: 13 },
-            { header: "Divisi", key: "divisi", width: 18 },
-            { header: "Kebutuhan", key: "kebutuhan", width: 24 },
-            { header: "Pengaju", key: "pengaju", width: 18 },
-            { header: "Nominal", key: "nominal", width: 15 },
-            { header: "Persetujuan", key: "persetujuan", width: 14 },
-            { header: "Pengambilan", key: "pengambilan", width: 14 },
-          ]}
-          rows={filtered.map((p) => ({
-            tanggal: formatDate(p.tanggal_pengajuan),
-            divisi: p.nama_divisi,
-            kebutuhan: p.nama_kebutuhan ?? "-",
-            pengaju: p.nama_pengaju,
-            nominal: formatRupiah(p.nominal),
-            persetujuan: STATUS_PERSETUJUAN_LABEL[p.status_persetujuan],
-            pengambilan: STATUS_PENGAMBILAN_LABEL[p.status_pengambilan],
-          }))}
-        />
-      </div>
+      <PageHeader
+        title="Pengajuan Dana"
+        description="Kelola persetujuan & pengambilan dana seluruh divisi"
+        action={
+          <ExportMenu
+            title="Pengajuan Dana"
+            subtitle="Seluruh divisi"
+            filename="pengajuan-dana-bendahara"
+            disabled={filtered.length === 0}
+            columns={[
+              { header: "Tanggal", key: "tanggal", width: 13 },
+              { header: "Divisi", key: "divisi", width: 18 },
+              { header: "Kebutuhan", key: "kebutuhan", width: 24 },
+              { header: "Pengaju", key: "pengaju", width: 18 },
+              { header: "Nominal", key: "nominal", width: 15 },
+              { header: "Persetujuan", key: "persetujuan", width: 14 },
+              { header: "Pengambilan", key: "pengambilan", width: 14 },
+            ]}
+            rows={filtered.map((p) => ({
+              tanggal: formatDate(p.tanggal_pengajuan),
+              divisi: p.nama_divisi,
+              kebutuhan: p.nama_kebutuhan ?? "-",
+              pengaju: p.nama_pengaju,
+              nominal: formatRupiah(p.nominal),
+              persetujuan: STATUS_PERSETUJUAN_LABEL[p.status_persetujuan],
+              pengambilan: STATUS_PENGAMBILAN_LABEL[p.status_pengambilan],
+            }))}
+          />
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">

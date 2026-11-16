@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
-import { fetchSaldoAwal } from "@/lib/finance";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { fetchSaldoAwal, fetchSaldoAwalMap } from "@/lib/finance";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -38,7 +38,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
   const [perDivisi, setPerDivisi] = useState<
-    Array<{ id: string; nama: string; masuk: number; keluar: number }>
+    Array<{ id: string; nama: string; saldoAwal: number; masuk: number; keluar: number }>
   >([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
 
@@ -49,6 +49,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       const month = String(filterMonth).padStart(2, "0");
 
       const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
+      const saldoMap = await fetchSaldoAwalMap(supabase);
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
         .select("divisi_id, jenis_transaksi, nominal")
@@ -68,6 +69,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
         (div ?? []).map((d) => ({
           id: d.id,
           nama: d.nama_divisi,
+          saldoAwal: saldoMap.get(d.id) ?? 0,
           masuk: map.get(d.id)?.masuk ?? 0,
           keluar: map.get(d.id)?.keluar ?? 0,
         }))
@@ -80,6 +82,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
 
   const totalMasuk = perDivisi.reduce((s, d) => s + d.masuk, 0);
   const totalKeluar = perDivisi.reduce((s, d) => s + d.keluar, 0);
+  const totalSaldoAwalDivisi = perDivisi.reduce((s, d) => s + d.saldoAwal, 0);
   const saldoSekarang = saldoAwal + totalMasuk - totalKeluar;
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
@@ -99,7 +102,10 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rekap Keuangan Bulanan</h1>
+      <PageHeader
+        title="Rekap Keuangan Bulanan"
+        description="Ringkasan pemasukan, pengeluaran, dan saldo seluruh divisi per bulan."
+      />
 
       <Card>
         <CardHeader title="Filter" />
@@ -142,7 +148,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
             <p className={`mt-1 text-2xl font-bold ${saldoSekarang >= 0 ? "text-brand-600 dark:text-brand-400" : "text-red-600 dark:text-red-400"}`}>
               {formatRupiah(saldoSekarang)}
             </p>
-            <p className="mt-1 text-xs text-slate-400">git</p>
           </CardContent>
         </Card>
       </div>
@@ -241,23 +246,26 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
               filename="rekap-keuangan-bulanan-per-divisi"
               disabled={perDivisi.length === 0}
               columns={[
-                { header: "Divisi", key: "divisi", width: 24 },
-                { header: "Pemasukan", key: "pemasukan", width: 20, align: "right" },
-                { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
-                { header: "Saldo", key: "saldo", width: 20, align: "right" },
+                { header: "Divisi", key: "divisi", width: 22 },
+                { header: "Saldo Awal", key: "saldoAwal", width: 18, align: "right" },
+                { header: "Pemasukan", key: "pemasukan", width: 18, align: "right" },
+                { header: "Pengeluaran", key: "pengeluaran", width: 18, align: "right" },
+                { header: "Saldo", key: "saldo", width: 18, align: "right" },
               ]}
               rows={[
                 ...perDivisi.map((d) => ({
                   divisi: d.nama,
+                  saldoAwal: formatRupiah(d.saldoAwal),
                   pemasukan: formatRupiah(d.masuk),
                   pengeluaran: formatRupiah(d.keluar),
-                  saldo: formatRupiah(d.masuk - d.keluar),
+                  saldo: formatRupiah(d.saldoAwal + d.masuk - d.keluar),
                 })),
                 {
                   divisi: "TOTAL",
+                  saldoAwal: formatRupiah(totalSaldoAwalDivisi),
                   pemasukan: formatRupiah(totalMasuk),
                   pengeluaran: formatRupiah(totalKeluar),
-                  saldo: formatRupiah(totalMasuk - totalKeluar),
+                  saldo: formatRupiah(totalSaldoAwalDivisi + totalMasuk - totalKeluar),
                   __total: true,
                 },
               ]}
@@ -265,10 +273,11 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           }
         />
         <CardContent>
-          <TableWrap minWidth={620}>
+          <TableWrap minWidth={720}>
             <THead>
               <tr>
                 <TH>Divisi</TH>
+                <TH align="right">Saldo Awal</TH>
                 <TH align="right">Pemasukan</TH>
                 <TH align="right">Pengeluaran</TH>
                 <TH align="right">Saldo</TH>
@@ -282,6 +291,9 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                     {d.nama}
                   </TD>
                   <TD align="right" className="whitespace-nowrap">
+                    {formatRupiah(d.saldoAwal)}
+                  </TD>
+                  <TD align="right" className="whitespace-nowrap">
                     {formatRupiah(d.masuk)}
                   </TD>
                   <TD align="right" className="whitespace-nowrap">
@@ -290,12 +302,12 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                   <TD
                     align="right"
                     className={`whitespace-nowrap font-medium ${
-                      d.masuk - d.keluar >= 0
+                      d.saldoAwal + d.masuk - d.keluar >= 0
                         ? "text-emerald-600 dark:text-emerald-400"
                         : "text-red-600 dark:text-red-400"
                     }`}
                   >
-                    {formatRupiah(d.masuk - d.keluar)}
+                    {formatRupiah(d.saldoAwal + d.masuk - d.keluar)}
                   </TD>
                   <TD align="right" className="whitespace-nowrap">
                     <Link

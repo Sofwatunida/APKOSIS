@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, Divisi, AnggotaDivisi } from "@/lib/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
@@ -212,21 +212,21 @@ async function handleSave() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Profil Divisi</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Identitas dan kepengurusan divisi</p>
-        </div>
-        {!isEditing && (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="rounded-lg border border-blue-400 bg-blue-50/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
-          >
-            Edit Profil
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Profil Divisi"
+        description="Identitas dan kepengurusan divisi"
+        action={
+          !isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="rounded-lg border border-blue-200 bg-blue-50/70 px-4 py-2 text-sm font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98] dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-400"
+            >
+              Edit Profil
+            </button>
+          )
+        }
+      />
 
       <Card>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">

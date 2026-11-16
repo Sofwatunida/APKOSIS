@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, Inventaris } from "@/lib/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 
@@ -146,32 +147,32 @@ export function InventarisClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inventaris Divisi</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola barang inventaris divisi</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportMenu
-            title="Inventaris Divisi"
-            filename="inventaris-divisi"
-            disabled={items.length === 0}
-            columns={[
-              { header: "Nama Barang", key: "nama_barang", width: 25 },
-              { header: "Jumlah", key: "jumlah", width: 10 },
-              { header: "Kondisi", key: "kondisi", width: 16 },
-              { header: "Keterangan", key: "keterangan", width: 30 },
-            ]}
-            rows={items.map((i) => ({
-              nama_barang: i.nama_barang,
-              jumlah: i.jumlah ?? "-",
-              kondisi: KONDISI_LABEL[i.kondisi ?? ""] ?? i.kondisi ?? "-",
-              keterangan: i.keterangan ?? "-",
-            }))}
-          />
-          <Button onClick={openAdd}>+ Tambah Barang</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Inventaris Divisi"
+        description="Kelola barang inventaris divisi"
+        action={
+          <>
+            <ExportMenu
+              title="Inventaris Divisi"
+              filename="inventaris-divisi"
+              disabled={items.length === 0}
+              columns={[
+                { header: "Nama Barang", key: "nama_barang", width: 25 },
+                { header: "Jumlah", key: "jumlah", width: 10 },
+                { header: "Kondisi", key: "kondisi", width: 16 },
+                { header: "Keterangan", key: "keterangan", width: 30 },
+              ]}
+              rows={items.map((i) => ({
+                nama_barang: i.nama_barang,
+                jumlah: i.jumlah ?? "-",
+                kondisi: KONDISI_LABEL[i.kondisi ?? ""] ?? i.kondisi ?? "-",
+                keterangan: i.keterangan ?? "-",
+              }))}
+            />
+            <Button onClick={openAdd}>+ Tambah Barang</Button>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader title="Daftar Inventaris" />
@@ -179,49 +180,47 @@ export function InventarisClient({ profile }: { profile: Profile }) {
           {items.length === 0 ? (
             <EmptyState title="Belum ada inventaris" description="Tambahkan barang inventaris divisi." />
           ) : (
-            <div className="table-scroll">
-              <table className="w-full min-w-[36rem] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="px-3 py-2">Nama Barang</th>
-                    <th className="px-3 py-2">Jumlah</th>
-                    <th className="px-3 py-2">Kondisi</th>
-                    <th className="px-3 py-2">Keterangan</th>
-                    <th className="px-3 py-2 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((i) => (
-                    <tr key={i.id} className="border-b border-slate-50 dark:border-slate-800">
-                      <td className="px-3 py-2 font-medium">{i.nama_barang}</td>
-                      <td className="px-3 py-2">{i.jumlah ?? "-"}</td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        <span className={`font-medium ${kondisiColor(i.kondisi ?? "")}`}>
-                          {KONDISI_LABEL[i.kondisi ?? ""] ?? i.kondisi}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">{i.keterangan || "-"}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openEdit(i)}
-                            className="rounded-md border border-blue-400 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 shadow-sm transition hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(i)}
-                            className="rounded-md border border-red-400 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 shadow-sm transition hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TableWrap minWidth={560}>
+              <THead>
+                <tr>
+                  <TH>Nama Barang</TH>
+                  <TH>Jumlah</TH>
+                  <TH>Kondisi</TH>
+                  <TH>Keterangan</TH>
+                  <TH align="right">Aksi</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {items.map((i) => (
+                  <TR key={i.id}>
+                    <TD className="font-medium">{i.nama_barang}</TD>
+                    <TD>{i.jumlah ?? "-"}</TD>
+                    <TD className="whitespace-nowrap">
+                      <span className={`font-medium ${kondisiColor(i.kondisi ?? "")}`}>
+                        {KONDISI_LABEL[i.kondisi ?? ""] ?? i.kondisi}
+                      </span>
+                    </TD>
+                    <TD className="text-xs text-slate-600 dark:text-slate-400">{i.keterangan || "-"}</TD>
+                    <TD align="right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(i)}
+                          className="rounded-lg border border-blue-200 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition hover:bg-blue-100 active:scale-[0.98] dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-400"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(i)}
+                          className="rounded-lg border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:border-rose-500/30 dark:bg-rose-900/20 dark:text-rose-400"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>

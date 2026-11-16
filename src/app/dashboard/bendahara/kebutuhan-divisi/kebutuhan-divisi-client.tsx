@@ -11,7 +11,7 @@ import {
 } from "@/lib/kebutuhan";
 import { formatDate, todayISO } from "@/lib/date";
 import { buildDivisiOptions } from "@/lib/divisi-options";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea } from "@/components/ui/form";
@@ -225,42 +225,38 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Kebutuhan Divisi
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Semua kebutuhan yang diajukan divisi beserta status persyaratannya
-          </p>
-        </div>
-        <ExportMenu
-          title="Kebutuhan Divisi"
-          subtitle="Rekap kebutuhan seluruh divisi"
-          filename="kebutuhan-divisi-bendahara"
-          orientation="landscape"
-          columns={[
-            { header: "No", key: "no", width: 5, align: "center" },
-            { header: "Tanggal", key: "tanggal", width: 12, align: "center" },
-            { header: "Divisi", key: "divisi", width: 16, align: "left" },
-            { header: "Kebutuhan", key: "kebutuhan", width: 22, align: "left" },
-            { header: "Jumlah", key: "jumlah", width: 8, align: "center" },
-            { header: "Keterangan", key: "keterangan", width: 24, align: "left" },
-            { header: "Status", key: "status", width: 13, align: "center" },
-            { header: "Pelapor", key: "pelapor", width: 15, align: "left" },
-          ]}
-          rows={filtered.map((k, idx) => ({
-            no: idx + 1,
-            tanggal: formatDate(k.tanggal_efektif),
-            divisi: k.nama_divisi,
-            kebutuhan: k.nama_kebutuhan,
-            jumlah: k.jumlah ?? "-",
-            keterangan: k.keterangan ?? "-",
-            status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
-            pelapor: k.pelapor,
-          }))}
-        />
-      </div>
+      <PageHeader
+        title="Kebutuhan Divisi"
+        description="Semua kebutuhan yang diajukan divisi beserta status persyaratannya"
+        action={
+          <ExportMenu
+            title="Kebutuhan Divisi"
+            subtitle="Rekap kebutuhan seluruh divisi"
+            filename="kebutuhan-divisi-bendahara"
+            orientation="landscape"
+            columns={[
+              { header: "No", key: "no", width: 5, align: "center" },
+              { header: "Tanggal", key: "tanggal", width: 12, align: "center" },
+              { header: "Divisi", key: "divisi", width: 16, align: "left" },
+              { header: "Kebutuhan", key: "kebutuhan", width: 22, align: "left" },
+              { header: "Jumlah", key: "jumlah", width: 8, align: "center" },
+              { header: "Keterangan", key: "keterangan", width: 24, align: "left" },
+              { header: "Status", key: "status", width: 13, align: "center" },
+              { header: "Pelapor", key: "pelapor", width: 15, align: "left" },
+            ]}
+            rows={filtered.map((k, idx) => ({
+              no: idx + 1,
+              tanggal: formatDate(k.tanggal_efektif),
+              divisi: k.nama_divisi,
+              kebutuhan: k.nama_kebutuhan,
+              jumlah: k.jumlah ?? "-",
+              keterangan: k.keterangan ?? "-",
+              status: STATUS_KEBUTUHAN_LABEL[k.status] ?? k.status ?? "-",
+              pelapor: k.pelapor,
+            }))}
+          />
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {STATUS_KEBUTUHAN.map((s) => (

@@ -25,6 +25,10 @@ import { Modal } from "@/components/ui/modal";
 import { ExportMenu } from "@/components/export-menu";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import {
+  TablePagination,
+  usePagination,
+} from "@/components/ui/pagination";
 import { ROLE_LABELS } from "@/lib/role";
 import type { Role } from "@/lib/types";
 import {
@@ -176,6 +180,20 @@ export function AccountsAdminClient({
       return parts.some((part) => part.toLowerCase().includes(debouncedSearch));
     });
   }, [integratedRows, periodeFilter, debouncedSearch]);
+
+  const pagination = usePagination(visibleRows.length);
+
+  useEffect(() => {
+    pagination.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, periodeFilter]);
+
+  const pagedRows = pagination.showAll
+    ? visibleRows
+    : visibleRows.slice(
+        (pagination.page - 1) * pagination.pageSize,
+        pagination.page * pagination.pageSize
+      );
 
   function run(
     action: () => Promise<{ ok: boolean; message: string }>,
@@ -361,7 +379,7 @@ export function AccountsAdminClient({
                 </TR>
               </THead>
               <TBody>
-                {visibleRows.map((row) => {
+                {pagedRows.map((row) => {
                   if (row.kind === "division") {
                     const d = row.division;
                     return (
@@ -556,6 +574,17 @@ export function AccountsAdminClient({
               </TBody>
             </TableWrap>
           )}
+          <TablePagination
+            total={visibleRows.length}
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            showAll={pagination.showAll}
+            start={pagination.start}
+            end={pagination.end}
+            label="baris"
+            onPageChange={pagination.goTo}
+            onToggleAll={pagination.toggleShowAll}
+          />
         </CardContent>
       </Card>
 

@@ -13,7 +13,8 @@ import {
 } from "@/lib/date";
 import { parseBukti } from "@/lib/bukti";
 import { buildDivisiOptions } from "@/lib/divisi-options";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { fetchSaldoAwal } from "@/lib/finance";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
@@ -72,6 +73,7 @@ export function DetailKeuanganClient({
   const [filterYear, setFilterYear] = useState(currentYear);
   const [filterJenis, setFilterJenis] = useState<"all" | "pemasukan" | "pengeluaran">("all");
   const [rows, setRows] = useState<Row[]>([]);
+  const [saldoAwal, setSaldoAwal] = useState(0);
   const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
 
   /** "Semua Divisi" = tanpa filter divisi; seluruh data divisi ikut terhitung. */
@@ -125,6 +127,7 @@ export function DetailKeuanganClient({
 
       const { data } = await query;
       setRows((data ?? []) as Row[]);
+      setSaldoAwal(await fetchSaldoAwal(supabase, isSemuaDivisi ? null : divisiId));
       setLoading(false);
     }
     load();
@@ -138,8 +141,8 @@ export function DetailKeuanganClient({
       if (t.jenis_transaksi === "pemasukan") masuk += n;
       else keluar += n;
     });
-    return { masuk, keluar, saldo: masuk - keluar };
-  }, [rows]);
+    return { masuk, keluar, saldoAwal, saldo: saldoAwal + masuk - keluar };
+  }, [rows, saldoAwal]);
 
   /**
    * Ringkasan per sumber: pemasukan, pengeluaran, dan netto-nya digabung.
@@ -185,54 +188,52 @@ export function DetailKeuanganClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link
-            href={
-              profile.role === "bendahara"
-                ? "/dashboard/bendahara/rekap-bulanan"
-                : "/dashboard/monitoring/rekap-keuangan"
-            }
-            className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Kembali ke Rekap Keuangan
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Detail Keuangan {namaDivisi || "Divisi"}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Rincian pemasukan &amp; pengeluaran {labelPeriode}
-          </p>
-        </div>
-        <ExportMenu
-          title={`Detail Keuangan ${namaDivisi}`}
-          subtitle={labelPeriode}
-          filename={`detail-keuangan-${namaDivisi || "divisi"}-${filterYear}`}
-          disabled={filtered.length === 0}
-          columns={[
-            { header: "Tanggal", key: "tanggal", width: 13 },
-            ...(isSemuaDivisi
-              ? [{ header: "Divisi", key: "divisi", width: 18 } as const]
-              : []),
-            { header: "Jenis", key: "jenis", width: 13 },
-            { header: "Sumber / Digunakan Untuk", key: "rincian", width: 22 },
-            { header: "Keterangan", key: "keterangan", width: 32 },
-            { header: "Nominal", key: "nominal", width: 20, align: "right" as const },
-          ]}
-          rows={filtered.map((t) => {
-            const { cleanKeterangan } = parseBukti(t.keterangan);
-            return {
-              tanggal: formatDate(t.tanggal),
-              divisi: t.divisi?.nama_divisi ?? "-",
-              jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
-              rincian: (t.jenis_transaksi === "pemasukan"
-                ? t.sumber_pemasukan
-                : t.digunakan_untuk) ?? "-",
-              keterangan: cleanKeterangan,
-              nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
-            };
-          })}
+      <div className="space-y-2">
+        <Link
+          href={
+            profile.role === "bendahara"
+              ? "/dashboard/bendahara/rekap-bulanan"
+              : "/dashboard/monitoring/rekap-keuangan"
+          }
+          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Kembali ke Rekap Keuangan
+        </Link>
+        <PageHeader
+          title={`Detail Keuangan ${namaDivisi || "Divisi"}`}
+          description={`Rincian pemasukan & pengeluaran ${labelPeriode}`}
+          action={
+            <ExportMenu
+              title={`Detail Keuangan ${namaDivisi}`}
+              subtitle={labelPeriode}
+              filename={`detail-keuangan-${namaDivisi || "divisi"}-${filterYear}`}
+              disabled={filtered.length === 0}
+              columns={[
+                { header: "Tanggal", key: "tanggal", width: 13 },
+                ...(isSemuaDivisi
+                  ? [{ header: "Divisi", key: "divisi", width: 18 } as const]
+                  : []),
+                { header: "Jenis", key: "jenis", width: 13 },
+                { header: "Sumber / Digunakan Untuk", key: "rincian", width: 22 },
+                { header: "Keterangan", key: "keterangan", width: 32 },
+                { header: "Nominal", key: "nominal", width: 20, align: "right" as const },
+              ]}
+              rows={filtered.map((t) => {
+                const { cleanKeterangan } = parseBukti(t.keterangan);
+                return {
+                  tanggal: formatDate(t.tanggal),
+                  divisi: t.divisi?.nama_divisi ?? "-",
+                  jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
+                  rincian: (t.jenis_transaksi === "pemasukan"
+                    ? t.sumber_pemasukan
+                    : t.digunakan_untuk) ?? "-",
+                  keterangan: cleanKeterangan,
+                  nominal: `${t.jenis_transaksi === "pemasukan" ? "+" : "-"} ${formatRupiah(t.nominal)}`,
+                };
+              })}
+            />
+          }
         />
       </div>
 
@@ -289,7 +290,14 @@ export function DetailKeuanganClient({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Saldo Awal"
+          value={formatRupiah(total.saldoAwal)}
+          tone="indigo"
+          icon={<Wallet className="h-4.5 w-4.5" />}
+          sub={isSemuaDivisi ? "Total semua divisi" : namaDivisi}
+        />
         <StatCard
           label="Total Pemasukan"
           value={formatRupiah(total.masuk)}

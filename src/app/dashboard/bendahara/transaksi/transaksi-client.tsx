@@ -17,11 +17,18 @@ import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { usePeriode } from "@/lib/periode-context";
-import { saveSaldoAwal } from "@/lib/finance";
+import { saveSaldoAwalAction } from "../../actions/saldo-actions";
 import { buildDivisiOptions } from "@/lib/divisi-options";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
+}
+
+interface SaldoRow {
+  divisiId: string;
+  nomor: number;
+  nama: string;
+  nominal: number;
 }
 
 export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
@@ -61,19 +68,64 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [pengeluaran, setPengeluaran] = useState(0);
   const [viewBukti, setViewBukti] = useState<string | null>(null);
 
-  const [saldoAwal, setSaldoAwal] = useState(0);
-  const [editingSaldo, setEditingSaldo] = useState(false);
+  const [saldoRows, setSaldoRows] = useState<SaldoRow[]>([]);
+  const [saldoDivisiId, setSaldoDivisiId] = useState("");
   const [saldoInput, setSaldoInput] = useState("");
   const [savingSaldo, setSavingSaldo] = useState(false);
 
-  async function loadSaldoAwal() {
-    // Saldo awal sekarang satu baris per periode, jadi tidak memakai id=1.
+  async function loadSaldoAwal(
+    divRows: { id: string; nomor_divisi: number | null; nama_divisi: string | null }[]
+  ) {
     const { data } = await supabase
       .from("saldo_awal")
-      .select("nominal")
-      .maybeSingle();
-    setSaldoAwal(Number(data?.nominal) || 0);
+      .select("divisi_id, nominal");
+
+    const byDivisi = new Map<string, number>();
+    (data ?? []).forEach((row) => {
+      if (row.divisi_id) {
+        byDivisi.set(row.divisi_id, Number(row.nominal) || 0);
+      }
+    });
+
+    // Hanya divisi nyata (bukan uuid placeholder) yang bisa menyimpan saldo.
+    const seen = new Set<number>();
+    const list: SaldoRow[] = [];
+    for (const d of divRows) {
+      const nomor = typeof d.nomor_divisi === "number" ? d.nomor_divisi : null;
+      if (nomor !== null) {
+        if (seen.has(nomor)) continue;
+        seen.add(nomor);
+      }
+      list.push({
+        divisiId: d.id,
+        nomor: nomor ?? Number.MAX_SAFE_INTEGER,
+        nama:
+          (d.nama_divisi ?? "").trim() ||
+          (nomor !== null ? `Divisi ${String(nomor).padStart(2, "0")}` : "-"),
+        nominal: byDivisi.get(d.id) ?? 0,
+      });
+    }
+    list.sort((a, b) => a.nomor - b.nomor);
+
+    setSaldoRows(list);
+    if (list.length > 0) {
+      setSaldoDivisiId((prev) => prev || list[0].divisiId);
+      setSaldoInput((prev) =>
+        prev || (list[0].nominal !== 0 ? String(list[0].nominal) : "")
+      );
+    }
   }
+
+  function handleSaldoDivisiChange(divisiId: string) {
+    setSaldoDivisiId(divisiId);
+    const row = saldoRows.find((r) => r.divisiId === divisiId);
+    setSaldoInput(row && row.nominal !== 0 ? String(row.nominal) : "");
+  }
+
+  const totalSaldoAwal = useMemo(
+    () => saldoRows.reduce((total, row) => total + row.nominal, 0),
+    [saldoRows]
+  );
 
   async function load() {
     setLoading(true);
@@ -121,7 +173,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         .order("nomor_divisi");
       // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
       setDivisiOptions(buildDivisiOptions(div));
-      await loadSaldoAwal();
+      await loadSaldoAwal(div ?? []);
     }
     init();
     load();
@@ -130,6 +182,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   async function handleSaveSaldoAwal() {
     const nominal = Number(saldoInput);
+    if (!saldoDivisiId) {
+      error("Pilih divisi terlebih dahulu.");
+      return;
+    }
     if (isNaN(nominal) || nominal < 0) {
       error("Nominal saldo awal tidak valid.");
       return;
@@ -139,18 +195,21 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       return;
     }
     setSavingSaldo(true);
-    const user = (await supabase.auth.getUser()).data.user;
-    // periode_id diisi otomatis oleh period scope + unik per periode.
-    const { error: upErr } = await saveSaldoAwal(supabase, nominal, user?.id ?? null);
-    if (upErr) {
-      setSavingSaldo(false);
-      error("Gagal menyimpan saldo awal: " + upErr.message);
+    const fd = new FormData();
+    fd.set("divisi_id", saldoDivisiId);
+    fd.set("nominal", String(nominal));
+    const result = await saveSaldoAwalAction(fd);
+    setSavingSaldo(false);
+    if (!result.ok) {
+      error(result.message);
       return;
     }
-    setSaldoAwal(nominal);
-    setEditingSaldo(false);
-    setSavingSaldo(false);
-    success("Saldo awal berhasil disimpan.");
+    setSaldoRows((prev) =>
+      prev.map((row) =>
+        row.divisiId === saldoDivisiId ? { ...row, nominal } : row
+      )
+    );
+    success(result.message);
   }
 
   useEffect(() => {
@@ -224,73 +283,100 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      {/* Saldo Awal Setting */}
+      {/* Saldo Awal per Divisi */}
       <Card>
         <CardHeader
-          title="Saldo Awal"
-          subtitle="Set saldo awal kas OSIS"
+          title="Saldo Awal per Divisi"
+          subtitle="Atur saldo awal kas setiap divisi pada periode ini."
         />
-        <CardContent>
-          {!editingSaldo ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Saldo Awal Tersimpan</p>
-                <p className="mt-1 text-2xl font-bold text-brand-600 dark:text-brand-400">
-                  {formatRupiah(saldoAwal)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Saldo ini dipakai di semua role untuk menghitung saldo OSIS.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSaldoInput(saldoAwal === 0 ? "" : String(saldoAwal));
-                  setEditingSaldo(true);
-                }}
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-brand-600/25 transition hover:from-brand-500 hover:to-indigo-500 active:scale-[0.98]"
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:items-end">
+            <Field label="Divisi">
+              <Select
+                value={saldoDivisiId}
+                disabled={readOnly || savingSaldo || saldoRows.length === 0}
+                onChange={(e) => handleSaldoDivisiChange(e.target.value)}
               >
-                Edit Saldo Awal
-              </button>
-            </div>
-          ) : (
-            <div className="max-w-sm space-y-4">
-              <Field label="Nominal Saldo Awal (Rp)">
-                <Input
-                  type="number"
-                  min="0"
-                  value={saldoInput}
-                  onChange={(e) => setSaldoInput(e.target.value)}
-                  placeholder="Ketik nominal saldo awal..."
-                />
-              </Field>
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={handleSaveSaldoAwal} loading={savingSaldo} size="sm">
-                  {savingSaldo ? "Menyimpan..." : "Simpan Saldo Awal"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingSaldo(false)}
-                >
-                  Batal
-                </Button>
-              </div>
-            </div>
-          )}
+                {saldoRows.length === 0 && (
+                  <option value="">Belum ada divisi</option>
+                )}
+                {saldoRows.map((row) => (
+                  <option key={row.divisiId} value={row.divisiId}>
+                    {row.nama}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Nominal Saldo Awal (Rp)">
+              <Input
+                type="number"
+                min="0"
+                value={saldoInput}
+                disabled={readOnly || savingSaldo || saldoRows.length === 0}
+                onChange={(e) => setSaldoInput(e.target.value)}
+                placeholder="Ketik nominal saldo awal..."
+              />
+            </Field>
+            <Button
+              type="button"
+              onClick={handleSaveSaldoAwal}
+              loading={savingSaldo}
+              disabled={readOnly || saldoRows.length === 0}
+              className="self-end"
+            >
+              Simpan Saldo Awal
+            </Button>
+          </div>
+
+          <TableWrap minWidth={420}>
+            <THead>
+              <tr>
+                <TH>Divisi</TH>
+                <TH align="right">Saldo Awal</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {saldoRows.map((row) => (
+                <TR key={row.divisiId}>
+                  <TD className="font-medium">{row.nama}</TD>
+                  <TD align="right" className="whitespace-nowrap">
+                    {formatRupiah(row.nominal)}
+                  </TD>
+                </TR>
+              ))}
+              {saldoRows.length === 0 && (
+                <TR>
+                  <TD
+                    colSpan={2}
+                    className="py-6 text-center text-sm text-slate-400"
+                  >
+                    Belum ada divisi.
+                  </TD>
+                </TR>
+              )}
+            </TBody>
+          </TableWrap>
+
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              Total Saldo Awal
+            </span>
+            <span className="text-lg font-bold text-brand-600 dark:text-brand-400">
+              {formatRupiah(totalSaldoAwal)}
+            </span>
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Pemasukan" value={formatRupiah(pemasukan)} tone="green" />
         <StatCard label="Total Pengeluaran" value={formatRupiah(pengeluaran)} tone="red" />
-        <StatCard label="Saldo Awal" value={formatRupiah(saldoAwal)} tone="indigo" />
+        <StatCard label="Saldo Awal" value={formatRupiah(totalSaldoAwal)} tone="indigo" />
         <StatCard
           label="Saldo"
           sub="Saldo Awal + Masuk - Keluar"
-          value={formatRupiah(saldoAwal + pemasukan - pengeluaran)}
-          tone={saldoAwal + pemasukan - pengeluaran >= 0 ? "brand" : "red"}
+          value={formatRupiah(totalSaldoAwal + pemasukan - pengeluaran)}
+          tone={totalSaldoAwal + pemasukan - pengeluaran >= 0 ? "brand" : "red"}
         />
       </div>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, ProgramKerja } from "@/lib/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea } from "@/components/ui/form";
@@ -387,30 +387,30 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Program Kerja Divisi</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola dan monitor program kerja divisi</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportMenu
-            title={`Program Kerja${namaDivisi ? ` - ${namaDivisi}` : ""}`}
-            subtitle="Program kerja, program unggulan, dan catatan belum terlaksana"
-            filename={`program-kerja-${namaDivisi || "divisi"}`}
-            orientation="landscape"
-            disabled={exportRows.length === 0}
-            columns={[
-              { header: "No", key: "no", width: 6, align: "center" },
-              { header: "Jenis", key: "jenis", width: 20 },
-              { header: "Program", key: "program", width: 28 },
-              { header: "Deskripsi / Catatan", key: "keterangan", width: 36 },
-              { header: "Lampiran", key: "lampiran", width: 22 },
-            ]}
-            rows={exportRows}
-          />
-          <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Program Kerja Divisi"
+        description="Kelola dan monitor program kerja divisi"
+        action={
+          <>
+            <ExportMenu
+              title={`Program Kerja${namaDivisi ? ` - ${namaDivisi}` : ""}`}
+              subtitle="Program kerja, program unggulan, dan catatan belum terlaksana"
+              filename={`program-kerja-${namaDivisi || "divisi"}`}
+              orientation="landscape"
+              disabled={exportRows.length === 0}
+              columns={[
+                { header: "No", key: "no", width: 6, align: "center" },
+                { header: "Jenis", key: "jenis", width: 20 },
+                { header: "Program", key: "program", width: 28 },
+                { header: "Deskripsi / Catatan", key: "keterangan", width: 36 },
+                { header: "Lampiran", key: "lampiran", width: 22 },
+              ]}
+              rows={exportRows}
+            />
+            <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader

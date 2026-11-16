@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "APKOSIS - Aplikasi Laporan Harian OSIS",
   description:
-    "Sistem pencatatan dan monitoring laporan harian seluruh divisi OSIS.",
+    "Laporan Harian OSIS Berbasis Digital",
 };
 
 export default function RootLayout({

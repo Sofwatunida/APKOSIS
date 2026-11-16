@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 export interface DivisiSummary {
   id: string;
   nama: string;
+  saldoAwal?: number;
   masuk: number;
   keluar: number;
 }
@@ -23,7 +24,8 @@ export function DivisiSummaryCard({
   divisi: DivisiSummary;
   periode: string;
 }) {
-  const saldo = divisi.masuk - divisi.keluar;
+  const saldoAwal = divisi.saldoAwal ?? 0;
+  const saldo = saldoAwal + divisi.masuk - divisi.keluar;
   const href = `/dashboard/detail-keuangan?divisi=${encodeURIComponent(
     divisi.id
   )}&periode=${encodeURIComponent(periode)}`;
@@ -40,6 +42,12 @@ export function DivisiSummaryCard({
         <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600" />
       </div>
       <div className="mt-2 space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-slate-500 dark:text-slate-400">Saldo Awal</span>
+          <span className="font-medium text-indigo-600 dark:text-indigo-400">
+            {formatRupiah(saldoAwal)}
+          </span>
+        </div>
         <div className="flex justify-between text-xs">
           <span className="text-slate-500 dark:text-slate-400">Pemasukan</span>
           <span className="font-medium text-emerald-600 dark:text-emerald-400">

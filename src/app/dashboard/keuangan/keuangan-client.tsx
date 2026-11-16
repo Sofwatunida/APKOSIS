@@ -624,37 +624,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
       </Modal>
 
       {/* Modal View Bukti Struk (Requirement 8) */}
-      <Modal open={Boolean(viewBuktiUrl)} onClose={() => setViewBuktiUrl(null)} title="Bukti Struk Transaksi">
-        {viewBuktiUrl && (
-          <div className="space-y-4">
-            <div className="max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center dark:border-slate-700 dark:bg-slate-900/60">
-              <img
-                src={viewBuktiUrl}
-                alt="Bukti Transaksi"
-                className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-sm"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <a
-                href={viewBuktiUrl}
-                target="_blank"
-                rel="noreferrer"
-                download="bukti-struk"
-                className="rounded-lg border border-brand-500 bg-brand-50 px-3.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 dark:bg-brand-900/20 dark:text-brand-400"
-              >
-                Unduh Gambar
-              </a>
-              <button
-                type="button"
-                onClick={() => setViewBuktiUrl(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <BuktiPreviewModal buktiRef={viewBuktiUrl} onClose={() => setViewBuktiUrl(null)} />
     </div>
   );
 }

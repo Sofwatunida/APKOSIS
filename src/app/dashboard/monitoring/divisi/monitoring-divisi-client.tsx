@@ -7,6 +7,7 @@ import { formatRupiah } from "@/lib/format";
 import { formatDate, todayISO } from "@/lib/date";
 import { sortByJabatan } from "@/lib/jabatan";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/card";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { Modal } from "@/components/ui/modal";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -118,37 +119,37 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Semua Divisi</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Pantau 20 divisi OSIS</p>
-        </div>
-        <ExportMenu
-          title="Data Divisi"
-          filename="data-divisi"
-          disabled={divisiList.length === 0}
-          columns={[
-            { header: "Divisi", key: "divisi", width: 20 },
-            { header: "Ketua", key: "ketua", width: 20 },
-            { header: "Wakil", key: "wakil", width: 20 },
-            { header: "Anggota", key: "anggota", width: 10 },
-            { header: "Laporan Hari Ini", key: "laporan_hari_ini", width: 16 },
-            { header: "Laporan Terakhir", key: "laporan_terakhir", width: 14 },
-            { header: "Kendala Terbaru", key: "kendala", width: 30 },
-            { header: "Saldo", key: "saldo", width: 20, align: "right" },
-          ]}
-          rows={divisiList.map((d) => ({
-            divisi: d.nama_divisi,
-            ketua: d.ketua_divisi ?? "-",
-            wakil: d.wakil_divisi ?? "-",
-            anggota: d.anggota,
-            laporan_hari_ini: d.todayReport ? "Sudah Mengisi" : "Belum Mengisi",
-            laporan_terakhir: d.lastReportDate ? formatDate(d.lastReportDate) : "-",
-            kendala: d.kendala || "-",
-            saldo: formatRupiah(d.pemasukan - d.pengeluaran),
-          }))}
-        />
-      </div>
+      <PageHeader
+        title="Semua Divisi"
+        description="Pantau 20 divisi OSIS"
+        action={
+          <ExportMenu
+            title="Data Divisi"
+            filename="data-divisi"
+            disabled={divisiList.length === 0}
+            columns={[
+              { header: "Divisi", key: "divisi", width: 20 },
+              { header: "Ketua", key: "ketua", width: 20 },
+              { header: "Wakil", key: "wakil", width: 20 },
+              { header: "Anggota", key: "anggota", width: 10 },
+              { header: "Laporan Hari Ini", key: "laporan_hari_ini", width: 16 },
+              { header: "Laporan Terakhir", key: "laporan_terakhir", width: 14 },
+              { header: "Kendala Terbaru", key: "kendala", width: 30 },
+              { header: "Saldo", key: "saldo", width: 20, align: "right" },
+            ]}
+            rows={divisiList.map((d) => ({
+              divisi: d.nama_divisi,
+              ketua: d.ketua_divisi ?? "-",
+              wakil: d.wakil_divisi ?? "-",
+              anggota: d.anggota,
+              laporan_hari_ini: d.todayReport ? "Sudah Mengisi" : "Belum Mengisi",
+              laporan_terakhir: d.lastReportDate ? formatDate(d.lastReportDate) : "-",
+              kendala: d.kendala || "-",
+              saldo: formatRupiah(d.pemasukan - d.pengeluaran),
+            }))}
+          />
+        }
+      />
 
       {/* Tabel per divisi: garis baris & kolom jelas, spasi rapi,
           teks tidak tumpang tindih, dan geser horizontal bila lebar. */}

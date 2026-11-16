@@ -4,6 +4,10 @@ import { useState, useTransition } from "react";
 import { Select } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import {
+  TablePagination,
+  usePagination,
+} from "@/components/ui/pagination";
 import { setDivisiPeriodAction } from "../../actions/periode-actions";
 
 interface DivisiRow {
@@ -28,6 +32,13 @@ export function AdminDivisiClient({
   const { success, error } = useToast();
   const [pending, startTransition] = useTransition();
   const [choices, setChoices] = useState<Record<string, string>>({});
+  const pagination = usePagination(divisi.length);
+  const visibleDivisi = pagination.showAll
+    ? divisi
+    : divisi.slice(
+        (pagination.page - 1) * pagination.pageSize,
+        pagination.page * pagination.pageSize
+      );
 
   function handle(divisiId: string, periodeId: string) {
     setChoices((prev) => ({ ...prev, [divisiId]: periodeId }));
@@ -42,7 +53,8 @@ export function AdminDivisiClient({
   }
 
   return (
-    <TableWrap>
+    <>
+      <TableWrap>
       <THead>
         <TR>
           <TH>Divisi</TH>
@@ -51,7 +63,7 @@ export function AdminDivisiClient({
         </TR>
       </THead>
       <TBody>
-        {divisi.map((d) => (
+        {visibleDivisi.map((d) => (
           <TR key={d.id}>
             <TD className="font-medium">{d.nomorDivisi}</TD>
             <TD>{d.namaDivisi}</TD>
@@ -72,7 +84,26 @@ export function AdminDivisiClient({
             </TD>
           </TR>
         ))}
+        {visibleDivisi.length === 0 && (
+          <TR>
+            <TD colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+              Belum ada divisi.
+            </TD>
+          </TR>
+        )}
       </TBody>
     </TableWrap>
+    <TablePagination
+      total={divisi.length}
+      page={pagination.page}
+      pageCount={pagination.pageCount}
+      showAll={pagination.showAll}
+      start={pagination.start}
+      end={pagination.end}
+      label="divisi"
+      onPageChange={pagination.goTo}
+      onToggleAll={pagination.toggleShowAll}
+    />
+    </>
   );
 }

@@ -7,10 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { endDivisionSessionAction } from "@/app/pilih-divisi/actions";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
+import { parseBukti } from "@/lib/bukti";
 import type { Profile, Divisi, LaporanHarian, TransaksiKeuangan, KendalaSolusi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
+import { fetchSaldoAwal } from "@/lib/finance";
 import { formatDate, todayISO } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -133,6 +136,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
   const [jumlahLaporan, setJumlahLaporan] = useState(0);
   const [pemasukan, setPemasukan] = useState(0);
   const [pengeluaran, setPengeluaran] = useState(0);
+  const [saldoAwal, setSaldoAwal] = useState(0);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [detailReport, setDetailReport] = useState<LaporanHarian | null>(null);
   const [detailKendala, setDetailKendala] = useState<KendalaSolusi[]>([]);
@@ -214,6 +218,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         });
         setPemasukan(masuk);
         setPengeluaran(keluar);
+        setSaldoAwal(await fetchSaldoAwal(supabase, d.id));
 
         setNeedsSetup(!missingSetup ? false : false);
         if (!d.ketua_divisi && !d.wakil_divisi && (anggota?.length ?? 0) === 0) {
@@ -337,10 +342,10 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         />
         <StatCard
           label="Saldo Divisi"
-          value={formatRupiah(pemasukan - pengeluaran)}
-          color={pemasukan - pengeluaran >= 0 ? "green" : "red"}
+          value={formatRupiah(saldoAwal + pemasukan - pengeluaran)}
+          color={saldoAwal + pemasukan - pengeluaran >= 0 ? "green" : "red"}
           icon={Wallet}
-          sub="Pemasukan - Pengeluaran"
+          sub="Saldo Awal + Pemasukan - Pengeluaran"
         />
       </div>
 
@@ -553,10 +558,10 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Monitoring</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Pantau progres pelaporan harian seluruh divisi OSIS secara real-time</p>
-      </div>
+      <PageHeader
+        title="Dashboard Monitoring"
+        description="Pantau progres pelaporan harian seluruh divisi OSIS secara real-time"
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
@@ -655,12 +660,10 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Dashboard {profile.role === "sekretaris" ? "Sekretaris OSIS" : "Staff"}
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi</p>
-      </div>
+      <PageHeader
+        title={`Dashboard ${profile.role === "sekretaris" ? "Sekretaris OSIS" : "Staff"}`}
+        description="Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi"
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
@@ -692,18 +695,6 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 }
 
 /* ============ BENDAHARA ============ */
-function extractBukti(raw: string): { cleanKeterangan: string; buktiUrl: string | null } {
-  if (!raw) return { cleanKeterangan: "", buktiUrl: null };
-  const match = raw.match(/\[BUKTI:([^\]]+)\]/);
-  if (match) {
-    return {
-      cleanKeterangan: raw.replace(/\[BUKTI:[^\]]+\]/, "").trim(),
-      buktiUrl: match[1],
-    };
-  }
-  return { cleanKeterangan: raw, buktiUrl: null };
-}
-
 interface RecentRow extends TransaksiKeuangan {
   divisi?: { nama_divisi: string } | null;
 }
@@ -733,10 +724,10 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Bendahara OSIS</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi</p>
-      </div>
+      <PageHeader
+        title="Dashboard Bendahara OSIS"
+        description="Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi"
+      />
 
       <FinanceSummary />
 
@@ -758,7 +749,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                 { header: "Nominal", key: "nominal", width: 20, align: "right" },
               ]}
               rows={recent.map((t) => {
-                const { cleanKeterangan } = extractBukti(t.keterangan);
+                const { cleanKeterangan } = parseBukti(t.keterangan);
                 return {
                   tanggal: formatDate(t.tanggal),
                   divisi: t.divisi?.nama_divisi ?? "-",
@@ -789,7 +780,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
               </THead>
               <TBody>
                 {recent.map((t) => {
-                  const { cleanKeterangan, buktiUrl } = extractBukti(t.keterangan);
+                  const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
                   return (
                     <TR key={t.id}>
                       <TD className="whitespace-nowrap text-xs font-medium text-slate-800 dark:text-slate-200">
@@ -809,18 +800,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                         </span>
                       </TD>
                       <TD className="whitespace-nowrap">
-                        {buktiUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => setViewBuktiUrl(buktiUrl)}
-                            className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shadow-xs transition hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
-                          >
-                            <Eye className="h-3 w-3" />
-                            <span>Lihat Bukti</span>
-                          </button>
-                        ) : (
-                          <span className="text-xs text-slate-300">-</span>
-                        )}
+                        <BuktiButton buktiRef={buktiRef} onOpen={setViewBuktiUrl} />
                       </TD>
                       <TD align="right" className="whitespace-nowrap font-bold text-slate-900 dark:text-white">
                         {formatRupiah(t.nominal)}
@@ -834,28 +814,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      <Modal open={Boolean(viewBuktiUrl)} onClose={() => setViewBuktiUrl(null)} title="Bukti Transaksi">
-        {viewBuktiUrl && (
-          <div className="space-y-4">
-            <div className="max-h-[65vh] overflow-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 p-3 dark:bg-slate-900/60 flex items-center justify-center">
-              <img
-                src={viewBuktiUrl}
-                alt="Bukti Transaksi"
-                className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-card"
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewBuktiUrl(null)}
-              >
-                Tutup
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <BuktiPreviewModal buktiRef={viewBuktiUrl} onClose={() => setViewBuktiUrl(null)} />
     </div>
   );
 }

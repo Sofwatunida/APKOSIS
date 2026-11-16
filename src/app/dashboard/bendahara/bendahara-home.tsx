@@ -5,16 +5,20 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { formatDate } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
+import { parseBukti, stripBukti } from "@/lib/bukti";
 
 export function BendaharaHome({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [recent, setRecent] = useState<TransaksiKeuangan[]>([]);
+  const [viewBukti, setViewBukti] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -34,7 +38,10 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard Bendahara</h1>
+      <PageHeader
+        title="Dashboard Bendahara"
+        description="Ringkasan keuangan dan transaksi terbaru OSIS."
+      />
       <FinanceSummary />
 
       <Card>
@@ -54,45 +61,60 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
               rows={recent.map((t) => ({
                 tanggal: formatDate(t.tanggal),
                 jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
-                keterangan: t.keterangan?.replace(/\[BUKTI:[^\]]+\]/, "").trim() ?? "-",
+                keterangan: stripBukti(t.keterangan) || "-",
                 nominal: formatRupiah(t.nominal),
               }))}
             />
           }
         />
-        <CardContent>
+        <CardContent className="p-0">
           {recent.length === 0 ? (
             <EmptyState title="Belum ada transaksi" />
           ) : (
-            <div className="table-scroll">
-              <table className="w-full min-w-[32rem] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
-                    <th className="px-3 py-2">Tanggal</th>
-                    <th className="px-3 py-2">Jenis</th>
-                    <th className="px-3 py-2">Keterangan</th>
-                    <th className="px-3 py-2 text-right">Nominal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((t) => (
-                    <tr key={t.id} className="border-b border-slate-50 dark:border-slate-800">
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.tanggal)}</td>
-                      <td className="whitespace-nowrap px-3 py-2">
+            <TableWrap minWidth={820}>
+              <THead>
+                <tr>
+                  <TH>Tanggal</TH>
+                  <TH>Jenis</TH>
+                  <TH>Keterangan</TH>
+                  <TH>Bukti</TH>
+                  <TH align="right">Nominal</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {recent.map((t) => {
+                  const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
+                  return (
+                    <TR key={t.id}>
+                      <TD className="whitespace-nowrap text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {formatDate(t.tanggal)}
+                      </TD>
+                      <TD className="whitespace-nowrap">
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                          {t.jenis_transaksi}
+                          {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-2">{t.keterangan}</td>
-                      <td className="px-3 py-2 text-right font-medium">{formatRupiah(t.nominal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </TD>
+                      <TD className="max-w-xs">
+                        <span className="safe-text block truncate text-xs text-slate-600 dark:text-slate-400">
+                          {cleanKeterangan || "-"}
+                        </span>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        <BuktiButton buktiRef={buktiRef} onOpen={setViewBukti} />
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                        {formatRupiah(t.nominal)}
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>
+
+      <BuktiPreviewModal buktiRef={viewBukti} onClose={() => setViewBukti(null)} />
     </div>
   );
 }

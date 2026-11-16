@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, ProgramKerja } from "@/lib/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { CatatanProgramBelumTerlaksana } from "@/components/program-belum-terlaksana";
 
@@ -54,10 +54,10 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Program Kerja</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Lihat program kerja dan catatan</p>
-      </div>
+      <PageHeader
+        title="Program Kerja"
+        description="Lihat program kerja dan catatan"
+      />
 
       <Card>
         <CardHeader

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { sortByJabatan } from "@/lib/jabatan";
@@ -303,88 +304,88 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
               <EmptyState title="Tidak ada hasil" description={`Tidak ditemukan anggota dengan kata kunci "${search}".`} />
             </div>
           ) : (
-            <div className="table-scroll">
-              <table className="w-full min-w-[44rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    <th className="px-5 py-3.5">Nama & Profil</th>
-                    <th className="px-5 py-3.5">Jabatan</th>
-                    <th className="px-5 py-3.5">Status</th>
-                    <th className="px-5 py-3.5">Keterangan</th>
-                    <th className="px-5 py-3.5 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filtered.map((a) => {
-                    const initials = a.nama
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase();
-                    return (
-                      <tr key={a.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 dark:from-brand-900/30 to-indigo-100 dark:to-indigo-900/30 text-xs font-bold text-brand-700 dark:text-brand-400 ring-1 ring-brand-500/20">
-                              {initials}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-slate-900 dark:text-white">{a.nama}</p>
-                              {a.tanggal_masuk && (
-                                <p className="text-xs text-slate-400">
-                                  Masuk: {a.tanggal_masuk}
-                                </p>
-                              )}
-                            </div>
+            <TableWrap minWidth={700}>
+              <THead>
+                <tr>
+                  <TH>Nama &amp; Profil</TH>
+                  <TH>Jabatan</TH>
+                  <TH>Status</TH>
+                  <TH>Keterangan</TH>
+                  <TH align="right">Aksi</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {filtered.map((a) => {
+                  const initials = a.nama
+                    .split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase();
+                  return (
+                    <TR key={a.id}>
+                      <TD>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 dark:from-brand-900/30 to-indigo-100 dark:to-indigo-900/30 text-xs font-bold text-brand-700 dark:text-brand-400 ring-1 ring-brand-500/20">
+                            {initials}
                           </div>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-3.5">
-                          {a.jabatan ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
-                              <Briefcase className="h-3 w-3 text-slate-400" />
-                              {a.jabatan}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-3.5">
-                          <Badge color={a.status === "aktif" ? "green" : "slate"} dot>
-                            {a.status === "aktif" ? "Aktif" : "Nonaktif"}
-                          </Badge>
-                        </td>
-                        <td className="max-w-xs truncate px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400">
+                          <div>
+                            <p className="font-semibold text-slate-900 dark:text-white">{a.nama}</p>
+                            {a.tanggal_masuk && (
+                              <p className="text-xs text-slate-400">
+                                Masuk: {a.tanggal_masuk}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        {a.jabatan ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                            <Briefcase className="h-3 w-3 text-slate-400" />
+                            {a.jabatan}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        <Badge color={a.status === "aktif" ? "green" : "slate"} dot>
+                          {a.status === "aktif" ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </TD>
+                      <TD className="max-w-xs">
+                        <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
                           {a.keterangan || "-"}
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEdit(a)}
-                              className="h-8 px-2.5 text-slate-600 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-600 dark:hover:text-brand-400"
-                            >
-                              <Pencil className="mr-1 h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(a)}
-                              className="h-8 px-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-700 dark:hover:text-rose-400"
-                            >
-                              <Trash2 className="mr-1 h-3.5 w-3.5" />
-                              Hapus
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </span>
+                      </TD>
+                      <TD align="right">
+                        <div className="flex justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(a)}
+                            className="h-8 px-2.5 text-slate-600 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-600 dark:hover:text-brand-400"
+                          >
+                            <Pencil className="mr-1 h-3.5 w-3.5" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(a)}
+                            className="h-8 px-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-700 dark:hover:text-rose-400"
+                          >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" />
+                            Hapus
+                          </Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </TableWrap>
           )}
         </CardContent>
       </Card>

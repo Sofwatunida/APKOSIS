@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -14,6 +14,7 @@ import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
 import { buildDivisiOptions } from "@/lib/divisi-options";
+import { fetchSaldoAwalMap } from "@/lib/finance";
 import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
@@ -31,7 +32,8 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
-  const [allDivSaldo, setAllDivSaldo] = useState<Array<{ id: string; nama: string; masuk: number; keluar: number }>>([]);
+  const [saldoPerDivisi, setSaldoPerDivisi] = useState<Record<string, number>>({});
+  const [allDivSaldo, setAllDivSaldo] = useState<Array<{ id: string; nama: string; saldoAwal: number; masuk: number; keluar: number }>>([]);
 
   useEffect(() => {
     async function init() {
@@ -67,9 +69,16 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
         else cur.keluar += n;
       });
       const divList = (await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi")).data ?? [];
+      const saldoMap = await fetchSaldoAwalMap(supabase);
+      const saldoRecord: Record<string, number> = {};
+      saldoMap.forEach((value, key) => {
+        saldoRecord[key] = value;
+      });
+      setSaldoPerDivisi(saldoRecord);
       setAllDivSaldo(divList.map((d) => ({
         id: d.id,
         nama: d.nama_divisi,
+        saldoAwal: saldoMap.get(d.id) ?? 0,
         masuk: allDivMap.get(d.id)?.masuk ?? 0,
         keluar: allDivMap.get(d.id)?.keluar ?? 0,
       })));
@@ -107,7 +116,10 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rekap Keuangan</h1>
+      <PageHeader
+        title="Rekap Keuangan"
+        description="Pantau saldo dan arus kas seluruh divisi OSIS per periode."
+      />
 
       <Card>
         <CardHeader title="Filter" />
@@ -157,7 +169,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
               .map((d) => (
                 <DivisiSummaryCard
                   key={d.id}
-                  divisi={{ id: d.id, nama: d.nama, masuk: d.masuk, keluar: d.keluar }}
+                  divisi={{ id: d.id, nama: d.nama, saldoAwal: d.saldoAwal, masuk: d.masuk, keluar: d.keluar }}
                   periode="tahunan"
                 />
               ))}
@@ -177,7 +189,13 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                 return (
                   <DivisiSummaryCard
                     key={d.id}
-                    divisi={{ id: d.id, nama: d.nama, masuk: f.masuk, keluar: f.keluar }}
+                    divisi={{
+                      id: d.id,
+                      nama: d.nama,
+                      saldoAwal: saldoPerDivisi[d.id] ?? 0,
+                      masuk: f.masuk,
+                      keluar: f.keluar,
+                    }}
                     periode="bulanan"
                   />
                 );
@@ -215,30 +233,34 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
               filename="rekap-keuangan-per-divisi"
               disabled={divisiOptions.length === 0}
               columns={[
-                { header: "Divisi", key: "divisi", width: 24 },
-                { header: "Pemasukan", key: "pemasukan", width: 20, align: "right" },
-                { header: "Pengeluaran", key: "pengeluaran", width: 20, align: "right" },
-                { header: "Saldo", key: "saldo", width: 20, align: "right" },
+                { header: "Divisi", key: "divisi", width: 22 },
+                { header: "Saldo Awal", key: "saldoAwal", width: 18, align: "right" },
+                { header: "Pemasukan", key: "pemasukan", width: 18, align: "right" },
+                { header: "Pengeluaran", key: "pengeluaran", width: 18, align: "right" },
+                { header: "Saldo", key: "saldo", width: 18, align: "right" },
               ]}
               rows={divisiOptions
                 .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
                 .map((d) => {
                   const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
+                  const saldoAwal = saldoPerDivisi[d.id] ?? 0;
                   return {
                     divisi: d.nama,
+                    saldoAwal: formatRupiah(saldoAwal),
                     pemasukan: formatRupiah(f.masuk),
                     pengeluaran: formatRupiah(f.keluar),
-                    saldo: formatRupiah(f.masuk - f.keluar),
+                    saldo: formatRupiah(saldoAwal + f.masuk - f.keluar),
                   };
                 })}
             />
           )}
         </div>
         <CardContent>
-          <TableWrap minWidth={620}>
+          <TableWrap minWidth={720}>
             <THead>
               <tr>
                 <TH>Divisi</TH>
+                <TH align="right">Saldo Awal</TH>
                 <TH align="right">Pemasukan</TH>
                 <TH align="right">Pengeluaran</TH>
                 <TH align="right">Saldo</TH>
@@ -250,11 +272,15 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                 .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
                 .map((d) => {
                   const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
-                  const saldo = f.masuk - f.keluar;
+                  const saldoAwal = saldoPerDivisi[d.id] ?? 0;
+                  const saldo = saldoAwal + f.masuk - f.keluar;
                   return (
                     <TR key={d.id}>
                       <TD className="min-w-[9rem] whitespace-nowrap font-medium">
                         {d.nama}
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        {formatRupiah(saldoAwal)}
                       </TD>
                       <TD align="right" className="whitespace-nowrap">
                         {formatRupiah(f.masuk)}
