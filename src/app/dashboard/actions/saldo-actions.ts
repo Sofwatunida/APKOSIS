@@ -14,6 +14,29 @@ export interface SaldoActionResult {
 
 const MAX_NOMINAL = 9_999_999_999_999.99;
 
+/** Ubah pesan error database menjadi kalimat yang bisa dipahami pengguna. */
+function friendlySaldoError(message: string): string {
+  if (/row-level security/i.test(message)) {
+    return "Saldo awal gagal disimpan karena kewenangan periode tidak cocok. Pastikan akun Anda berperan Bendahara dan periode yang dipilih masih aktif.";
+  }
+  if (/periode_id wajib|periode_id.*null/i.test(message)) {
+    return "Periode belum ditentukan. Pilih satu periode aktif sebelum menyimpan saldo awal.";
+  }
+  if (/belum aktif/i.test(message)) {
+    return "Periode ini belum aktif sehingga saldo awal tidak bisa diubah.";
+  }
+  if (/diarsipkan|hanya bisa dibaca|read only/i.test(message)) {
+    return "Periode ini sudah diarsipkan dan hanya bisa dibaca. Hubungi Super Admin untuk koreksi.";
+  }
+  if (/saldo_awal_nominal_nonnegative|check constraint/i.test(message)) {
+    return "Nominal saldo awal tidak valid. Nilai tidak boleh negatif.";
+  }
+  if (/duplicate key|unique/i.test(message)) {
+    return "Saldo awal untuk tujuan dan periode ini sudah ada. Muat ulang halaman lalu edit nominalnya.";
+  }
+  return message;
+}
+
 /**
  * Menyimpan saldo awal Bendahara (kas pusat) atau saldo awal satu
  * divisi pada periode yang sedang dipilih.
@@ -41,7 +64,8 @@ export async function saveSaldoAwalAction(
   const divisiId = isBendahara
     ? null
     : String(formData.get("divisi_id") ?? "").trim();
-  const nominal = Number(formData.get("nominal"));
+  const rawNominal = String(formData.get("nominal") ?? "").trim();
+  const nominal = Number(rawNominal);
 
   const ctx = await getPeriodeContext(profile);
   if (ctx.allPeriodsMode || !ctx.selected.id) {
@@ -53,12 +77,17 @@ export async function saveSaldoAwalAction(
   if (!ctx.canWrite) {
     return {
       ok: false,
-      message: "Periode arsip tidak bisa diubah.",
+      message: ctx.readOnly
+        ? "Periode arsip tidak bisa diubah."
+        : "Periode ini belum aktif sehingga saldo awal tidak bisa diubah.",
     };
   }
 
   if (!isBendahara && !divisiId) {
     return { ok: false, message: "Pilih divisi terlebih dahulu." };
+  }
+  if (rawNominal === "") {
+    return { ok: false, message: "Nominal saldo awal wajib diisi." };
   }
   if (!Number.isFinite(nominal) || nominal < 0) {
     return { ok: false, message: "Nominal saldo awal tidak valid." };
@@ -67,13 +96,14 @@ export async function saveSaldoAwalAction(
     return { ok: false, message: "Nominal saldo awal terlalu besar." };
   }
 
+  const nominalRounded = Math.round(nominal * 100) / 100;
   const supabase = await createClient();
-  const { error } = await saveSaldoAwal(
-    supabase,
-    nominal,
-    profile.id,
-    divisiId
-  );
+  const { error } = await saveSaldoAwal(supabase, {
+    nominal: nominalRounded,
+    userId: profile.id,
+    periodeId: ctx.selected.id,
+    divisiId,
+  });
 
   const auditTargetType = isBendahara ? "saldo_awal_bendahara" : "saldo_awal";
 
@@ -82,17 +112,17 @@ export async function saveSaldoAwalAction(
       action: "ubah_saldo_awal",
       targetType: auditTargetType,
       targetId: divisiId ?? undefined,
-      detail: `nominal=${nominal}`,
+      detail: `nominal=${nominalRounded}`,
       success: false,
     });
-    return { ok: false, message: error.message };
+    return { ok: false, message: friendlySaldoError(error.message) };
   }
 
   await writeAuditLog({
     action: "ubah_saldo_awal",
     targetType: auditTargetType,
     targetId: divisiId ?? undefined,
-    detail: `nominal=${nominal}`,
+    detail: `nominal=${nominalRounded}`,
     success: true,
   });
 

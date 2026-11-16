@@ -15,10 +15,12 @@ import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
 import { buildDivisiOptions } from "@/lib/divisi-options";
 import { fetchSaldoAwalBendahara, fetchSaldoAwalMap } from "@/lib/finance";
+import { usePeriode } from "@/lib/periode-context";
 import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
+  const { periodeId } = usePeriode();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
@@ -110,7 +112,10 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       setLoading(false);
     }
     load();
-  }, [filterMonth, filterYear]);
+    // Muat ulang saat periode diganti supaya saldo awal tidak tertinggal
+    // dari periode sebelumnya.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterMonth, filterYear, periodeId]);
 
   if (loading) return <Spinner />;
 

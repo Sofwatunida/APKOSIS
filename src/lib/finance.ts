@@ -126,40 +126,87 @@ export async function fetchSaldoAwal(
   return entries.reduce((total, entry) => total + entry.nominal, 0);
 }
 
+export interface SaveSaldoAwalInput {
+  /** Nominal baru (>= 0, sudah divalidasi pemanggil). */
+  nominal: number;
+  /** User yang melakukan perubahan, untuk kolom `updated_by`. */
+  userId: string | null;
+  /** Periode tujuan. Selalu eksplisit supaya tidak bergantung cookie. */
+  periodeId: string;
+  /** `null` = saldo awal Bendahara (kas pusat). */
+  divisiId?: string | null;
+}
+
+export interface SaldoAwalSaveError {
+  message: string;
+  code?: string;
+}
+
 /**
- * Menyimpan saldo awal satu divisi pada periode terpilih.
+ * Menyimpan saldo awal satu tujuan pada satu periode.
  *
- * `periode_id` diisi otomatis oleh period scope. Unik per
- * (periode_id, divisi_id) sehingga saldo awal antarperiode maupun
- * antardivisi tidak saling menimpa. `divisiId = null` menulis baris
- * saldo awal Bendahara (kas pusat).
+ * Identitas baris = (`periode_id`, `divisi_id`):
+ *   - divisiId = null  -> saldo awal Bendahara (kas pusat)
+ *   - divisiId = uuid  -> saldo awal divisi tersebut
+ *
+ * Jika baris sudah ada, data di-UPDATE (bukan insert duplikat). Bila dua
+ * penyimpanan berjalan bersamaan dan salah satunya kalah balapan unique
+ * index, percobaan kedua diarahkan ke UPDATE juga.
  */
 export async function saveSaldoAwal(
   supabase: SupabaseClient<Database>,
-  nominal: number,
-  userId: string | null,
-  divisiId: string | null = null
-): Promise<{ error: { message: string } | null }> {
-  const existingQuery = supabase.from("saldo_awal").select("id");
-  const { data: existing, error: findError } = divisiId
-    ? await existingQuery.eq("divisi_id", divisiId).maybeSingle()
-    : await existingQuery.is("divisi_id", null).maybeSingle();
+  input: SaveSaldoAwalInput
+): Promise<{ error: SaldoAwalSaveError | null }> {
+  const { nominal, userId, periodeId, divisiId = null } = input;
+  const updatedAt = new Date().toISOString();
 
+  async function findExisting() {
+    let query = supabase
+      .from("saldo_awal")
+      .select("id")
+      .eq("periode_id", periodeId)
+      .limit(1);
+    query = divisiId
+      ? query.eq("divisi_id", divisiId)
+      : query.is("divisi_id", null);
+    return query.maybeSingle();
+  }
+
+  async function updateExisting(id: string) {
+    return supabase
+      .from("saldo_awal")
+      .update({ nominal, updated_by: userId, updated_at: updatedAt })
+      .eq("id", id)
+      .eq("periode_id", periodeId);
+  }
+
+  const { data: existing, error: findError } = await findExisting();
   if (findError) return { error: findError };
 
   if (existing?.id) {
-    const { error } = await supabase
-      .from("saldo_awal")
-      .update({ nominal, updated_by: userId, updated_at: new Date().toISOString() })
-      .eq("id", existing.id);
+    const { error } = await updateExisting(existing.id);
     return { error };
   }
 
   const { error } = await supabase.from("saldo_awal").insert({
+    periode_id: periodeId,
+    divisi_id: divisiId,
     nominal,
     updated_by: userId,
-    updated_at: new Date().toISOString(),
-    divisi_id: divisiId,
+    updated_at: updatedAt,
   });
+
+  if (!error) return { error: null };
+
+  // 23505 = unique_violation: baris dibuat bersamaan oleh request lain.
+  // Jangan gagal dengan duplikat; ulangi sebagai UPDATE.
+  if (error.code === "23505") {
+    const { data: raced } = await findExisting();
+    if (raced?.id) {
+      const { error: updateError } = await updateExisting(raced.id);
+      return { error: updateError };
+    }
+  }
+
   return { error };
 }

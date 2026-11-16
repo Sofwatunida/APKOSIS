@@ -101,8 +101,9 @@ export const NAV_STRUCTURE: NavSection[] = [
       { label: "Inventaris", href: "/dashboard/inventaris", roles: ["division_admin"] },
       { label: "Kebutuhan", href: "/dashboard/kebutuhan", roles: ["division_admin"] },
       { label: "Pengajuan Dana", href: "/dashboard/pengajuan-dana", roles: ["division_admin"] },
+      { label: "Keuangan", href: "/dashboard/keuangan", roles: ["division_admin"] },
       { label: "Profil Divisi", href: "/dashboard/profil-divisi", roles: ["division_admin"] },
-      { label: "Rekap Keuangan", href: "/dashboard/detail-keuangan", roles: ["monitoring", "sekretaris", "bendahara"] },
+      { label: "Rekap Keuangan", href: "/dashboard/detail-keuangan", roles: ["division_admin", "monitoring", "sekretaris", "bendahara"] },
     ],
   },
   {

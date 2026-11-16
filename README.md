@@ -132,7 +132,17 @@ karena hanya memakai *publishable key*. Jalankan migration berurutan di
 20261001000003_fix_profiles_policy_recursion.sql # Wajib: hentikan infinite recursion policy
 20261001000004_fix_division_credential.sql      # Wajib: perbaiki simpan password + periode divisi
 20261001000005_drop_ambiguous_periode_refs.sql   # Wajib: hapus overload liar + qualification periode_id
+20261112000000_saldo_awal_per_divisi.sql         # Wajib: saldo awal per divisi + kolom id
+20261116000000_saldo_awal_rls_upsert_fix.sql     # Wajib: perbaikan RLS saldo awal + simpan tanpa duplikat
 ```
+
+> **WAJIB dijalankan setelah `20261112000000`.** Tanpa migration ini
+> penyimpanan saldo awal Bendahara bisa gagal dengan
+> `new row violates row-level security policy for table "saldo_awal"`
+> ketika `profiles.periode_id` belum diisi atau berbeda dengan periode
+> aktif. Migration ini mempertahankan RLS (tidak memakai `service_role`),
+> mengizinkan Bendahara menulis hanya pada periode aktif, memberi
+> Monitoring/Sekretaris hak baca, dan menambah validasi nominal >= 0.
 
 > **WAJIB dijalankan setelah `20261001000002`.** Tanpa migration ini semua
 > query ke `profiles` (termasuk saat login) gagal dengan

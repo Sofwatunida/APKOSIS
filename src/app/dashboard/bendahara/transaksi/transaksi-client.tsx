@@ -32,12 +32,13 @@ interface SaldoRow {
   nomor: number;
   nama: string;
   nominal: number;
+  exists: boolean;
 }
 
 export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
   const { success, error } = useToast();
-  const { readOnly, options: periodeOptions } = usePeriode();
+  const { readOnly, options: periodeOptions, periodeId } = usePeriode();
   // Tahun filter TIDAK lagi memakai tahun kalender, melainkan tahun
   // milik periode yang dipilih (dari tabel `periods`).
   const periodeTahun = useMemo(() => {
@@ -73,8 +74,13 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   const [saldoRows, setSaldoRows] = useState<SaldoRow[]>([]);
   const [saldoBendahara, setSaldoBendahara] = useState(0);
+  const [saldoBendaharaExists, setSaldoBendaharaExists] = useState(false);
+  const [divisiRaw, setDivisiRaw] = useState<
+    { id: string; nomor_divisi: number | null; nama_divisi: string | null }[]
+  >([]);
   const [saldoDivisiId, setSaldoDivisiId] = useState("");
   const [saldoInput, setSaldoInput] = useState("");
+  const [saldoEditing, setSaldoEditing] = useState(false);
   const [savingSaldo, setSavingSaldo] = useState(false);
 
   async function loadSaldoAwal(
@@ -86,14 +92,17 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
     const byDivisi = new Map<string, number>();
     let bendahara = 0;
+    let bendaharaExists = false;
     (data ?? []).forEach((row) => {
       if (row.divisi_id) {
         byDivisi.set(row.divisi_id, Number(row.nominal) || 0);
       } else {
         bendahara = Number(row.nominal) || 0;
+        bendaharaExists = true;
       }
     });
     setSaldoBendahara(bendahara);
+    setSaldoBendaharaExists(bendaharaExists);
 
     // Hanya divisi nyata (bukan uuid placeholder) yang bisa menyimpan saldo.
     const seen = new Set<number>();
@@ -111,28 +120,70 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
           (d.nama_divisi ?? "").trim() ||
           (nomor !== null ? `Divisi ${String(nomor).padStart(2, "0")}` : "-"),
         nominal: byDivisi.get(d.id) ?? 0,
+        exists: byDivisi.has(d.id),
       });
     }
     list.sort((a, b) => a.nomor - b.nomor);
 
     setSaldoRows(list);
-    if (list.length > 0) {
-      setSaldoDivisiId((prev) => prev || list[0].divisiId);
-      setSaldoInput((prev) =>
-        prev || (list[0].nominal !== 0 ? String(list[0].nominal) : "")
-      );
+    setSaldoDivisiId((prev) => {
+      if (
+        prev === SALDO_BENDAHARA_TARGET ||
+        list.some((row) => row.divisiId === prev)
+      ) {
+        return prev;
+      }
+      return SALDO_BENDAHARA_TARGET;
+    });
+  }
+
+  /** Nominal terakhir yang tersimpan untuk tujuan yang sedang dipilih. */
+  function currentSaldoTarget() {
+    if (saldoDivisiId === SALDO_BENDAHARA_TARGET) {
+      return { nominal: saldoBendahara, exists: saldoBendaharaExists };
     }
+    const row = saldoRows.find((r) => r.divisiId === saldoDivisiId);
+    return { nominal: row?.nominal ?? 0, exists: row?.exists ?? false };
   }
 
   function handleSaldoDivisiChange(divisiId: string) {
     setSaldoDivisiId(divisiId);
+    setSaldoEditing(false);
     if (divisiId === SALDO_BENDAHARA_TARGET) {
-      setSaldoInput(saldoBendahara !== 0 ? String(saldoBendahara) : "");
+      setSaldoInput(saldoBendaharaExists ? String(saldoBendahara) : "");
       return;
     }
     const row = saldoRows.find((r) => r.divisiId === divisiId);
-    setSaldoInput(row && row.nominal !== 0 ? String(row.nominal) : "");
+    setSaldoInput(row?.exists ? String(row.nominal) : "");
   }
+
+  function startEditSaldo() {
+    const current = currentSaldoTarget();
+    setSaldoInput(current.exists ? String(current.nominal) : "");
+    setSaldoEditing(true);
+  }
+
+  function cancelEditSaldo() {
+    setSaldoEditing(false);
+  }
+
+  // Saat tidak sedang mengedit, input selalu menampilkan nilai terakhir
+  // yang tersimpan (termasuk setelah ganti tujuan atau selesai menyimpan).
+  useEffect(() => {
+    if (saldoEditing) return;
+    if (saldoDivisiId === SALDO_BENDAHARA_TARGET) {
+      setSaldoInput(saldoBendaharaExists ? String(saldoBendahara) : "");
+      return;
+    }
+    const row = saldoRows.find((r) => r.divisiId === saldoDivisiId);
+    setSaldoInput(row?.exists ? String(row.nominal) : "");
+  }, [
+    saldoEditing,
+    saldoDivisiId,
+    saldoBendahara,
+    saldoBendaharaExists,
+    saldoRows,
+  ]);
 
   const totalSaldoAwal = useMemo(
     () =>
@@ -186,6 +237,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         .order("nomor_divisi");
       // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
       setDivisiOptions(buildDivisiOptions(div));
+      setDivisiRaw(div ?? []);
       await loadSaldoAwal(div ?? []);
     }
     init();
@@ -193,10 +245,23 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Saat periode diganti, muat ulang saldo awal supaya nominal periode
+  // sebelumnya tidak terbawa ke periode yang baru.
+  useEffect(() => {
+    if (!periodeId || divisiRaw.length === 0) return;
+    setSaldoEditing(false);
+    void loadSaldoAwal(divisiRaw);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodeId]);
+
   async function handleSaveSaldoAwal() {
     const nominal = Number(saldoInput);
     if (!saldoDivisiId) {
-      error("Pilih divisi terlebih dahulu.");
+      error("Pilih tujuan saldo awal terlebih dahulu.");
+      return;
+    }
+    if (saldoInput.trim() === "") {
+      error("Nominal saldo awal wajib diisi.");
       return;
     }
     if (isNaN(nominal) || nominal < 0) {
@@ -219,15 +284,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       error(result.message);
       return;
     }
-    if (isBendahara) {
-      setSaldoBendahara(nominal);
-    } else {
-      setSaldoRows((prev) =>
-        prev.map((row) =>
-          row.divisiId === saldoDivisiId ? { ...row, nominal } : row
-        )
-      );
-    }
+    setSaldoEditing(false);
+    // Baca ulang dari database supaya tampilan Monitoring/Bendahara
+    // sama-sama memakai nilai terbaru, bukan asumsi state lokal.
+    await loadSaldoAwal(divisiRaw);
     success(result.message);
   }
 
@@ -247,6 +307,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     }
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }, [periodeOptions]);
+
+  const saldoTarget = currentSaldoTarget();
+  const saldoTargetLabel =
+    saldoDivisiId === SALDO_BENDAHARA_TARGET
+      ? SALDO_BENDAHARA_LABEL
+      : saldoRows.find((r) => r.divisiId === saldoDivisiId)?.nama ?? "-";
 
   return (
     <div className="space-y-6">
@@ -330,22 +396,62 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
               <Input
                 type="number"
                 min="0"
+                step="0.01"
                 value={saldoInput}
-                disabled={readOnly || savingSaldo}
+                disabled={readOnly || savingSaldo || !saldoEditing}
                 onChange={(e) => setSaldoInput(e.target.value)}
                 placeholder="Ketik nominal saldo awal..."
               />
             </Field>
-            <Button
-              type="button"
-              onClick={handleSaveSaldoAwal}
-              loading={savingSaldo}
-              disabled={readOnly}
-              className="self-end"
-            >
-              Simpan Saldo Awal
-            </Button>
+            <div className="flex flex-wrap items-end gap-2">
+              {saldoEditing ? (
+                <>
+                  <Button
+                    type="button"
+                    onClick={handleSaveSaldoAwal}
+                    loading={savingSaldo}
+                    disabled={readOnly}
+                  >
+                    Simpan Perubahan
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={cancelEditSaldo}
+                    disabled={savingSaldo}
+                  >
+                    Batal
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant={saldoTarget.exists ? "outline" : "primary"}
+                  onClick={startEditSaldo}
+                  disabled={readOnly || savingSaldo}
+                >
+                  {saldoTarget.exists ? "Edit Saldo Awal" : "Tambah Saldo Awal"}
+                </Button>
+              )}
+            </div>
           </div>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {saldoTarget.exists ? (
+              <>
+                Saldo awal tersimpan untuk{" "}
+                <span className="font-semibold">{saldoTargetLabel}</span> pada
+                periode ini: {formatRupiah(saldoTarget.nominal)}.
+              </>
+            ) : (
+              <>
+                Saldo awal <span className="font-semibold">{saldoTargetLabel}</span>{" "}
+                belum diatur pada periode ini. Klik{" "}
+                <span className="font-semibold">Tambah Saldo Awal</span> untuk
+                mengisinya.
+              </>
+            )}
+          </p>
 
           <TableWrap minWidth={420}>
             <THead>
