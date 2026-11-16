@@ -69,6 +69,7 @@ export function ProgramKerjaBendaharaClient({
   const [unggulanForm, setUnggulanForm] = useState<FormState>(emptyForm);
   const [savingUnggulan, setSavingUnggulan] = useState(false);
   const [unggulanErrors, setUnggulanErrors] = useState<Record<string, string>>({});
+  const [viewUnggulan, setViewUnggulan] = useState<{ title: string; desc: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -459,6 +460,15 @@ export function ProgramKerjaBendaharaClient({
                           </p>
                         )}
                         <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          {cleanDesc && (
+                            <button
+                              type="button"
+                              onClick={() => setViewUnggulan({ title: p.nama_program ?? "Program Unggulan", desc: cleanDesc })}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                            >
+                              Lihat
+                            </button>
+                          )}
                           {p.file_path && (
                             <button
                               type="button"
@@ -677,6 +687,14 @@ export function ProgramKerjaBendaharaClient({
                 </Button>
               </div>
             </div>
+          </Modal>
+
+          <Modal
+            open={!!viewUnggulan}
+            onClose={() => setViewUnggulan(null)}
+            title={viewUnggulan?.title ?? "Program Unggulan"}
+          >
+            <RichTextContent html={viewUnggulan?.desc ?? ""} className="text-sm text-slate-700 dark:text-slate-200" />
           </Modal>
 
           {/* Modal Tambah/Edit Program Unggulan */}

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card"
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { CatatanProgramBelumTerlaksana } from "@/components/program-belum-terlaksana";
 import { RichTextContent } from "@/components/ui/rich-text-editor";
+import { Modal } from "@/components/ui/modal";
 
 interface ProgramKerjaRow extends ProgramKerja {
   divisi?: { nama_divisi: string } | null;
@@ -17,6 +18,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ProgramKerjaRow[]>([]);
   const [unggulanItems, setUnggulanItems] = useState<ProgramKerjaRow[]>([]);
+  const [viewUnggulan, setViewUnggulan] = useState<{ title: string; desc: string } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -94,15 +96,26 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                         <span className="truncate max-w-[220px]">{p.file_name}</span>
                       </p>
                     )}
-                    {p.file_path && (
-                      <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadFile(p)}
-                          className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
-                        >
-                          Download File
-                        </button>
+                    {(cleanDesc || p.file_path) && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                        {cleanDesc && (
+                          <button
+                            type="button"
+                            onClick={() => setViewUnggulan({ title: p.nama_program ?? "Program Unggulan", desc: cleanDesc })}
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                          >
+                            Lihat
+                          </button>
+                        )}
+                        {p.file_path && (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadFile(p)}
+                            className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
+                          >
+                            Download File
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -143,6 +156,14 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
           )}
         </CardContent>
       </Card>
+
+      <Modal
+        open={!!viewUnggulan}
+        onClose={() => setViewUnggulan(null)}
+        title={viewUnggulan?.title ?? "Program Unggulan"}
+      >
+        <RichTextContent html={viewUnggulan?.desc ?? ""} className="text-sm text-slate-700 dark:text-slate-200" />
+      </Modal>
 
       {profile.role !== "bendahara" && <CatatanProgramBelumTerlaksana profile={profile} />}
     </div>
