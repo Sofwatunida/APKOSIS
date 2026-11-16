@@ -6,6 +6,7 @@ import type { Profile, ProgramKerja } from "@/lib/types";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { CatatanProgramBelumTerlaksana } from "@/components/program-belum-terlaksana";
+import { RichTextContent } from "@/components/ui/rich-text-editor";
 
 interface ProgramKerjaRow extends ProgramKerja {
   divisi?: { nama_divisi: string } | null;
@@ -83,7 +84,9 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                       {p.divisi?.nama_divisi ?? "Divisi tidak diketahui"}
                     </p>
                     {cleanDesc && (
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{cleanDesc}</p>
+                      <div className="mt-1 line-clamp-4 text-sm text-slate-500 dark:text-slate-400">
+                        <RichTextContent html={cleanDesc} />
+                      </div>
                     )}
                     {p.file_name && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">

@@ -10,6 +10,7 @@ import { Field, Input, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
+import { RichTextEditor, RichTextContent, htmlToPlainText } from "@/components/ui/rich-text-editor";
 
 const ALLOWED = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 
@@ -374,7 +375,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
     ...unggulanItems.map((program) => ({
       jenis: "Program Unggulan",
       program: program.nama_program,
-      keterangan: program.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") ?? "-",
+      keterangan: htmlToPlainText(program.deskripsi?.replace(/^\[UNGGULAN\]\s*/, "") ?? "") || "-",
       lampiran: program.file_name ?? "-",
     })),
     ...notesList.map((note) => ({
@@ -441,7 +442,9 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
                       </span>
                     </div>
                     {cleanDesc && (
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{cleanDesc}</p>
+                      <div className="mt-1 line-clamp-4 text-sm text-slate-500 dark:text-slate-400">
+                        <RichTextContent html={cleanDesc} />
+                      </div>
                     )}
                     {p.file_name && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
@@ -674,9 +677,9 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
             />
           </Field>
           <Field label="Keterangan Singkat">
-            <Textarea
+            <RichTextEditor
               value={unggulanForm.deskripsi}
-              onChange={(e) => setUnggulanForm({ ...unggulanForm, deskripsi: e.target.value })}
+              onChange={(html) => setUnggulanForm({ ...unggulanForm, deskripsi: html })}
               placeholder="Tuliskan deskripsi singkat program unggulan ini..."
             />
           </Field>

@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
+import { RichTextEditor, RichTextContent } from "@/components/ui/rich-text-editor";
 
 const ALLOWED = [
   "application/pdf",
@@ -693,9 +694,9 @@ export function ProgramKerjaBendaharaClient({
                 />
               </Field>
               <Field label="Keterangan Singkat">
-                <Textarea
+                <RichTextEditor
                   value={unggulanForm.deskripsi}
-                  onChange={(e) => setUnggulanForm({ ...unggulanForm, deskripsi: e.target.value })}
+                  onChange={(html) => setUnggulanForm({ ...unggulanForm, deskripsi: html })}
                   placeholder="Tuliskan deskripsi singkat program unggulan ini..."
                 />
               </Field>
