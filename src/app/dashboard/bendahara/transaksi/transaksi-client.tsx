@@ -19,6 +19,9 @@ import { ExportMenu } from "@/components/export-menu";
 import { usePeriode } from "@/lib/periode-context";
 import { saveSaldoAwalAction } from "../../actions/saldo-actions";
 import { buildDivisiOptions } from "@/lib/divisi-options";
+import { SALDO_BENDAHARA_TARGET } from "@/lib/finance";
+
+const SALDO_BENDAHARA_LABEL = "Bendahara (Kas Pusat)";
 
 interface Row extends TransaksiKeuangan {
   divisi: { nama_divisi: string } | null;
@@ -69,6 +72,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [viewBukti, setViewBukti] = useState<string | null>(null);
 
   const [saldoRows, setSaldoRows] = useState<SaldoRow[]>([]);
+  const [saldoBendahara, setSaldoBendahara] = useState(0);
   const [saldoDivisiId, setSaldoDivisiId] = useState("");
   const [saldoInput, setSaldoInput] = useState("");
   const [savingSaldo, setSavingSaldo] = useState(false);
@@ -81,11 +85,15 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       .select("divisi_id, nominal");
 
     const byDivisi = new Map<string, number>();
+    let bendahara = 0;
     (data ?? []).forEach((row) => {
       if (row.divisi_id) {
         byDivisi.set(row.divisi_id, Number(row.nominal) || 0);
+      } else {
+        bendahara = Number(row.nominal) || 0;
       }
     });
+    setSaldoBendahara(bendahara);
 
     // Hanya divisi nyata (bukan uuid placeholder) yang bisa menyimpan saldo.
     const seen = new Set<number>();
@@ -118,13 +126,18 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   function handleSaldoDivisiChange(divisiId: string) {
     setSaldoDivisiId(divisiId);
+    if (divisiId === SALDO_BENDAHARA_TARGET) {
+      setSaldoInput(saldoBendahara !== 0 ? String(saldoBendahara) : "");
+      return;
+    }
     const row = saldoRows.find((r) => r.divisiId === divisiId);
     setSaldoInput(row && row.nominal !== 0 ? String(row.nominal) : "");
   }
 
   const totalSaldoAwal = useMemo(
-    () => saldoRows.reduce((total, row) => total + row.nominal, 0),
-    [saldoRows]
+    () =>
+      saldoBendahara + saldoRows.reduce((total, row) => total + row.nominal, 0),
+    [saldoBendahara, saldoRows]
   );
 
   async function load() {
@@ -195,8 +208,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       return;
     }
     setSavingSaldo(true);
+    const isBendahara = saldoDivisiId === SALDO_BENDAHARA_TARGET;
     const fd = new FormData();
-    fd.set("divisi_id", saldoDivisiId);
+    fd.set("target", isBendahara ? "bendahara" : "divisi");
+    if (!isBendahara) fd.set("divisi_id", saldoDivisiId);
     fd.set("nominal", String(nominal));
     const result = await saveSaldoAwalAction(fd);
     setSavingSaldo(false);
@@ -204,11 +219,15 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       error(result.message);
       return;
     }
-    setSaldoRows((prev) =>
-      prev.map((row) =>
-        row.divisiId === saldoDivisiId ? { ...row, nominal } : row
-      )
-    );
+    if (isBendahara) {
+      setSaldoBendahara(nominal);
+    } else {
+      setSaldoRows((prev) =>
+        prev.map((row) =>
+          row.divisiId === saldoDivisiId ? { ...row, nominal } : row
+        )
+      );
+    }
     success(result.message);
   }
 
@@ -286,20 +305,20 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       {/* Saldo Awal per Divisi */}
       <Card>
         <CardHeader
-          title="Saldo Awal per Divisi"
-          subtitle="Atur saldo awal kas setiap divisi pada periode ini."
+          title="Saldo Awal Bendahara & Divisi"
+          subtitle="Atur saldo awal kas Bendahara (kas pusat) dan setiap divisi pada periode ini."
         />
         <CardContent className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:items-end">
-            <Field label="Divisi">
+            <Field label="Tujuan Saldo Awal">
               <Select
                 value={saldoDivisiId}
-                disabled={readOnly || savingSaldo || saldoRows.length === 0}
+                disabled={readOnly || savingSaldo}
                 onChange={(e) => handleSaldoDivisiChange(e.target.value)}
               >
-                {saldoRows.length === 0 && (
-                  <option value="">Belum ada divisi</option>
-                )}
+                <option value={SALDO_BENDAHARA_TARGET}>
+                  {SALDO_BENDAHARA_LABEL}
+                </option>
                 {saldoRows.map((row) => (
                   <option key={row.divisiId} value={row.divisiId}>
                     {row.nama}
@@ -312,7 +331,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                 type="number"
                 min="0"
                 value={saldoInput}
-                disabled={readOnly || savingSaldo || saldoRows.length === 0}
+                disabled={readOnly || savingSaldo}
                 onChange={(e) => setSaldoInput(e.target.value)}
                 placeholder="Ketik nominal saldo awal..."
               />
@@ -321,7 +340,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
               type="button"
               onClick={handleSaveSaldoAwal}
               loading={savingSaldo}
-              disabled={readOnly || saldoRows.length === 0}
+              disabled={readOnly}
               className="self-end"
             >
               Simpan Saldo Awal
@@ -336,6 +355,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
               </tr>
             </THead>
             <TBody>
+              <TR>
+                <TD className="font-medium">{SALDO_BENDAHARA_LABEL}</TD>
+                <TD align="right" className="whitespace-nowrap">
+                  {formatRupiah(saldoBendahara)}
+                </TD>
+              </TR>
               {saldoRows.map((row) => (
                 <TR key={row.divisiId}>
                   <TD className="font-medium">{row.nama}</TD>
@@ -371,7 +396,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Pemasukan" value={formatRupiah(pemasukan)} tone="green" />
         <StatCard label="Total Pengeluaran" value={formatRupiah(pengeluaran)} tone="red" />
-        <StatCard label="Saldo Awal" value={formatRupiah(totalSaldoAwal)} tone="indigo" />
+        <StatCard
+          label="Saldo Awal"
+          sub="Bendahara + semua divisi"
+          value={formatRupiah(totalSaldoAwal)}
+          tone="indigo"
+        />
         <StatCard
           label="Saldo"
           sub="Saldo Awal + Masuk - Keluar"

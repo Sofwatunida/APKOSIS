@@ -14,8 +14,18 @@ export interface SaldoAwalEntry {
 }
 
 /**
+ * Nilai sentinel pilihan "Bendahara" pada form saldo awal.
+ *
+ * Baris saldo awal dengan `divisi_id = null` dipakai sebagai saldo
+ * awal Bendahara (kas pusat / kas OSIS), terpisah dari saldo awal
+ * masing-masing divisi.
+ */
+export const SALDO_BENDAHARA_TARGET = "bendahara";
+
+/**
  * Semua baris saldo awal periode terpilih.
  *
+ * Termasuk baris Bendahara (`divisi_id = null`) dan baris per divisi.
  * Periode sudah difilter otomatis oleh `src/lib/supabase/client.ts`,
  * jadi tidak mungkin mencampur saldo awal antarperiode.
  */
@@ -32,7 +42,7 @@ export async function fetchSaldoAwalEntries(
   }));
 }
 
-/** Peta `divisi_id` -> nominal saldo awal (baris umum lama tidak ikut). */
+/** Peta `divisi_id` -> nominal saldo awal (baris Bendahara tidak ikut). */
 export async function fetchSaldoAwalMap(
   supabase: SupabaseClient<Database>
 ): Promise<Map<string, number>> {
@@ -45,11 +55,28 @@ export async function fetchSaldoAwalMap(
 }
 
 /**
+ * Saldo awal Bendahara (kas pusat) pada periode terpilih.
+ *
+ * Disimpan pada baris `saldo_awal` dengan `divisi_id = null` dan
+ * diatur oleh role Bendahara dari halaman Transaksi.
+ */
+export async function fetchSaldoAwalBendahara(
+  supabase: SupabaseClient<Database>
+): Promise<number> {
+  const { data } = await supabase
+    .from("saldo_awal")
+    .select("nominal")
+    .is("divisi_id", null)
+    .maybeSingle();
+  return Number(data?.nominal) || 0;
+}
+
+/**
  * Ringkasan kas untuk periode yang sedang dipilih.
  *
- * Saldo awal dijumlahkan dari seluruh divisi (plus baris umum lama
- * bila masih ada), sehingga kartu ringkasan selalu konsisten dengan
- * tabel saldo awal per divisi.
+ * Saldo awal dijumlahkan dari saldo awal Bendahara (kas pusat) dan
+ * seluruh divisi, sehingga kartu ringkasan selalu konsisten dengan
+ * pengaturan saldo awal di halaman Transaksi.
  */
 export async function fetchFinanceSummary(
   supabase: SupabaseClient<Database>
@@ -78,10 +105,9 @@ export async function fetchFinanceSummary(
 /**
  * Total saldo awal periode terpilih.
  *
- * Tanpa `divisiId`, hasilnya jumlah saldo awal seluruh divisi. Baris
- * umum lama (tanpa divisi) hanya dipakai sebagai fallback bila belum
- * ada satu pun saldo awal per divisi, sehingga tidak terjadi hitung
- * ganda. Dengan `divisiId`, hasilnya saldo awal divisi tersebut saja.
+ * Tanpa `divisiId`, hasilnya saldo awal Bendahara (kas pusat) ditambah
+ * saldo awal seluruh divisi. Dengan `divisiId`, hasilnya saldo awal
+ * divisi tersebut saja (tanpa saldo awal Bendahara).
  */
 export async function fetchSaldoAwal(
   supabase: SupabaseClient<Database>,
@@ -97,9 +123,7 @@ export async function fetchSaldoAwal(
   }
 
   const entries = await fetchSaldoAwalEntries(supabase);
-  const perDivisi = entries.filter((entry) => entry.divisiId);
-  const used = perDivisi.length > 0 ? perDivisi : entries;
-  return used.reduce((total, entry) => total + entry.nominal, 0);
+  return entries.reduce((total, entry) => total + entry.nominal, 0);
 }
 
 /**
@@ -108,7 +132,7 @@ export async function fetchSaldoAwal(
  * `periode_id` diisi otomatis oleh period scope. Unik per
  * (periode_id, divisi_id) sehingga saldo awal antarperiode maupun
  * antardivisi tidak saling menimpa. `divisiId = null` menulis baris
- * umum lama (fallback) dan hanya dipakai untuk kompatibilitas.
+ * saldo awal Bendahara (kas pusat).
  */
 export async function saveSaldoAwal(
   supabase: SupabaseClient<Database>,

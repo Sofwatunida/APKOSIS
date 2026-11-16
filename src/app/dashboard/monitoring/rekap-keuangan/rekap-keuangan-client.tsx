@@ -14,7 +14,7 @@ import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
 import { buildDivisiOptions } from "@/lib/divisi-options";
-import { fetchSaldoAwalMap } from "@/lib/finance";
+import { fetchSaldoAwalBendahara, fetchSaldoAwalMap } from "@/lib/finance";
 import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
@@ -33,6 +33,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
   const [saldoPerDivisi, setSaldoPerDivisi] = useState<Record<string, number>>({});
+  const [saldoBendahara, setSaldoBendahara] = useState(0);
   const [allDivSaldo, setAllDivSaldo] = useState<Array<{ id: string; nama: string; saldoAwal: number; masuk: number; keluar: number }>>([]);
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       });
       const divList = (await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi")).data ?? [];
       const saldoMap = await fetchSaldoAwalMap(supabase);
+      setSaldoBendahara(await fetchSaldoAwalBendahara(supabase));
       const saldoRecord: Record<string, number> = {};
       saldoMap.forEach((value, key) => {
         saldoRecord[key] = value;
@@ -111,6 +113,12 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   }, [filterMonth, filterYear]);
 
   if (loading) return <Spinner />;
+
+  const totalSaldoAwalDivisi = allDivSaldo.reduce(
+    (total, d) => total + d.saldoAwal,
+    0
+  );
+  const totalSaldoAwal = saldoBendahara + totalSaldoAwalDivisi;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
@@ -162,7 +170,34 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       {/* Saldo Keseluruhan */}
       <Card>
         <CardHeader title="Saldo Keseluruhan Semua Divisi" subtitle="Total semua waktu" />
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Saldo awal Bendahara (kas pusat) diatur dari menu Transaksi role Bendahara. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
+              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Saldo Awal Bendahara (Kas Pusat)
+              </p>
+              <p className="mt-1 text-xl font-bold text-indigo-700 dark:text-indigo-300">
+                {formatRupiah(saldoBendahara)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                Diatur role Bendahara pada menu Transaksi
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Total Saldo Awal
+              </p>
+              <p className="mt-1 text-xl font-bold text-brand-600 dark:text-brand-400">
+                {formatRupiah(totalSaldoAwal)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                Bendahara {formatRupiah(saldoBendahara)} + divisi{" "}
+                {formatRupiah(totalSaldoAwalDivisi)}
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {allDivSaldo
               .filter((d) => filterDivisi === "all" || d.id === filterDivisi)

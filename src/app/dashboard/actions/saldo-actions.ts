@@ -15,7 +15,8 @@ export interface SaldoActionResult {
 const MAX_NOMINAL = 9_999_999_999_999.99;
 
 /**
- * Menyimpan saldo awal untuk satu divisi pada periode yang sedang dipilih.
+ * Menyimpan saldo awal Bendahara (kas pusat) atau saldo awal satu
+ * divisi pada periode yang sedang dipilih.
  *
  * - Hanya Bendahara (dan Super Admin untuk koreksi) yang boleh menulis.
  * - Nominal divalidasi di server, bukan hanya di form.
@@ -35,7 +36,11 @@ export async function saveSaldoAwalAction(
     };
   }
 
-  const divisiId = String(formData.get("divisi_id") ?? "").trim();
+  const target = String(formData.get("target") ?? "divisi");
+  const isBendahara = target === "bendahara";
+  const divisiId = isBendahara
+    ? null
+    : String(formData.get("divisi_id") ?? "").trim();
   const nominal = Number(formData.get("nominal"));
 
   const ctx = await getPeriodeContext(profile);
@@ -52,7 +57,7 @@ export async function saveSaldoAwalAction(
     };
   }
 
-  if (!divisiId) {
+  if (!isBendahara && !divisiId) {
     return { ok: false, message: "Pilih divisi terlebih dahulu." };
   }
   if (!Number.isFinite(nominal) || nominal < 0) {
@@ -70,11 +75,13 @@ export async function saveSaldoAwalAction(
     divisiId
   );
 
+  const auditTargetType = isBendahara ? "saldo_awal_bendahara" : "saldo_awal";
+
   if (error) {
     await writeAuditLog({
       action: "ubah_saldo_awal",
-      targetType: "saldo_awal",
-      targetId: divisiId,
+      targetType: auditTargetType,
+      targetId: divisiId ?? undefined,
       detail: `nominal=${nominal}`,
       success: false,
     });
@@ -83,8 +90,8 @@ export async function saveSaldoAwalAction(
 
   await writeAuditLog({
     action: "ubah_saldo_awal",
-    targetType: "saldo_awal",
-    targetId: divisiId,
+    targetType: auditTargetType,
+    targetId: divisiId ?? undefined,
     detail: `nominal=${nominal}`,
     success: true,
   });
@@ -97,5 +104,10 @@ export async function saveSaldoAwalAction(
   revalidatePath("/dashboard/detail-keuangan");
   revalidatePath("/dashboard");
 
-  return { ok: true, message: "Saldo awal divisi berhasil disimpan." };
+  return {
+    ok: true,
+    message: isBendahara
+      ? "Saldo awal Bendahara berhasil disimpan."
+      : "Saldo awal divisi berhasil disimpan.",
+  };
 }
