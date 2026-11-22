@@ -8,8 +8,8 @@ export default async function DetailKeuanganPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { profile } = await requireProfile();
-  // Halaman detail hanya untuk pemantau keuangan: Monitoring, Sekretaris, Bendahara.
-  requireRole(profile, ["monitoring", "sekretaris", "bendahara"]);
+  // Halaman detail hanya untuk pemantau keuangan: Monitoring dan Sekretaris.
+  requireRole(profile, ["monitoring", "sekretaris"]);
 
   const sp = await searchParams;
   const pick = (key: string) => {

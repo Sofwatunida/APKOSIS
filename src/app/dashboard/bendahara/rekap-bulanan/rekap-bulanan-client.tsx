@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -12,7 +11,7 @@ import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
-import { Eye } from "lucide-react";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import {
   BarChart,
   Bar,
@@ -48,7 +47,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       const year = String(filterYear);
       const month = String(filterMonth).padStart(2, "0");
 
-      const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
+      const { data: div } = await supabase.from("divisi").select("id, nomor_divisi, nama_divisi").order("nomor_divisi");
       const saldoMap = await fetchSaldoAwalMap(supabase);
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
@@ -68,7 +67,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       setPerDivisi(
         (div ?? []).map((d) => ({
           id: d.id,
-          nama: d.nama_divisi,
+          nama: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
           saldoAwal: saldoMap.get(d.id) ?? 0,
           masuk: map.get(d.id)?.masuk ?? 0,
           keluar: map.get(d.id)?.keluar ?? 0,
@@ -104,7 +103,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Rekap Keuangan Bulanan"
-        description="Ringkasan pemasukan, pengeluaran, dan saldo seluruh divisi per bulan."
       />
 
       <Card>
@@ -139,7 +137,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
           <CardContent>
             <p className="text-sm text-slate-500 dark:text-slate-400">Saldo Awal</p>
             <p className="mt-1 text-2xl font-bold text-brand-600 dark:text-brand-400">{formatRupiah(saldoAwal)}</p>
-            <p className="mt-1 text-xs text-slate-400">Diset pada fitur Transaksi oleh Bendahara</p>
           </CardContent>
         </Card>
         <Card>
@@ -281,7 +278,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                 <TH align="right">Pemasukan</TH>
                 <TH align="right">Pengeluaran</TH>
                 <TH align="right">Saldo</TH>
-                <TH align="right">Detail</TH>
               </tr>
             </THead>
             <TBody>
@@ -308,17 +304,6 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                     }`}
                   >
                     {formatRupiah(d.saldoAwal + d.masuk - d.keluar)}
-                  </TD>
-                  <TD align="right" className="whitespace-nowrap">
-                    <Link
-                      href={`/dashboard/detail-keuangan?divisi=${encodeURIComponent(
-                        d.id
-                      )}&periode=bulanan`}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                    >
-                      <Eye className="h-3 w-3 text-slate-400" />
-                      <span>Lihat Detail</span>
-                    </Link>
                   </TD>
                 </TR>
               ))}

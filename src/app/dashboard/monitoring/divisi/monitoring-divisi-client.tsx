@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/modal";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
 import { Eye } from "lucide-react";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 /** Baris anggota yang dibutuhkan tabel & modal "Lihat Anggota". */
 type AnggotaRow = Pick<AnggotaDivisi, "id" | "divisi_id" | "nama" | "jabatan" | "status">;
@@ -121,7 +122,6 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Semua Divisi"
-        description="Pantau 20 divisi OSIS"
         action={
           <ExportMenu
             title="Data Divisi"
@@ -138,7 +138,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
               { header: "Saldo", key: "saldo", width: 20, align: "right" },
             ]}
             rows={divisiList.map((d) => ({
-              divisi: d.nama_divisi,
+              divisi: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
               ketua: d.ketua_divisi ?? "-",
               wakil: d.wakil_divisi ?? "-",
               anggota: d.anggota,
@@ -172,7 +172,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
             {divisiList.map((d) => (
               <TR key={d.id}>
                 <TD className={`${CELL} font-medium text-slate-900 dark:text-white`}>
-                  {d.nama_divisi}
+                  {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
                 </TD>
                 <TD className={CELL}>{d.ketua_divisi || "-"}</TD>
                 <TD className={CELL}>{d.wakil_divisi || "-"}</TD>
@@ -200,7 +200,12 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
                 <TD className={`${CELL} text-center`} align="center">
                   <button
                     type="button"
-                    onClick={() => setMemberModal({ id: d.id, nama: d.nama_divisi })}
+                    onClick={() =>
+                      setMemberModal({
+                        id: d.id,
+                        nama: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
+                      })
+                    }
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     <Eye className="h-3 w-3 text-slate-400" />
@@ -226,8 +231,7 @@ export function MonitoringDivisiClient({ profile }: { profile: Profile }) {
             Data yang diisi ketua divisi. Total{" "}
             <strong className="text-slate-800 dark:text-slate-200">
               {modalMembers.length} anggota
-            </strong>{" "}
-            — tampilan baca saja.
+            </strong>.
           </p>
 
           {modalMembers.length === 0 ? (

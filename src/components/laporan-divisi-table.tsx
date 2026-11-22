@@ -11,6 +11,13 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { ExportMenu } from "@/components/export-menu";
 import { Eye } from "lucide-react";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 
 interface DivisiRow {
   id: string;
@@ -29,6 +36,7 @@ interface ReportBrief {
 interface TableRow {
   no: number;
   id: string;
+  nomor_divisi: number | null;
   nama_divisi: string;
   sudah: boolean;
   last: ReportBrief | null;
@@ -45,8 +53,10 @@ export function LaporanDivisiTable() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [divisiList, setDivisiList] = useState<DivisiRow[]>([]);
+  const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
   const [briefs, setBriefs] = useState<ReportBrief[]>([]);
 
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterTanggal, setFilterTanggal] = useState(todayISO());
   const [filterStatus, setFilterStatus] = useState("all");
   const [search, setSearch] = useState("");
@@ -71,6 +81,7 @@ export function LaporanDivisiTable() {
           .order("created_at", { ascending: false }),
       ]);
       setDivisiList(div ?? []);
+      setDivisiOptions(buildDivisiOptions(div).map((d) => ({ id: d.id, nama: d.nama })));
       setBriefs(reps ?? []);
       setLoading(false);
     }
@@ -88,14 +99,23 @@ export function LaporanDivisiTable() {
 
     const q = search.trim().toLowerCase();
     const filtered = divisiList.filter(
-      (d) => !q || d.nama_divisi.toLowerCase().includes(q)
+      (d) =>
+        (isSemuaDivisi(filterDivisi) || d.id === filterDivisi) &&
+        (!q || d.nama_divisi.toLowerCase().includes(q))
     );
 
     return filtered
       .map((d) => {
         const last = lastByDiv.get(d.id) ?? null;
         const sudah = onDateByDiv.has(d.id);
-        return { no: 0, id: d.id, nama_divisi: d.nama_divisi, sudah, last } as TableRow;
+        return {
+          no: 0,
+          id: d.id,
+          nomor_divisi: d.nomor_divisi,
+          nama_divisi: d.nama_divisi,
+          sudah,
+          last,
+        } as TableRow;
       })
       .filter((r) =>
         filterStatus === "all"
@@ -105,7 +125,7 @@ export function LaporanDivisiTable() {
             : !r.sudah
       )
       .map((r, idx) => ({ ...r, no: idx + 1 }));
-  }, [briefs, divisiList, filterTanggal, filterStatus, search]);
+  }, [briefs, divisiList, filterDivisi, filterTanggal, filterStatus, search]);
 
   const sudahCount = rows.filter((r) => r.sudah).length;
   const belumCount = rows.length - sudahCount;
@@ -113,7 +133,7 @@ export function LaporanDivisiTable() {
   async function openDetail(row: TableRow) {
     const last = row.last;
     if (!last) return;
-    setDetailDivisi(row.nama_divisi);
+    setDetailDivisi(formatDivisiLabel(row.nomor_divisi, row.nama_divisi));
     setLoadingDetail(true);
     setDetail(null);
     setKendalaDetail([]);
@@ -132,13 +152,24 @@ export function LaporanDivisiTable() {
 
   if (loading) return <Spinner />;
 
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
+
   return (
     <div className="space-y-6">
       {/* Filter */}
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Divisi">
+              <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
+                {divisiOptions.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nama}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Field label="Tanggal" hint="Status ditentukan dari laporan pada tanggal ini.">
               <Input
                 type="date"
@@ -167,12 +198,13 @@ export function LaporanDivisiTable() {
       {/* Tabel rekap per divisi */}
       <Card>
         <CardHeader
-          title="Rekap Laporan Divisi"
+          title="Data Laporan"
           subtitle={`${formatDate(filterTanggal)} — ${sudahCount} sudah mengisi, ${belumCount} belum`}
           action={
             <ExportMenu
               title="Rekap Laporan Divisi"
-              subtitle={`Per ${formatDate(filterTanggal)}`}
+              subtitle={`Per ${formatDate(filterTanggal)} - ${filterDivisiLabel}`}
+              division={filterDivisiLabel}
               filename="rekap-laporan-divisi"
               disabled={rows.length === 0}
               columns={[
@@ -184,7 +216,7 @@ export function LaporanDivisiTable() {
               ]}
               rows={rows.map((r) => ({
                 no: r.no,
-                divisi: r.nama_divisi,
+                divisi: formatDivisiLabel(r.nomor_divisi, r.nama_divisi),
                 status: r.sudah ? "Sudah Mengisi" : "Belum Mengisi",
                 laporan_terakhir: r.last ? formatDate(r.last.tanggal) : "-",
                 dibuat: r.last ? formatDateTime(r.last.created_at) : "-",
@@ -215,7 +247,7 @@ export function LaporanDivisiTable() {
                     <tr key={r.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/70">
                       <td className="px-5 py-3.5 text-xs text-slate-400">{r.no}</td>
                       <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-white">
-                        {r.nama_divisi}
+                        {formatDivisiLabel(r.nomor_divisi, r.nama_divisi)}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         {r.sudah ? (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -9,14 +8,18 @@ import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
-import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
-import { buildDivisiOptions } from "@/lib/divisi-options";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import { fetchSaldoAwalBendahara, fetchSaldoAwalMap } from "@/lib/finance";
 import { usePeriode } from "@/lib/periode-context";
-import { Eye } from "lucide-react";
 
 export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -26,9 +29,8 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
-  // Khusus dropdown divisi: selalu lengkap "Divisi 01" .. "Divisi 20".
   const [divisiSelect, setDivisiSelect] = useState<{ id: string; nama: string }[]>([]);
-  const [filterDivisi, setFilterDivisi] = useState("all");
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
 
@@ -44,7 +46,12 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
         .from("divisi")
         .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi");
-      setDivisiOptions((div ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi })));
+      setDivisiOptions(
+        (div ?? []).map((d) => ({
+          id: d.id,
+          nama: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
+        }))
+      );
       setDivisiSelect(buildDivisiOptions(div));
     }
     init();
@@ -71,7 +78,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
         if (t.jenis_transaksi === "pemasukan") cur.masuk += n;
         else cur.keluar += n;
       });
-      const divList = (await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi")).data ?? [];
+      const divList = (await supabase.from("divisi").select("id, nomor_divisi, nama_divisi").order("nomor_divisi")).data ?? [];
       const saldoMap = await fetchSaldoAwalMap(supabase);
       setSaldoBendahara(await fetchSaldoAwalBendahara(supabase));
       const saldoRecord: Record<string, number> = {};
@@ -81,7 +88,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       setSaldoPerDivisi(saldoRecord);
       setAllDivSaldo(divList.map((d) => ({
         id: d.id,
-        nama: d.nama_divisi,
+        nama: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
         saldoAwal: saldoMap.get(d.id) ?? 0,
         masuk: allDivMap.get(d.id)?.masuk ?? 0,
         keluar: allDivMap.get(d.id)?.keluar ?? 0,
@@ -126,12 +133,12 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const totalSaldoAwal = saldoBendahara + totalSaldoAwalDivisi;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Rekap Keuangan"
-        description="Pantau saldo dan arus kas seluruh divisi OSIS per periode."
       />
 
       <Card>
@@ -158,7 +165,6 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
             </Field>
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
-                <option value="all">Semua Divisi</option>
                 {divisiSelect.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -170,13 +176,63 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      <FinanceSummary title="Ringkasan Keuangan OSIS" />
+      <FinanceSummary
+        title="Ringkasan Keuangan OSIS"
+        divisiId={filterDivisi}
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Pemasukan {MONTH_NAMES_ID[filterMonth - 1]}</p>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatRupiah(financeMonthly.masuk)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Pengeluaran {MONTH_NAMES_ID[filterMonth - 1]}</p>
+            <p className="text-2xl font-bold text-red-600">{formatRupiah(financeMonthly.keluar)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Saldo Keseluruhan */}
       <Card>
-        <CardHeader title="Saldo Keseluruhan Semua Divisi" subtitle="Total semua waktu" />
+        <CardHeader
+          title="Saldo Keseluruhan Semua Divisi"
+          action={
+            profile.role === "sekretaris" ? (
+              <ExportMenu
+                title={`Rekap Keuangan per Divisi - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+                subtitle={`Periode ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - ${filterDivisiLabel}`}
+                division={filterDivisiLabel}
+                filename="rekap-keuangan-per-divisi"
+                disabled={divisiOptions.length === 0}
+                columns={[
+                  { header: "Divisi", key: "divisi", width: 22 },
+                  { header: "Saldo Awal", key: "saldoAwal", width: 18, align: "right" },
+                  { header: "Pemasukan", key: "pemasukan", width: 18, align: "right" },
+                  { header: "Pengeluaran", key: "pengeluaran", width: 18, align: "right" },
+                  { header: "Saldo", key: "saldo", width: 18, align: "right" },
+                ]}
+                rows={divisiOptions
+                  .filter((d) => isSemuaDivisi(filterDivisi) || d.id === filterDivisi)
+                  .map((d) => {
+                    const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
+                    const saldoAwal = saldoPerDivisi[d.id] ?? 0;
+                    return {
+                      divisi: d.nama,
+                      saldoAwal: formatRupiah(saldoAwal),
+                      pemasukan: formatRupiah(f.masuk),
+                      pengeluaran: formatRupiah(f.keluar),
+                      saldo: formatRupiah(saldoAwal + f.masuk - f.keluar),
+                    };
+                  })}
+              />
+            ) : undefined
+          }
+        />
         <CardContent className="space-y-4">
-          {/* Saldo awal Bendahara (kas pusat) diatur dari menu Transaksi role Bendahara. */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-900/20">
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
@@ -205,7 +261,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {allDivSaldo
-              .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
+              .filter((d) => isSemuaDivisi(filterDivisi) || d.id === filterDivisi)
               .map((d) => (
                 <DivisiSummaryCard
                   key={d.id}
@@ -223,7 +279,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {divisiOptions
-              .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
+              .filter((d) => isSemuaDivisi(filterDivisi) || d.id === filterDivisi)
               .map((d) => {
                 const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
                 return (
@@ -241,119 +297,6 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                 );
               })}
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Pemasukan {MONTH_NAMES_ID[filterMonth - 1]}</p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatRupiah(financeMonthly.masuk)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Pengeluaran {MONTH_NAMES_ID[filterMonth - 1]}</p>
-            <p className="text-2xl font-bold text-red-600">{formatRupiah(financeMonthly.keluar)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Rekap Keuangan per Divisi + Export Button */}
-      <Card>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Rekap Keuangan per Divisi</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{MONTH_NAMES_ID[filterMonth - 1]} {filterYear}</p>
-          </div>
-          {profile.role === "sekretaris" && (
-            <ExportMenu
-              title={`Rekap Keuangan per Divisi - ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
-              subtitle={`Periode ${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
-              filename="rekap-keuangan-per-divisi"
-              disabled={divisiOptions.length === 0}
-              columns={[
-                { header: "Divisi", key: "divisi", width: 22 },
-                { header: "Saldo Awal", key: "saldoAwal", width: 18, align: "right" },
-                { header: "Pemasukan", key: "pemasukan", width: 18, align: "right" },
-                { header: "Pengeluaran", key: "pengeluaran", width: 18, align: "right" },
-                { header: "Saldo", key: "saldo", width: 18, align: "right" },
-              ]}
-              rows={divisiOptions
-                .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
-                .map((d) => {
-                  const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
-                  const saldoAwal = saldoPerDivisi[d.id] ?? 0;
-                  return {
-                    divisi: d.nama,
-                    saldoAwal: formatRupiah(saldoAwal),
-                    pemasukan: formatRupiah(f.masuk),
-                    pengeluaran: formatRupiah(f.keluar),
-                    saldo: formatRupiah(saldoAwal + f.masuk - f.keluar),
-                  };
-                })}
-            />
-          )}
-        </div>
-        <CardContent>
-          <TableWrap minWidth={720}>
-            <THead>
-              <tr>
-                <TH>Divisi</TH>
-                <TH align="right">Saldo Awal</TH>
-                <TH align="right">Pemasukan</TH>
-                <TH align="right">Pengeluaran</TH>
-                <TH align="right">Saldo</TH>
-                <TH align="right">Detail</TH>
-              </tr>
-            </THead>
-            <TBody>
-              {divisiOptions
-                .filter((d) => filterDivisi === "all" || d.id === filterDivisi)
-                .map((d) => {
-                  const f = financePerDivisi[d.id] ?? { masuk: 0, keluar: 0 };
-                  const saldoAwal = saldoPerDivisi[d.id] ?? 0;
-                  const saldo = saldoAwal + f.masuk - f.keluar;
-                  return (
-                    <TR key={d.id}>
-                      <TD className="min-w-[9rem] whitespace-nowrap font-medium">
-                        {d.nama}
-                      </TD>
-                      <TD align="right" className="whitespace-nowrap">
-                        {formatRupiah(saldoAwal)}
-                      </TD>
-                      <TD align="right" className="whitespace-nowrap">
-                        {formatRupiah(f.masuk)}
-                      </TD>
-                      <TD align="right" className="whitespace-nowrap">
-                        {formatRupiah(f.keluar)}
-                      </TD>
-                      <TD
-                        align="right"
-                        className={`whitespace-nowrap font-medium ${
-                          saldo >= 0
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {formatRupiah(saldo)}
-                      </TD>
-                      <TD align="right" className="whitespace-nowrap">
-                        <Link
-                          href={`/dashboard/detail-keuangan?divisi=${encodeURIComponent(
-                            d.id
-                          )}&periode=bulanan`}
-                          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                        >
-                          <Eye className="h-3 w-3 text-slate-400" />
-                          <span>Lihat Detail</span>
-                        </Link>
-                      </TD>
-                    </TR>
-                  );
-                })}
-            </TBody>
-          </TableWrap>
         </CardContent>
       </Card>
     </div>

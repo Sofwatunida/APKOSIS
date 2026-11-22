@@ -193,9 +193,6 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Anggota Divisi</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Kelola daftar personil dan pembagian peran divisi OSIS
-              </p>
             </div>
           </div>
         </div>
@@ -263,7 +260,6 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Daftar Pengurus & Anggota"
-          subtitle="Seluruh anggota yang terdaftar dalam divisi Anda"
           action={
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">

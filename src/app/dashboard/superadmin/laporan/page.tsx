@@ -53,10 +53,7 @@ export default async function SuperAdminLaporanPage() {
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Cetak Laporan"
-          description="Susun, pratinjau, dan cetak/ekspor laporan per periode, divisi, tanggal, dan jenis."
-        />
+        <PageHeader title="Cetak Laporan" />
         <ReportsClient
           periods={periods}
           divisi={divisi}

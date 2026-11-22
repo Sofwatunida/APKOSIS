@@ -10,11 +10,16 @@ import {
   type KebutuhanDetail,
 } from "@/lib/kebutuhan";
 import { formatDate, todayISO } from "@/lib/date";
-import { buildDivisiOptions } from "@/lib/divisi-options";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { Field, Input, Textarea } from "@/components/ui/form";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -57,7 +62,7 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama_divisi: string }[]>([]);
 
   const [search, setSearch] = useState("");
-  const [filterDivisi, setFilterDivisi] = useState("");
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterStatus, setFilterStatus] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -77,7 +82,6 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
         .from("divisi")
         .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi", { ascending: true });
-      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
       setDivisiOptions(
         buildDivisiOptions(divisi).map((d) => ({ id: d.id, nama_divisi: d.nama }))
       );
@@ -105,10 +109,9 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(() => {
+  const rekapSource = useMemo(() => {
     return items.filter((k) => {
-      if (filterDivisi && k.divisi_id !== filterDivisi) return false;
-      if (filterStatus && k.status !== filterStatus) return false;
+      if (!isSemuaDivisi(filterDivisi) && k.divisi_id !== filterDivisi) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const haystack = [
@@ -124,7 +127,12 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
       }
       return true;
     });
-  }, [items, search, filterDivisi, filterStatus]);
+  }, [items, search, filterDivisi]);
+
+  const filtered = useMemo(
+    () => rekapSource.filter((k) => !filterStatus || k.status === filterStatus),
+    [rekapSource, filterStatus]
+  );
 
   const rekap = useMemo(() => {
     const c: Record<KebutuhanStatus, number> = {
@@ -133,9 +141,9 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
       ditolak: 0,
       sudah_dipenuhi: 0,
     };
-    items.forEach((k) => (c[k.status] += 1));
+    rekapSource.forEach((k) => (c[k.status] += 1));
     return c;
-  }, [items]);
+  }, [rekapSource]);
 
   async function updateStatus(
     target: KebutuhanDetail,
@@ -223,15 +231,17 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
 
   if (loading) return <Spinner />;
 
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Kebutuhan Divisi"
-        description="Semua kebutuhan yang diajukan divisi beserta status persyaratannya"
         action={
           <ExportMenu
             title="Kebutuhan Divisi"
-            subtitle="Rekap kebutuhan seluruh divisi"
+            subtitle={`Rekap kebutuhan - ${filterDivisiLabel}`}
+            division={filterDivisiLabel}
             filename="kebutuhan-divisi-bendahara"
             orientation="landscape"
             columns={[
@@ -283,7 +293,6 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
       <Card>
         <CardHeader
           title="Daftar Kebutuhan"
-          subtitle={`${filtered.length} dari ${items.length} kebutuhan`}
           icon={<ShoppingBag className="h-5 w-5" />}
           action={
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -298,18 +307,17 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
                   className="h-9 pl-9 text-xs"
                 />
               </div>
-              <select
+              <Select
                 value={filterDivisi}
                 onChange={(e) => setFilterDivisi(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="h-9 py-0 text-xs font-medium"
               >
-                <option value="">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama_divisi}
                   </option>
                 ))}
-              </select>
+              </Select>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -329,7 +337,6 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
           {filtered.length === 0 ? (
             <EmptyState
               title="Belum ada kebutuhan"
-              description="Kebutuhan yang dikirim divisi akan muncul di sini."
             />
           ) : (
             <TableWrap minWidth={1100}>

@@ -64,11 +64,9 @@ export function CardContent({
 /** Judul halaman yang konsisten untuk seluruh role. */
 export function PageHeader({
   title,
-  description,
   action,
 }: {
   title: string;
-  description?: string;
   action?: ReactNode;
 }) {
   return (
@@ -77,11 +75,6 @@ export function PageHeader({
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           {title}
         </h1>
-        {description && (
-          <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            {description}
-          </p>
-        )}
       </div>
       {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
     </div>

@@ -3,11 +3,23 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { MONTH_NAMES_ID, endOfMonthISO, formatDateShort } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
-import { Spinner, EmptyState } from "@/components/ui/feedback";
+import { Spinner } from "@/components/ui/feedback";
 import { ExportMenu } from "@/components/export-menu";
+import {
+  REKAP_KENDALA_COLUMNS,
+  RekapKendalaList,
+  buildRekapKendalaRows,
+  type RekapKendalaItem,
+} from "@/components/rekap-kendala-list";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 
 interface KendalaWithDate {
   kendala: string;
@@ -22,7 +34,7 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
-  const [filterDivisi, setFilterDivisi] = useState("all");
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
   const [searchKendala, setSearchKendala] = useState("");
@@ -31,8 +43,13 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     async function init() {
-      const { data: div } = await supabase.from("divisi").select("id, nama_divisi").order("nomor_divisi");
-      setDivisiOptions((div ?? []).map((d) => ({ id: d.id, nama: d.nama_divisi })));
+      const { data: div } = await supabase
+        .from("divisi")
+        .select("id, nomor_divisi, nama_divisi")
+        .order("nomor_divisi");
+      setDivisiOptions(
+        buildDivisiOptions(div).map((d) => ({ id: d.id, nama: d.nama }))
+      );
     }
     init();
   }, []);
@@ -77,45 +94,43 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
   // Filter kendala by search
   const filteredKendalaData: Record<string, KendalaWithDate[]> = {};
   Object.entries(kendalaData).forEach(([divId, list]) => {
-    if (filterDivisi !== "all" && divId !== filterDivisi) return;
+    if (!isSemuaDivisi(filterDivisi) && divId !== filterDivisi) return;
     const filtered = list.filter((ks) => {
       if (!searchKendala.trim()) return true;
       const q = searchKendala.toLowerCase();
-      return ks.kendala.toLowerCase().includes(q) || ks.tanggal.includes(q);
+      return (
+        (ks.kendala ?? "").toLowerCase().includes(q) ||
+        (ks.solusi ?? "").toLowerCase().includes(q) ||
+        ks.tanggal.includes(q)
+      );
     });
     if (filtered.length > 0) filteredKendalaData[divId] = filtered;
   });
 
-  // Detail data (datar) untuk ekspor rekap detail
-  const flatDetail: {
-    no: number;
-    divisi: string;
-    tanggal: string;
-    kendala: string;
-    solusi: string;
-  }[] = [];
+  const flatItems: RekapKendalaItem[] = [];
   Object.entries(filteredKendalaData).forEach(([divId, list]) => {
     const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
-    list.forEach((ks) => {
-      flatDetail.push({
-        no: flatDetail.length + 1,
-        divisi: divName,
+    list.forEach((ks, index) => {
+      flatItems.push({
+        id: `${divId}-${ks.tanggal}-${index}`,
         tanggal: ks.tanggal,
+        divisi: divName,
         kendala: ks.kendala,
         solusi: ks.solusi,
       });
     });
   });
+  const exportRows = buildRekapKendalaRows(flatItems);
 
   if (loading) return <Spinner />;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rekap Kendala"
-        description="Daftar kendala dan solusi seluruh divisi dalam bentuk list ringkas."
+        title="Rekap Kendala & Solusi"
       />
 
       <Card>
@@ -142,7 +157,6 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
             </Field>
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
-                <option value="all">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -154,25 +168,18 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      {/* Rekap Kendala & Solusi Bulanan */}
       <Card>
         <CardHeader
-          title="Rekap Kendala & Solusi Bulanan"
-          subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`}
+          title="Data Kendala"
           action={
             <ExportMenu
               title="Rekap Kendala & Solusi"
-              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - Seluruh Divisi`}
+              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - ${filterDivisiLabel}`}
+              division={filterDivisiLabel}
               filename="rekap-kendala-solusi"
-              disabled={flatDetail.length === 0}
-              columns={[
-                { header: "No", key: "no", width: 6 },
-                { header: "Divisi", key: "divisi", width: 20 },
-                { header: "Tanggal", key: "tanggal", width: 14 },
-                { header: "Kendala", key: "kendala", width: 30 },
-                { header: "Solusi", key: "solusi", width: 30 },
-              ]}
-              rows={flatDetail}
+              disabled={exportRows.length === 0}
+              columns={REKAP_KENDALA_COLUMNS}
+              rows={exportRows}
             />
           }
         />
@@ -180,62 +187,16 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
           {/* Search filter for kendala */}
           <div className="mb-4">
             <Input
-              placeholder="Cari berdasarkan kendala atau tanggal (YYYY-MM-DD)..."
+              placeholder="Cari kendala, solusi, divisi, atau tanggal (YYYY-MM-DD)..."
               value={searchKendala}
               onChange={(e) => setSearchKendala(e.target.value)}
             />
           </div>
-          <div className="space-y-5">
-            {Object.entries(filteredKendalaData).length > 0 ? (
-              Object.entries(filteredKendalaData).map(([divId, list]) => {
-                const divName = divisiOptions.find((d) => d.id === divId)?.nama ?? divId;
-                return (
-                  <div
-                    key={divId}
-                    className="overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800/80"
-                  >
-                    <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 bg-slate-50/70 px-4 py-2.5 dark:border-slate-800/80 dark:bg-slate-800/40">
-                      <h3 className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        {divName}
-                      </h3>
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        {list.length} kendala
-                      </span>
-                    </div>
-                    <div>
-                      {list.map((ks, i) => (
-                        <div key={i} className="list-row">
-                          <span className="shrink-0 self-start rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-500 sm:w-24 sm:self-center sm:text-center dark:bg-slate-800 dark:text-slate-400">
-                            {formatDateShort(ks.tanggal)}
-                          </span>
-                          <div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-4">
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:hidden dark:text-slate-500">
-                                Kendala
-                              </p>
-                              <p className="break-words text-sm text-slate-700 dark:text-slate-200">
-                                {ks.kendala || "-"}
-                              </p>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:hidden dark:text-slate-500">
-                                Solusi
-                              </p>
-                              <p className="break-words text-sm text-slate-600 dark:text-slate-300">
-                                {ks.solusi || "-"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <EmptyState title="Tidak ada kendala pada periode ini" />
-            )}
-          </div>
+          <RekapKendalaList
+            items={flatItems}
+            emptyTitle="Tidak ada kendala pada periode ini"
+            emptyDescription="Ubah bulan, tahun, divisi, atau kata kunci pencarian untuk melihat data lain."
+          />
         </CardContent>
       </Card>
     </div>

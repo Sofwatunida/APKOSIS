@@ -8,9 +8,10 @@ import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { CatatanProgramBelumTerlaksana } from "@/components/program-belum-terlaksana";
 import { RichTextContent } from "@/components/ui/rich-text-editor";
 import { Modal } from "@/components/ui/modal";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 interface ProgramKerjaRow extends ProgramKerja {
-  divisi?: { nama_divisi: string } | null;
+  divisi?: { nomor_divisi: number | null; nama_divisi: string } | null;
 }
 
 export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
@@ -24,7 +25,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
     async function load() {
       const { data } = await supabase
         .from("program_kerja")
-        .select("*, divisi(nama_divisi)")
+        .select("*, divisi(nomor_divisi, nama_divisi)")
         .order("created_at", { ascending: false });
       const all = (data ?? []) as ProgramKerjaRow[];
       setUnggulanItems(all.filter((p) => p.deskripsi?.startsWith("[UNGGULAN]") ?? false));
@@ -59,13 +60,11 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Program Kerja"
-        description="Lihat program kerja dan catatan"
       />
 
       <Card>
         <CardHeader
           title="Program Unggulan"
-          subtitle="Program unggulan tiap divisi yang dapat diunduh"
         />
         <CardContent>
           {unggulanItems.length === 0 ? (
@@ -83,7 +82,9 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {p.divisi?.nama_divisi ?? "Divisi tidak diketahui"}
+                      {p.divisi
+                        ? formatDivisiLabel(p.divisi.nomor_divisi, p.divisi.nama_divisi)
+                        : "Divisi tidak diketahui"}
                     </p>
                     {cleanDesc && (
                       <div className="mt-1 line-clamp-4 text-sm text-slate-500 dark:text-slate-400">
@@ -127,7 +128,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
       </Card>
 
       <Card>
-        <CardHeader title="Daftar Program Kerja" subtitle={`Total ${items.length} program`} />
+        <CardHeader title="Daftar Program Kerja" />
         <CardContent>
           {items.length === 0 ? (
             <EmptyState title="Belum ada program kerja" />
@@ -165,7 +166,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
         <RichTextContent html={viewUnggulan?.desc ?? ""} className="text-sm text-slate-700 dark:text-slate-200" />
       </Modal>
 
-      {profile.role !== "bendahara" && <CatatanProgramBelumTerlaksana profile={profile} />}
+      <CatatanProgramBelumTerlaksana profile={profile} />
     </div>
   );
 }

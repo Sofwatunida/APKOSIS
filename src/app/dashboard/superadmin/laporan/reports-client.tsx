@@ -6,9 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
 import { ExportMenu } from "@/components/export-menu";
+import { KENDALA_KOSONG, SOLUSI_KOSONG } from "@/components/rekap-kendala-list";
 import type { ExportColumn } from "@/lib/export-client";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/client";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import type { DivisiOption, PeriodOption } from "./page";
 
 type JenisKey =
@@ -65,7 +73,7 @@ export function ReportsClient({
 }) {
   const [jenis, setJenis] = useState<JenisKey>("harian");
   const [periodeId, setPeriodeId] = useState(defaultPeriodeId);
-  const [divisiId, setDivisiId] = useState("");
+  const [divisiId, setDivisiId] = useState(SEMUA_DIVISI_VALUE);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -73,9 +81,21 @@ export function ReportsClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const divisiSelect = useMemo(
+    () =>
+      buildDivisiOptions(
+        divisi.map((d) => ({
+          id: d.id,
+          nomor_divisi: d.nomor,
+          nama_divisi: d.nama,
+        }))
+      ).map((d) => ({ id: d.id, nama: d.nama })),
+    [divisi]
+  );
+
   const divisiName = useMemo(() => {
     const m = new Map<string, string>();
-    for (const d of divisi) m.set(d.id, `${d.nomor} · ${d.nama}`);
+    for (const d of divisi) m.set(d.id, formatDivisiLabel(d.nomor, d.nama));
     return m;
   }, [divisi]);
 
@@ -109,13 +129,13 @@ export function ReportsClient({
   const subtitle = useMemo(() => {
     const p =
       periods.find((x) => x.id === periodeId)?.namaPeriode ?? "Semua Periode";
-    const d = divisiId ? (divisiName.get(divisiId) ?? "Semua Divisi") : "Seluruh Divisi";
+    const d = getDivisiFilterLabel(divisiId, divisiSelect);
     const rentang =
       dateFrom || dateTo
         ? `Tanggal: ${dateFrom ? tgl(dateFrom) : "..."} – ${dateTo ? tgl(dateTo) : "..."}`
         : null;
     return [p, d, rentang].filter(Boolean).join(" · ");
-  }, [periodeId, divisiId, dateFrom, dateTo, periods, divisiName]);
+  }, [periodeId, divisiId, dateFrom, dateTo, periods, divisiSelect]);
 
   function handlePrint() {
     document.body.classList.add("print-report");
@@ -135,7 +155,6 @@ export function ReportsClient({
       <Card className="no-print">
         <CardHeader
           title="Filter Laporan"
-          subtitle="Pilih jenis, periode, divisi, dan rentang tanggal. Data diambil langsung dari basis data."
           icon={<FileBarChart2 className="h-5 w-5" />}
         />
         <CardContent>
@@ -161,10 +180,9 @@ export function ReportsClient({
             </Field>
             <Field label="Divisi">
               <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
-                <option value="">Seluruh divisi</option>
-                {divisi.map((d) => (
+                {divisiSelect.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.nomor} · {d.nama}
+                    {d.nama}
                   </option>
                 ))}
               </Select>
@@ -182,11 +200,7 @@ export function ReportsClient({
       {/* Aksi ekspor + cetak */}
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">
-          {loading
-            ? "Memuat laporan..."
-            : result
-              ? `Menampilkan ${result.rows.length} baris`
-              : "Tidak ada data"}
+          {loading ? "Memuat laporan..." : !result ? "Tidak ada data" : ""}
         </span>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -207,6 +221,14 @@ export function ReportsClient({
             orientation={result?.orientation ?? (result?.columns && result.columns.length >= 6 ? "landscape" : "portrait")}
             columns={result?.columns ?? []}
             rows={result?.rows ?? []}
+            division={getDivisiFilterLabel(divisiId, divisiSelect)}
+            documentType={
+              jenis === "rekap"
+                ? "REKAPITULASI"
+                : jenis === "keuangan"
+                  ? "LAPORAN KEUANGAN"
+                  : "LAPORAN"
+            }
           />
         </div>
       </div>
@@ -296,7 +318,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .order("tanggal", { ascending: true })
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     if (dateFrom) q = q.gte("tanggal", dateFrom);
     if (dateTo) q = q.lte("tanggal", dateTo);
     const { data, error } = await q;
@@ -329,7 +351,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .order("tanggal", { ascending: true })
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     if (dateFrom) q = q.gte("tanggal", dateFrom);
     if (dateTo) q = q.lte("tanggal", dateTo);
     const { data, error } = await q;
@@ -394,7 +416,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       laporan_harian: { divisi_id?: string; tanggal?: string } | null;
     };
     let list = (data ?? []) as unknown as KendalaRow[];
-    if (divisiId) {
+    if (!isSemuaDivisi(divisiId)) {
       list = list.filter((r) => r.laporan_harian?.divisi_id === divisiId);
     }
     if (dateFrom) {
@@ -420,8 +442,8 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
         no: idx + 1,
         tanggal: r.laporan_harian?.tanggal ? tgl(r.laporan_harian.tanggal) : tgl(r.created_at),
         divisi: r.laporan_harian?.divisi_id ? name(r.laporan_harian.divisi_id) : "-",
-        kendala: r.kendala,
-        solusi: r.solusi,
+        kendala: r.kendala?.trim() || KENDALA_KOSONG,
+        solusi: r.solusi?.trim() || SOLUSI_KOSONG,
       })),
     };
   }
@@ -433,7 +455,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .order("nama_barang")
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return {
@@ -464,7 +486,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .order("tanggal", { ascending: true })
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     if (dateFrom) q = q.gte("tanggal", dateFrom);
     if (dateTo) q = q.lte("tanggal", dateTo);
     const { data, error } = await q;
@@ -507,7 +529,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .order("tanggal_pengajuan", { ascending: true })
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     if (dateFrom) q = q.gte("tanggal_pengajuan", dateFrom);
     if (dateTo) q = q.lte("tanggal_pengajuan", dateTo);
     const { data, error } = await q;
@@ -552,7 +574,7 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
       .select("divisi_id, nama_program, deskripsi, file_name")
       .limit(MAX_ROWS);
     if (periodeId) q = q.eq("periode_id", periodeId);
-    if (divisiId) q = q.eq("divisi_id", divisiId);
+    if (!isSemuaDivisi(divisiId)) q = q.eq("divisi_id", divisiId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return {
@@ -574,8 +596,9 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
     };
   }
 
-  // jenis === "rekap" — agregat seluruh divisi untuk satu periode.
+  // jenis === "rekap" — agregat divisi terpilih untuk satu periode.
   const filterPeriode = periodeId;
+  const filterDivisi = isSemuaDivisi(divisiId) ? null : divisiId;
 
   async function collect<T>(
     table: "laporan_harian" | "transaksi_keuangan" | "inventaris" | "program_kerja",
@@ -585,14 +608,27 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
     if (filterPeriode) q = q.eq("periode_id", filterPeriode);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return (data ?? []) as T[];
+    let list = (data ?? []) as T[];
+    if (filterDivisi) {
+      list = list.filter((r) => (r as { divisi_id?: string }).divisi_id === filterDivisi);
+    }
+    if (dateFrom || dateTo) {
+      list = list.filter((r) => {
+        const tanggal = (r as { tanggal?: string }).tanggal?.slice(0, 10);
+        if (!tanggal) return true;
+        if (dateFrom && tanggal < dateFrom) return false;
+        if (dateTo && tanggal > dateTo) return false;
+        return true;
+      });
+    }
+    return list;
   }
 
   const [lap, trx, inv, pro] = await Promise.all([
-    collect<{ divisi_id: string }>("laporan_harian", "divisi_id"),
-    collect<{ divisi_id: string; jenis_transaksi: string; nominal: number }>(
+    collect<{ divisi_id: string; tanggal: string }>("laporan_harian", "divisi_id, tanggal"),
+    collect<{ divisi_id: string; tanggal: string; jenis_transaksi: string; nominal: number }>(
       "transaksi_keuangan",
-      "divisi_id, jenis_transaksi, nominal"
+      "divisi_id, tanggal, jenis_transaksi, nominal"
     ),
     collect<{ divisi_id: string }>("inventaris", "divisi_id"),
     collect<{ divisi_id: string }>("program_kerja", "divisi_id"),
@@ -600,14 +636,28 @@ async function buildReport(args: BuildArgs): Promise<ReportResult> {
 
   let qK = supabase
     .from("kendala_solusi")
-    .select("laporan_harian(divisi_id)")
+    .select("laporan_harian(divisi_id, tanggal), created_at")
     .limit(20000);
   if (filterPeriode) qK = qK.eq("periode_id", filterPeriode);
   const kendalaRes = await qK;
   if (kendalaRes.error) throw new Error(kendalaRes.error.message);
-  const kendalaRows = (kendalaRes.data ?? []) as unknown as {
-    laporan_harian: { divisi_id: string } | null;
+  let kendalaRows = (kendalaRes.data ?? []) as unknown as {
+    laporan_harian: { divisi_id: string; tanggal?: string } | null;
+    created_at: string;
   }[];
+  if (filterDivisi) {
+    kendalaRows = kendalaRows.filter(
+      (r) => r.laporan_harian?.divisi_id === filterDivisi
+    );
+  }
+  if (dateFrom || dateTo) {
+    kendalaRows = kendalaRows.filter((r) => {
+      const tanggal = (r.laporan_harian?.tanggal ?? r.created_at).slice(0, 10);
+      if (dateFrom && tanggal < dateFrom) return false;
+      if (dateTo && tanggal > dateTo) return false;
+      return true;
+    });
+  }
 
   const byDivisi = new Map<
     string,

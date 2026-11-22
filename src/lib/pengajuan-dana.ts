@@ -5,6 +5,7 @@ import type {
   StatusPersetujuan,
   StatusPengambilan,
 } from "./types";
+import { formatDivisiLabel } from "./divisi-options";
 
 /**
  * ==========================================================
@@ -105,8 +106,13 @@ export async function fetchPengajuanDanaDetail(
 
   const { data: divisiList } = await supabase
     .from("divisi")
-    .select("id, nama_divisi");
-  const namaDivisi = new Map((divisiList ?? []).map((d) => [d.id, d.nama_divisi]));
+    .select("id, nomor_divisi, nama_divisi");
+  const namaDivisi = new Map(
+    (divisiList ?? []).map((d) => [
+      d.id,
+      formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
+    ])
+  );
 
   const userIds = [
     ...new Set(rows.map((r) => r.user_id).filter((v): v is string => Boolean(v))),

@@ -86,10 +86,6 @@ export function TablePagination({
     <div
       className={`flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
     >
-      <p className="text-xs text-muted-foreground">
-        Menampilkan {start}&ndash;{end} dari {total} {label}
-      </p>
-
       <div className="flex flex-wrap items-center gap-2">
         {showAll ? (
           <Button type="button" variant="outline" size="sm" onClick={onToggleAll}>

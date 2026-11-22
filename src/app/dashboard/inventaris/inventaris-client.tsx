@@ -149,7 +149,6 @@ export function InventarisClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Inventaris Divisi"
-        description="Kelola barang inventaris divisi"
         action={
           <>
             <ExportMenu

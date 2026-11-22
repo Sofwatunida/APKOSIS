@@ -12,12 +12,14 @@
     "build:verify": "tsc src/lib/period-scope.ts src/lib/period-constants.ts --outDir .verify --module commonjs --target es2020 --moduleResolution node --skipLibCheck",
     "verify:period": "npm run build:verify && node scripts/verify-period-scope.mjs",
     "verify:rpc": "node scripts/verify-rpc-signatures.mjs",
+    "verify:export": "node scripts/verify-export-standard.mjs",
     "verify": "npm run typecheck && npm run verify:period && npm run verify:rpc"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "exceljs": "^4.4.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.47.0",
     "next": "^15.2.4",
     "react": "^19.1.0",

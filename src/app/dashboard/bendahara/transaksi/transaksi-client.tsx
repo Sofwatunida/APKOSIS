@@ -18,13 +18,24 @@ import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { usePeriode } from "@/lib/periode-context";
 import { saveSaldoAwalAction } from "../../actions/saldo-actions";
-import { buildDivisiOptions } from "@/lib/divisi-options";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import { SALDO_BENDAHARA_TARGET } from "@/lib/finance";
 
 const SALDO_BENDAHARA_LABEL = "Bendahara (Kas Pusat)";
 
 interface Row extends TransaksiKeuangan {
-  divisi: { nama_divisi: string } | null;
+  divisi: { nomor_divisi: number | null; nama_divisi: string } | null;
+}
+
+function divisiLabel(divisi: Row["divisi"]): string {
+  if (!divisi) return "-";
+  return formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi || "-");
 }
 
 interface SaldoRow {
@@ -61,7 +72,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
-  const [filterDivisi, setFilterDivisi] = useState("all");
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterJenis, setFilterJenis] = useState("all");
   const [filterTanggal, setFilterTanggal] = useState("");
   const [filterBulan, setFilterBulan] = useState("all");
@@ -116,9 +127,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       list.push({
         divisiId: d.id,
         nomor: nomor ?? Number.MAX_SAFE_INTEGER,
-        nama:
-          (d.nama_divisi ?? "").trim() ||
-          (nomor !== null ? `Divisi ${String(nomor).padStart(2, "0")}` : "-"),
+        nama: formatDivisiLabel(nomor, d.nama_divisi || "-"),
         nominal: byDivisi.get(d.id) ?? 0,
         exists: byDivisi.has(d.id),
       });
@@ -195,12 +204,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     setLoading(true);
     let query = supabase
       .from("transaksi_keuangan")
-      .select("*, divisi(nama_divisi)")
+      .select("*, divisi(nomor_divisi, nama_divisi)")
       .order("tanggal", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(500);
 
-    if (filterDivisi !== "all") query = query.eq("divisi_id", filterDivisi);
+    if (!isSemuaDivisi(filterDivisi)) query = query.eq("divisi_id", filterDivisi);
     if (filterJenis !== "all")
       query = query.eq("jenis_transaksi", filterJenis as "pemasukan" | "pengeluaran");
     if (filterTanggal) query = query.eq("tanggal", filterTanggal);
@@ -235,7 +244,6 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         .from("divisi")
         .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi");
-      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
       setDivisiOptions(buildDivisiOptions(div));
       setDivisiRaw(div ?? []);
       await loadSaldoAwal(div ?? []);
@@ -313,12 +321,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     saldoDivisiId === SALDO_BENDAHARA_TARGET
       ? SALDO_BENDAHARA_LABEL
       : saldoRows.find((r) => r.divisiId === saldoDivisiId)?.nama ?? "-";
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Transaksi Keuangan"
-        description="Seluruh mutasi kas masuk dan keluar OSIS beserta bukti struk transaksi."
       />
 
       <Card>
@@ -327,7 +335,6 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
-                <option value="all">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -372,7 +379,6 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Saldo Awal Bendahara & Divisi"
-          subtitle="Atur saldo awal kas Bendahara (kas pusat) dan setiap divisi pada periode ini."
         />
         <CardContent className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:items-end">
@@ -504,13 +510,11 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
         <StatCard label="Total Pengeluaran" value={formatRupiah(pengeluaran)} tone="red" />
         <StatCard
           label="Saldo Awal"
-          sub="Bendahara + semua divisi"
           value={formatRupiah(totalSaldoAwal)}
           tone="indigo"
         />
         <StatCard
           label="Saldo"
-          sub="Saldo Awal + Masuk - Keluar"
           value={formatRupiah(totalSaldoAwal + pemasukan - pengeluaran)}
           tone={totalSaldoAwal + pemasukan - pengeluaran >= 0 ? "brand" : "red"}
         />
@@ -522,6 +526,8 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
           action={
             <ExportMenu
               title="Transaksi Keuangan"
+              subtitle={`Divisi: ${filterDivisiLabel}`}
+              division={filterDivisiLabel}
               filename="transaksi-keuangan"
               disabled={rows.length === 0}
               columns={[
@@ -533,7 +539,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
               ]}
               rows={rows.map((t) => ({
                 tanggal: formatDate(t.tanggal),
-                divisi: t.divisi?.nama_divisi ?? "-",
+                divisi: divisiLabel(t.divisi),
                 jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
                 keterangan: stripBukti(t.keterangan) || "-",
                 nominal: formatRupiah(t.nominal),
@@ -567,7 +573,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
                         {formatDate(t.tanggal)}
                       </TD>
                       <TD className="font-medium text-slate-900 dark:text-white">
-                        {t.divisi?.nama_divisi ?? "-"}
+                        {divisiLabel(t.divisi)}
                       </TD>
                       <TD>
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>

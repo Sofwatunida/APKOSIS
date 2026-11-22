@@ -5,10 +5,17 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { ExportMenu } from "@/components/export-menu";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 
 import { Search, Eye, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 
@@ -38,6 +45,8 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [divisiList, setDivisiList] = useState<DivisiNote[]>([]);
+  const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<DivisiNote | null>(null);
 
@@ -53,6 +62,7 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
       catatan: d.catatan_program_belum_terlaksana,
     }));
     setDivisiList(list);
+    setDivisiOptions(buildDivisiOptions(data).map((d) => ({ id: d.id, nama: d.nama })));
     setLoading(false);
   }
 
@@ -63,34 +73,38 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return divisiList;
-    return divisiList.filter((d) =>
-      d.nama_divisi.toLowerCase().includes(q)
+    return divisiList.filter(
+      (d) =>
+        (isSemuaDivisi(filterDivisi) || d.id === filterDivisi) &&
+        (!q || d.nama_divisi.toLowerCase().includes(q))
     );
-  }, [divisiList, search]);
+  }, [divisiList, filterDivisi, search]);
 
   if (loading) return <Spinner />;
+
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
 
   return (
     <Card>
       <CardHeader
         title="Catatan Program Belum Terlaksana"
-        subtitle="Daftar rekapitulasi program kerja yang belum dilaksanakan per divisi"
         icon={<AlertCircle className="h-5 w-5 text-amber-500" />}
         action={
           profile.role === "sekretaris" ? (
             <ExportMenu
               title="Rekapitulasi Program Belum Terlaksana"
+              subtitle={`Divisi: ${filterDivisiLabel}`}
+              division={filterDivisiLabel}
               filename="rekapitulasi-program-belum-terlaksana"
-              disabled={divisiList.length === 0}
+              disabled={filtered.length === 0}
               columns={[
                 { header: "No", key: "no", width: 6 },
                 { header: "Divisi", key: "divisi", width: 24 },
                 { header: "Program yang Belum Terlaksana", key: "catatan", width: 60 },
               ]}
-              rows={divisiList.map((d, idx) => ({
+              rows={filtered.map((d, idx) => ({
                 no: idx + 1,
-                divisi: d.nama_divisi,
+                divisi: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
                 catatan: d.catatan?.trim() || EMPTY_NOTE,
               }))}
             />
@@ -98,16 +112,29 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
         }
       />
       <CardContent className="p-6">
-        <div className="mb-4 relative w-full sm:w-80">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-            <Search className="h-4 w-4" />
-          </div>
-          <Input
-            placeholder="Cari nama divisi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Divisi">
+            <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
+              {divisiOptions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nama}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Cari Divisi">
+            <div className="relative w-full">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Search className="h-4 w-4" />
+              </div>
+              <Input
+                placeholder="Cari nama divisi..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </Field>
         </div>
         {filtered.length === 0 ? (
           <EmptyState
@@ -129,7 +156,9 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
                 {filtered.map((d, idx) => (
                   <tr key={d.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
                     <td className="px-5 py-3.5 font-medium text-slate-400 dark:text-slate-500">{idx + 1}</td>
-                    <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{d.nama_divisi}</td>
+                    <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
+                      {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
+                    </td>
                     <td className="px-5 py-3.5 text-right">
                       <button
                         type="button"
@@ -152,19 +181,17 @@ export function CatatanProgramBelumTerlaksana({ profile }: { profile: Profile })
       <Modal
         open={Boolean(view)}
         onClose={() => setView(null)}
-        title={`Program Belum Terlaksana - ${view?.nama_divisi ?? ""}`}
+        title={`Program Belum Terlaksana - ${
+          view ? formatDivisiLabel(view.nomor_divisi, view.nama_divisi) : ""
+        }`}
       >
         {view && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
-                <p className="text-xs text-slate-400 dark:text-slate-500">Nomor Divisi</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{view.nomor_divisi}</p>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
-                <p className="text-xs text-slate-400 dark:text-slate-500">Nama Divisi</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{view.nama_divisi}</p>
-              </div>
+            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
+              <p className="text-xs text-slate-400 dark:text-slate-500">Divisi</p>
+              <p className="font-semibold text-slate-800 dark:text-slate-100">
+                {formatDivisiLabel(view.nomor_divisi, view.nama_divisi)}
+              </p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">

@@ -5,20 +5,17 @@ import {
 } from "@/lib/division-session";
 import { AppShell } from "@/components/app-shell";
 import { ProgramKerjaClient } from "./program-kerja-client";
-import { ProgramKerjaBendaharaClient } from "./program-kerja-bendahara-client";
 import { ProgramKerjaReadOnly } from "./program-kerja-readonly";
 
 export default async function ProgramKerjaPage() {
   const { profile } = await requireProfile();
-  requireRole(profile, ["division_admin", "monitoring", "sekretaris", "bendahara"]);
+  requireRole(profile, ["division_admin", "monitoring", "sekretaris"]);
   await requireDivisionSelection();
   const scopedProfile = await withActiveDivisi(profile);
   return (
     <AppShell profile={scopedProfile}>
       {scopedProfile.role === "division_admin" ? (
         <ProgramKerjaClient profile={scopedProfile} />
-      ) : scopedProfile.role === "bendahara" ? (
-        <ProgramKerjaBendaharaClient profile={scopedProfile} mode="isi" />
       ) : (
         <ProgramKerjaReadOnly profile={scopedProfile} />
       )}

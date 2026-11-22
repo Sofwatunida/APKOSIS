@@ -11,6 +11,7 @@ import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { ExportMenu } from "@/components/export-menu";
 import { RichTextEditor, RichTextContent, htmlToPlainText } from "@/components/ui/rich-text-editor";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 const ALLOWED = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 
@@ -35,6 +36,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
   const [notesList, setNotesList] = useState<string[]>([]);
   const [newNote, setNewNote] = useState("");
   const [namaDivisi, setNamaDivisi] = useState("");
+  const [labelDivisi, setLabelDivisi] = useState("");
 
   const [unggulanItems, setUnggulanItems] = useState<ProgramKerja[]>([]);
   const [unggulanOpen, setUnggulanOpen] = useState(false);
@@ -57,6 +59,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       setItems([]);
       setUnggulanItems([]);
       setNamaDivisi("");
+      setLabelDivisi("");
       setLoading(false);
       return;
     }
@@ -68,7 +71,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
         .order("created_at", { ascending: false }),
       supabase
         .from("divisi")
-        .select("nama_divisi")
+        .select("nomor_divisi, nama_divisi")
         .eq("id", profile.divisi_id)
         .maybeSingle(),
     ]);
@@ -79,6 +82,11 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
     }
     if (divisiResult.error) error("Gagal memuat identitas divisi.");
     setNamaDivisi(divisiResult.data?.nama_divisi ?? "");
+    setLabelDivisi(
+      divisiResult.data
+        ? formatDivisiLabel(divisiResult.data.nomor_divisi, divisiResult.data.nama_divisi)
+        : ""
+    );
     const data = programResult.data ?? [];
     setItems(data.filter((p) => !p.deskripsi?.startsWith("[UNGGULAN]")));
     setUnggulanItems(data.filter((p) => p.deskripsi?.startsWith("[UNGGULAN]") ?? false));
@@ -391,15 +399,14 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Program Kerja Divisi"
-        description="Kelola dan monitor program kerja divisi"
         action={
           <>
             <ExportMenu
-              title={`Program Kerja${namaDivisi ? ` - ${namaDivisi}` : ""}`}
-              subtitle="Program kerja, program unggulan, dan catatan belum terlaksana"
+              title={`Program Kerja${labelDivisi ? ` - ${labelDivisi}` : ""}`}
               filename={`program-kerja-${namaDivisi || "divisi"}`}
               orientation="landscape"
               disabled={exportRows.length === 0}
+              division={labelDivisi || undefined}
               columns={[
                 { header: "No", key: "no", width: 6, align: "center" },
                 { header: "Jenis", key: "jenis", width: 20 },
@@ -417,7 +424,6 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Program Unggulan"
-          subtitle="Program unggulan divisi yang dapat diunduh oleh role lain (monitoring, sekretaris, bendahara)"
           action={
             <Button onClick={openAddUnggulan} size="sm" variant="outline">
               + Tambah Program Unggulan
@@ -506,7 +512,7 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       </Card>
 
       <Card>
-        <CardHeader title="Daftar Program Kerja" subtitle={`Total ${items.length} program utama`} />
+        <CardHeader title="Daftar Program Kerja" />
         <CardContent>
           {items.length === 0 ? (
             <EmptyState title="Belum ada program kerja" description="Tambahkan program kerja divisi Anda." />
@@ -569,13 +575,8 @@ export function ProgramKerjaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Catatan Program Belum Terlaksana"
-          subtitle="Tambahkan program kerja yang belum dapat dilaksanakan satu per satu agar rapi"
         />
         <CardContent>
-          <p className="mb-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
-            Daftar ini akan dilihat dan diekspor oleh Sekretaris menjadi rekap program yang belum
-            terlaksana seluruh divisi.
-          </p>
           <div className="flex gap-2">
             <Input
               placeholder="Nama program yang belum terlaksana..."

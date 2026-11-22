@@ -1,7 +1,6 @@
 import { requireProfile, requireSuperAdmin } from "@/lib/guard";
 import { AppShell } from "@/components/app-shell";
-import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { ShieldCheck } from "lucide-react";
+import { PageHeader } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getPeriods } from "@/lib/period";
 import { AccountsAdminClient } from "./accounts-admin-client";
@@ -63,10 +62,7 @@ export default async function SuperAdminAkunPage({
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Pengelolaan Akun & Divisi"
-          description="Kelola akun, role, periode, divisi, dan kredensial dalam satu halaman."
-        />
+        <PageHeader title="Pengelolaan Akun & Divisi" />
 
         <AccountsAdminClient
           currentUserId={profile.id}
@@ -101,32 +97,6 @@ export default async function SuperAdminAkunPage({
               )?.namaPeriode ?? "—",
           }))}
         />
-
-        <Card>
-          <CardHeader
-            title="Catatan Keamanan"
-            subtitle="Aturan yang berlaku untuk penetapan role dan kredensial divisi."
-            icon={<ShieldCheck className="h-5 w-5" />}
-          />
-          <CardContent>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-              <li>
-                Hanya Super Admin yang dapat menetapkan Admin periode. Admin
-                tidak dapat mengubah role menjadi super_admin.
-              </li>
-              <li>
-                Admin periode 2026/2027 tidak otomatis menjadi Admin periode
-                berikutnya; Super Admin harus menetapkannya kembali.
-              </li>
-              <li>
-                Password divisi tidak pernah ditampilkan, hanya dapat direset.
-              </li>
-              <li>
-                Akun Anda sendiri tidak dapat diubah role-nya dari halaman ini.
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
     </AppShell>
   );

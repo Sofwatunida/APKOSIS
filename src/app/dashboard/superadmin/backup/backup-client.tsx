@@ -137,7 +137,6 @@ export function BackupClient({ periods }: { periods: PeriodOption[] }) {
       <Card>
         <CardHeader
           title="Backup Data"
-          subtitle="Unduh salinan JSON data satu periode (tanpa password). Aman disimpan sebagai arsip."
           icon={<DatabaseBackup className="h-5 w-5" />}
         />
         <CardContent>

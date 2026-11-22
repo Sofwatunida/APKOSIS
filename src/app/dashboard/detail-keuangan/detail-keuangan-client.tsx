@@ -12,7 +12,14 @@ import {
   startOfMonthISO,
 } from "@/lib/date";
 import { parseBukti } from "@/lib/bukti";
-import { buildDivisiOptions } from "@/lib/divisi-options";
+import {
+  SEMUA_DIVISI_VALUE,
+  SEMUA_DIVISI_LABEL,
+  buildDivisiOptions,
+  formatDivisiLabel,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
@@ -35,7 +42,12 @@ type Periode = "bulanan" | "tahunan";
 
 /** Baris transaksi + nama divisi asal (dipakai saat "Semua Divisi"). */
 interface Row extends TransaksiKeuangan {
-  divisi: { nama_divisi: string } | null;
+  divisi: { nomor_divisi: number | null; nama_divisi: string } | null;
+}
+
+function divisiLabel(divisi: Row["divisi"]): string {
+  if (!divisi) return "-";
+  return formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi || "-");
 }
 
 /**
@@ -64,7 +76,9 @@ export function DetailKeuanganClient({
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
   const [optReady, setOptReady] = useState(false);
-  const [divisiId, setDivisiId] = useState(initialDivisi);
+  const [divisiId, setDivisiId] = useState(
+    isSemuaDivisi(initialDivisi) ? SEMUA_DIVISI_VALUE : initialDivisi
+  );
   const [namaDivisi, setNamaDivisi] = useState("");
   const [periode, setPeriode] = useState<Periode>(
     initialPeriode ? "tahunan" : "bulanan"
@@ -77,7 +91,7 @@ export function DetailKeuanganClient({
   const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
 
   /** "Semua Divisi" = tanpa filter divisi; seluruh data divisi ikut terhitung. */
-  const isSemuaDivisi = divisiId === "";
+  const semuaDivisi = isSemuaDivisi(divisiId);
 
   useEffect(() => {
     (async () => {
@@ -85,7 +99,6 @@ export function DetailKeuanganClient({
         .from("divisi")
         .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi");
-      // Selalu lengkap "Divisi 01" .. "Divisi 20" walau ada baris yang kurang.
       const list = buildDivisiOptions(data);
       setDivisiOptions(list.map((d) => ({ id: d.id, nama: d.nama })));
       if (!initialDivisi && list.length > 0) setDivisiId(list[0].id);
@@ -94,17 +107,17 @@ export function DetailKeuanganClient({
   }, [initialDivisi]);
 
   useEffect(() => {
-    if (!divisiId) {
-      setNamaDivisi("Semua Divisi");
+    if (semuaDivisi) {
+      setNamaDivisi(SEMUA_DIVISI_LABEL);
       return;
     }
     setNamaDivisi(divisiOptions.find((d) => d.id === divisiId)?.nama ?? "");
-  }, [divisiId, divisiOptions]);
+  }, [divisiId, divisiOptions, semuaDivisi]);
 
   useEffect(() => {
     async function load() {
       // Belum ada pilihan & daftar divisi belum siap: tunggu.
-      if (!divisiId && !optReady) {
+      if (semuaDivisi && !optReady) {
         setLoading(false);
         return;
       }
@@ -115,7 +128,7 @@ export function DetailKeuanganClient({
 
       let query = supabase
         .from("transaksi_keuangan")
-        .select("*, divisi(nama_divisi)")
+        .select("*, divisi(nomor_divisi, nama_divisi)")
         .gte("tanggal", start)
         .lte("tanggal", end)
         .order("tanggal", { ascending: false })
@@ -123,15 +136,15 @@ export function DetailKeuanganClient({
 
       // "Semua Divisi" tidak memakai filter divisi_id — angka yang
       // tampil adalah total data asli seluruh divisi pada periode ini.
-      if (!isSemuaDivisi) query = query.eq("divisi_id", divisiId);
+      if (!semuaDivisi) query = query.eq("divisi_id", divisiId);
 
       const { data } = await query;
       setRows((data ?? []) as Row[]);
-      setSaldoAwal(await fetchSaldoAwal(supabase, isSemuaDivisi ? null : divisiId));
+      setSaldoAwal(await fetchSaldoAwal(supabase, semuaDivisi ? null : divisiId));
       setLoading(false);
     }
     load();
-  }, [divisiId, optReady, periode, filterMonth, filterYear, isSemuaDivisi]);
+  }, [divisiId, optReady, periode, filterMonth, filterYear, semuaDivisi]);
 
   const total = useMemo(() => {
     let masuk = 0;
@@ -191,8 +204,8 @@ export function DetailKeuanganClient({
       <div className="space-y-2">
         <Link
           href={
-            profile.role === "bendahara"
-              ? "/dashboard/bendahara/rekap-bulanan"
+            profile.role === "sekretaris"
+              ? "/dashboard/sekretaris/rekap-keuangan"
               : "/dashboard/monitoring/rekap-keuangan"
           }
           className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
@@ -202,16 +215,17 @@ export function DetailKeuanganClient({
         </Link>
         <PageHeader
           title={`Detail Keuangan ${namaDivisi || "Divisi"}`}
-          description={`Rincian pemasukan & pengeluaran ${labelPeriode}`}
           action={
             <ExportMenu
               title={`Detail Keuangan ${namaDivisi}`}
               subtitle={labelPeriode}
               filename={`detail-keuangan-${namaDivisi || "divisi"}-${filterYear}`}
               disabled={filtered.length === 0}
+              division={getDivisiFilterLabel(divisiId, divisiOptions)}
+              documentType="LAPORAN KEUANGAN"
               columns={[
                 { header: "Tanggal", key: "tanggal", width: 13 },
-                ...(isSemuaDivisi
+                ...(semuaDivisi
                   ? [{ header: "Divisi", key: "divisi", width: 18 } as const]
                   : []),
                 { header: "Jenis", key: "jenis", width: 13 },
@@ -223,7 +237,7 @@ export function DetailKeuanganClient({
                 const { cleanKeterangan } = parseBukti(t.keterangan);
                 return {
                   tanggal: formatDate(t.tanggal),
-                  divisi: t.divisi?.nama_divisi ?? "-",
+                  divisi: divisiLabel(t.divisi),
                   jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
                   rincian: (t.jenis_transaksi === "pemasukan"
                     ? t.sumber_pemasukan
@@ -243,7 +257,6 @@ export function DetailKeuanganClient({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Divisi">
               <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
-                <option value="">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -296,28 +309,24 @@ export function DetailKeuanganClient({
           value={formatRupiah(total.saldoAwal)}
           tone="indigo"
           icon={<Wallet className="h-4.5 w-4.5" />}
-          sub={isSemuaDivisi ? "Total semua divisi" : namaDivisi}
         />
         <StatCard
           label="Total Pemasukan"
           value={formatRupiah(total.masuk)}
           tone="green"
           icon={<TrendingUp className="h-4.5 w-4.5" />}
-          sub={labelPeriode}
         />
         <StatCard
           label="Total Pengeluaran"
           value={formatRupiah(total.keluar)}
           tone="red"
           icon={<TrendingDown className="h-4.5 w-4.5" />}
-          sub={labelPeriode}
         />
         <StatCard
           label="Saldo"
           value={formatRupiah(total.saldo)}
           tone={total.saldo >= 0 ? "brand" : "red"}
           icon={<Coins className="h-4.5 w-4.5" />}
-          sub={labelPeriode}
         />
       </div>
 
@@ -416,7 +425,6 @@ export function DetailKeuanganClient({
       <Card>
         <CardHeader
           title="Rincian Transaksi"
-          subtitle={`${filtered.length} transaksi`}
           icon={<Wallet className="h-5 w-5" />}
           action={
             <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
@@ -451,18 +459,18 @@ export function DetailKeuanganClient({
               <EmptyState
                 title="Belum ada transaksi"
                 description={
-                  isSemuaDivisi
+                  semuaDivisi
                     ? `Tidak ada transaksi divisi mana pun pada ${labelPeriode}.`
                     : `Tidak ada transaksi ${namaDivisi || "divisi"} pada ${labelPeriode}.`
                 }
               />
             </div>
           ) : (
-            <TableWrap minWidth={isSemuaDivisi ? 1120 : 980}>
+            <TableWrap minWidth={semuaDivisi ? 1120 : 980}>
               <THead>
                 <tr>
                   <TH>Tanggal</TH>
-                  {isSemuaDivisi && <TH>Divisi</TH>}
+                  {semuaDivisi && <TH>Divisi</TH>}
                   <TH>Jenis</TH>
                   <TH>Sumber / Digunakan Untuk</TH>
                   <TH>Keterangan</TH>
@@ -482,9 +490,9 @@ export function DetailKeuanganClient({
                       <TD className="whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {formatDate(t.tanggal)}
                       </TD>
-                      {isSemuaDivisi && (
+                      {semuaDivisi && (
                         <TD className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-300">
-                          {t.divisi?.nama_divisi ?? "-"}
+                          {divisiLabel(t.divisi)}
                         </TD>
                       )}
                       <TD className="whitespace-nowrap">

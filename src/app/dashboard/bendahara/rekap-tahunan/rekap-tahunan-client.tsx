@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -12,7 +11,7 @@ import { Field, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
-import { Eye } from "lucide-react";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import {
   BarChart,
   Bar,
@@ -74,12 +73,12 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       const saldoMap = await fetchSaldoAwalMap(supabase);
       const { data: divList } = await supabase
         .from("divisi")
-        .select("id, nama_divisi")
+        .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi");
       setPerDivisi(
         (divList ?? []).map((d) => ({
           id: d.id,
-          nama: d.nama_divisi,
+          nama: formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
           saldoAwal: saldoMap.get(d.id) ?? 0,
           masuk: divMap.get(d.id)?.masuk ?? 0,
           keluar: divMap.get(d.id)?.keluar ?? 0,
@@ -128,7 +127,6 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Rekap Keuangan Tahunan"
-        description="Ringkasan pemasukan, pengeluaran, dan saldo seluruh divisi per tahun."
       />
 
       <Card>
@@ -308,7 +306,6 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
                 <TH align="right">Pemasukan</TH>
                 <TH align="right">Pengeluaran</TH>
                 <TH align="right">Saldo</TH>
-                <TH align="right">Detail</TH>
               </tr>
             </THead>
             <TBody>
@@ -335,17 +332,6 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
                     }`}
                   >
                     {formatRupiah(d.saldoAwal + d.masuk - d.keluar)}
-                  </TD>
-                  <TD align="right" className="whitespace-nowrap">
-                    <Link
-                      href={`/dashboard/detail-keuangan?divisi=${encodeURIComponent(
-                        d.id
-                      )}&periode=tahunan`}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                    >
-                      <Eye className="h-3 w-3 text-slate-400" />
-                      <span>Lihat Detail</span>
-                    </Link>
                   </TD>
                 </TR>
               ))}

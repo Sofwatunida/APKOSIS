@@ -8,7 +8,6 @@ import {
   Check,
   Eye,
   EyeOff,
-  KeyRound,
   Lock,
   LogOut,
 } from "lucide-react";
@@ -16,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 import { clearDivisionTokenCookie } from "@/lib/division-session-client";
+import { formatDivisiLabel } from "@/lib/divisi-options";
+
 import {
   endDivisionSessionAction,
   startDivisionSessionAction,
@@ -37,6 +38,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
   const supabase = createClient();
 
   const [selected, setSelected] = useState<DivisiOpsi | null>(null);
+  const activeDivisi = divisi.find((d) => d.id === activeDivisiId) ?? null;
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,18 +89,11 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
 
       <div className="relative w-full max-w-2xl animate-fade-in">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 px-3 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 mb-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
-            Portal Divisi
-          </div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-            {selected ? selected.namaDivisi : "Pilih Divisi"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {selected
-              ? "Masukkan password divisi untuk melanjutkan."
-              : "Pilih divisi yang ingin dikelola."}
-          </p>
+              ? formatDivisiLabel(selected.nomorDivisi, selected.namaDivisi)
+              : "Pilih Divisi"}
+          </h1>
         </div>
 
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 shadow-card p-6 md:p-8">
@@ -107,11 +102,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
               <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Divisi {String(selected.nomorDivisi).padStart(2, "0")} —{" "}
-                    {selected.namaDivisi}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    Divisi {String(selected.nomorDivisi).padStart(2, "0")}
+                    {formatDivisiLabel(selected.nomorDivisi, selected.namaDivisi)}
                   </p>
                 </div>
                 <Button
@@ -192,8 +183,9 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                   <p className="text-xs text-emerald-700 dark:text-emerald-300">
                     Anda sedang mengelola{" "}
                     <span className="font-semibold">
-                      {divisi.find((d) => d.id === activeDivisiId)?.namaDivisi ??
-                        "sebuah divisi"}
+                      {activeDivisi
+                        ? formatDivisiLabel(activeDivisi.nomorDivisi, activeDivisi.namaDivisi)
+                        : "sebuah divisi"}
                     </span>
                     .
                   </p>
@@ -228,12 +220,8 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                       className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition hover:border-brand-500 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-500 dark:hover:bg-slate-950"
                     >
                       <span className="min-w-0">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          Divisi{" "}
-                          {String(d.nomorDivisi).padStart(2, "0")}
-                        </span>
                         <span className="mt-0.5 block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {d.namaDivisi}
+                          {formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}
                         </span>
                       </span>
                       <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
@@ -258,7 +246,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
           )}
         </div>
 
-<div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button
             type="button"
             variant="ghost"
@@ -269,11 +257,6 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
             <LogOut className="h-3.5 w-3.5" />
             Keluar dari akun
           </Button>
-        </div>
-
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-          <KeyRound className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
-          <span>Akses dilindungi password divisi</span>
         </div>
       </div>
     </div>

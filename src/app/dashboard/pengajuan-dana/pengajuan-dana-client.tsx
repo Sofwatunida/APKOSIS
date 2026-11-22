@@ -24,6 +24,7 @@ import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
 import { HandCoins, Plus, Info } from "lucide-react";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 interface FormState {
   kebutuhan_id: string;
@@ -68,10 +69,14 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
 
       const { data: divisi } = await supabase
         .from("divisi")
-        .select("nama_divisi")
+        .select("nomor_divisi, nama_divisi")
         .eq("id", divisiId)
         .maybeSingle();
-      setNamaDivisi(divisi?.nama_divisi ?? "Divisi");
+      setNamaDivisi(
+        divisi?.nama_divisi
+          ? formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi)
+          : "Divisi"
+      );
 
       // Kebutuhan yang bisa diajukan: sudah disetujui & belum ada pengajuannya.
       const { data: kebutuhan } = await supabase
@@ -177,7 +182,6 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Pengajuan Dana"
-        description={`Ajukan dana untuk kebutuhan ${namaDivisi} yang sudah disetujui Bendahara`}
         action={
           <>
             <ExportMenu
@@ -232,7 +236,7 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Riwayat Pengajuan"
-          subtitle={`${items.length} pengajuan &middot; total ${formatRupiah(total)}`}
+          subtitle={`Total ${formatRupiah(total)}`}
           icon={<HandCoins className="h-5 w-5" />}
         />
         <CardContent className="p-0">

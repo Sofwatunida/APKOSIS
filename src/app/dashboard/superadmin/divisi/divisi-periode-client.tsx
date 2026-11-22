@@ -9,6 +9,7 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import {
   createDivisiAction,
   deleteDivisiAction,
@@ -81,7 +82,7 @@ export function DivisiPeriodeClient({
   }
 
   function handleDelete(d: DivisiRow) {
-    const label = `Divisi ${String(d.nomorDivisi).padStart(2, "0")} — ${d.namaDivisi}`;
+    const label = formatDivisiLabel(d.nomorDivisi, d.namaDivisi);
     if (
       !window.confirm(
         `Hapus ${label}?\n\nData terkait divisi ini (anggota, kredensial, laporan) dapat ikut terhapus dan tidak bisa dikembalikan.`
@@ -122,16 +123,12 @@ export function DivisiPeriodeClient({
             className="pl-9"
           />
         </div>
-        <span className="text-xs text-muted-foreground">
-          {visible.length} dari {divisi.length} divisi
-        </span>
       </div>
 
       <TableWrap minWidth={640}>
         <THead>
           <TR>
             <TH>Divisi</TH>
-            <TH>Nama</TH>
             <TH>Periode</TH>
             <TH className="text-right">Aksi</TH>
           </TR>
@@ -139,8 +136,9 @@ export function DivisiPeriodeClient({
         <TBody>
           {visible.map((d) => (
             <TR key={d.id}>
-              <TD className="font-medium">{d.nomorDivisi}</TD>
-              <TD>{d.namaDivisi}</TD>
+              <TD className="font-medium">
+                {formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}
+              </TD>
               <TD>
                 <Select
                   className="w-auto"
@@ -163,7 +161,7 @@ export function DivisiPeriodeClient({
                     onClick={() => setEditing(d)}
                     disabled={pending}
                     title="Ubah data divisi"
-                    aria-label={`Ubah ${d.namaDivisi}`}
+                    aria-label={`Ubah ${formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}`}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                   >
                     <Pencil className="h-4 w-4" />
@@ -173,7 +171,7 @@ export function DivisiPeriodeClient({
                     onClick={() => handleDelete(d)}
                     disabled={pending}
                     title="Hapus divisi"
-                    aria-label={`Hapus ${d.namaDivisi}`}
+                    aria-label={`Hapus ${formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}`}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                   >
                     <Trash2 className="h-4 w-4" />

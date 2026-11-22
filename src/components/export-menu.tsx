@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import {
   downloadExport,
+  type ApprovalSpec,
   type ExportColumn,
   type ExportFormat,
+  type SummaryItem,
 } from "@/lib/export-client";
 import { DEFAULT_SCHOOL_KOP, type SchoolKop } from "@/lib/school-config";
 import { usePeriode } from "@/lib/periode-context";
@@ -31,6 +33,16 @@ interface ExportMenuProps {
   kop?: SchoolKop;
   /** Orientasi cetak PDF: portrait, landscape, atau auto (default). */
   orientation?: "portrait" | "landscape" | "auto";
+  /** Unit/divisi penghasil laporan; dikenali dari subtitle bila kosong. */
+  division?: string;
+  /** Jenis dokumen; dikenali dari judul bila kosong. */
+  documentType?: string;
+  /** Keterangan tambahan pada bagian KETERANGAN. */
+  notes?: string[];
+  /** Penyesuaian pihak pengesah untuk laporan khusus. */
+  approval?: ApprovalSpec;
+  /** Ringkasan tambahan yang dihitung aplikasi pemanggil. */
+  extraSummary?: SummaryItem[];
 }
 
 const FORMATS: {
@@ -51,8 +63,8 @@ const FORMATS: {
   },
   {
     key: "doc",
-    label: "Word (DOC)",
-    hint: "Dapat diedit di MS Word",
+    label: "Word (DOCX)",
+    hint: "Tabel dapat diedit di MS Word",
     icon: File,
     iconColor: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-50 dark:bg-blue-900/20",
@@ -77,6 +89,11 @@ export function ExportMenu({
   size = "sm",
   kop = DEFAULT_SCHOOL_KOP,
   orientation,
+  division,
+  documentType,
+  notes,
+  approval,
+  extraSummary,
 }: ExportMenuProps) {
   const { success, error } = useToast();
   // Phase 11: setiap file export harus menyebut periode asalnya supaya
@@ -116,6 +133,12 @@ export function ExportMenu({
         // KOP surat sekolah (bisa diganti lewat prop `kop`).
         kop,
         orientation,
+        division,
+        documentType,
+        notes,
+        approval,
+        extraSummary,
+        periodLabel: periodeLabel,
         // Nama file memuat periode agar tidak tertukar antar periode.
         filename: `${filename ?? title}-${periodeLabel.replace(/[^\w-]+/g, "-")}`,
       });

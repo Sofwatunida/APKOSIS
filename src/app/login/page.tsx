@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ToastProvider } from "@/components/ui/toast";
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
@@ -53,9 +53,6 @@ export default function LoginPage() {
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-950 dark:text-white">
               APKOSIS
             </h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-              Aplikasi Pencatatan Laporan Harian OSIS Berbasis Digital
-            </p>
           </div>
 
           {/* Login Card */}
@@ -64,9 +61,6 @@ export default function LoginPage() {
               <h2 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">
                 Masuk ke Akun Anda
               </h2>
-              <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-                Silakan masukkan kredensial yang telah didaftarkan.
-              </p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -141,16 +135,7 @@ export default function LoginPage() {
                 {!loading && <ArrowRight className="h-4 w-4" />}
               </Button>
             </form>
-
-            <div className="mt-8 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
-              <span>Akses terproteksi & terenkripsi</span>
-            </div>
           </div>
-
-          <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
-            APKOSIS &copy; 2026
-          </p>
         </div>
       </div>
     </ToastProvider>

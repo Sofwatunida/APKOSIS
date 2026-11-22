@@ -10,6 +10,7 @@ import { Field, Input, Textarea, Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { RichTextEditor, RichTextContent } from "@/components/ui/rich-text-editor";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 const ALLOWED = [
   "application/pdf",
@@ -382,22 +383,17 @@ export function ProgramKerjaBendaharaClient({
     <div className="space-y-6">
       <PageHeader
         title={canControl ? "Kontrol Semua Program Kerja" : "Program Kerja"}
-        description={
-          canControl
-            ? "Tambah, ubah, hapus, dan catat program kerja seluruh divisi"
-            : "Kelola program kerja seluruh divisi (atas nama divisi yang dipilih)"
-        }
       />
 
       <Card>
-        <CardHeader title="Pilih Divisi" subtitle="Pilih divisi yang ingin dikelola program kerjanya" />
+        <CardHeader title="Pilih Divisi" />
         <CardContent>
           <div className="w-full sm:w-96">
             <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
               <option value="">-- Pilih Divisi --</option>
               {divisiList.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.nama_divisi}
+                  {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
                 </option>
               ))}
             </Select>
@@ -415,9 +411,10 @@ export function ProgramKerjaBendaharaClient({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {selectedDivisi?.nama_divisi ?? "Divisi"}
+                {selectedDivisi
+                  ? formatDivisiLabel(selectedDivisi.nomor_divisi, selectedDivisi.nama_divisi)
+                  : "Divisi"}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Kelola dan monitor program kerja divisi</p>
             </div>
             <Button onClick={openAdd}>+ Tambah Program Kerja</Button>
           </div>
@@ -425,7 +422,6 @@ export function ProgramKerjaBendaharaClient({
           <Card>
             <CardHeader
               title="Program Unggulan"
-              subtitle="Program unggulan divisi yang dapat diunduh oleh role lain (monitoring, sekretaris, bendahara)"
               action={
                 <Button onClick={openAddUnggulan} size="sm" variant="outline">
                   + Tambah Program Unggulan
@@ -516,7 +512,7 @@ export function ProgramKerjaBendaharaClient({
           </Card>
 
           <Card>
-            <CardHeader title="Daftar Program Kerja" subtitle={`Total ${items.length} program utama`} />
+            <CardHeader title="Daftar Program Kerja" />
             <CardContent>
               {items.length === 0 ? (
                 <EmptyState title="Belum ada program kerja" description="Tambahkan program kerja divisi ini." />
@@ -585,13 +581,8 @@ export function ProgramKerjaBendaharaClient({
           <Card>
             <CardHeader
               title="Catatan Program Belum Terlaksana"
-              subtitle="Tambahkan program kerja yang belum dapat dilaksanakan satu per satu agar rapi"
             />
             <CardContent>
-              <p className="mb-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
-                Daftar ini akan dilihat dan diekspor oleh Sekretaris menjadi rekap program yang belum
-                terlaksana seluruh divisi.
-              </p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Nama program yang belum terlaksana..."

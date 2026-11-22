@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clearDivisionTokenCookie } from "@/lib/division-session-client";
 import { endDivisionSessionAction } from "@/app/pilih-divisi/actions";
 import { PeriodeProvider } from "@/lib/periode-context";
-import { NAV_STRUCTURE } from "@/lib/nav";
+import { NAV_ITEMS } from "@/lib/nav";
 import type { PeriodeOption } from "@/lib/period";
 import type { Profile, Role } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/role";
@@ -110,6 +110,8 @@ function getNavIcon(href: string) {
 interface ImpersonationState {
   role: Role;
   divisiId: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
   startedAt: string;
 }
 
@@ -231,13 +233,10 @@ function ShellInner({
 
   const role = profile.role ?? "division_admin";
 
-  const sections = NAV_STRUCTURE.map((section) => ({
-    ...section,
-    items: section.items.filter((item) => item.roles.includes(role)),
-  })).filter((section) => section.items.length > 0);
+  const navItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
 
   // Kumpulkan href semua menu yang terlihat untuk menentukan menu aktif.
-  const allHrefs = sections.flatMap((s) => s.items.map((i) => i.href));
+  const allHrefs = navItems.map((item) => item.href);
 
   /**
    * Menu aktif = href paling spesifik (terpanjang) yang cocok dengan path
@@ -337,9 +336,6 @@ function ShellInner({
                     {activePeriodBadge}
                   </span>
                 </div>
-                <p className="sidebar-subtle mt-1 text-[10px] font-medium leading-none">
-                  Portal Laporan OSIS
-                </p>
               </>
             )}
           </Link>
@@ -372,49 +368,39 @@ function ShellInner({
           )}
         </div>
 
-        {/* Navigation Sections — `min-h-0` + `flex-1` membuat nav benar-benar
-            bisa discroll saat menu banyak, tanpa mendorong kartu user di bawah
-            keluar layar. Antar kelompok menu diberi jarak (space-y-8). */}
-        <nav className={`min-h-0 flex-1 overflow-y-auto py-5 ${v ? "space-y-2 px-2.5" : "space-y-8 px-3.5"}`}>
-          {sections.map((section) => (
-            <div key={section.title}>
-              {!v && (
-                <p className="sidebar-section-title mb-2.5 px-3 text-[11px] font-bold uppercase tracking-wider">
-                  {section.title}
-                </p>
-              )}
-              <ul className="space-y-1">
-                {section.items.map((item) => {
-                  const IconComponent = getNavIcon(item.href);
-                  const active = isActive(item.href);
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        prefetch
-                        title={v ? item.label : undefined}
-                        onClick={() => setMobileOpen(false)}
-                        onMouseEnter={() => router.prefetch(item.href)}
-                        onFocus={() => router.prefetch(item.href)}
-                        className={`group flex items-center rounded-xl py-2.5 text-xs font-medium transition-all duration-150 ${
-                          v ? "justify-center px-2" : "gap-3 px-3"
-                        } ${active ? "sidebar-link-active font-semibold" : "sidebar-link"}`}
-                      >
-                        <IconComponent
-                          className={`h-4 w-4 shrink-0 transition-colors ${
-                            active
-                              ? "text-brand-600 dark:text-brand-400"
-                              : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-200"
-                          }`}
-                        />
-                        {!v && <span className="truncate">{item.label}</span>}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+        {/* Navigation — satu daftar menu tanpa label grup. `min-h-0` + `flex-1`
+            membuat nav tetap bisa discroll tanpa mendorong kartu user keluar layar. */}
+        <nav className={`min-h-0 flex-1 overflow-y-auto py-5 ${v ? "px-2.5" : "px-3.5"}`}>
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const IconComponent = getNavIcon(item.href);
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    prefetch
+                    title={v ? item.label : undefined}
+                    onClick={() => setMobileOpen(false)}
+                    onMouseEnter={() => router.prefetch(item.href)}
+                    onFocus={() => router.prefetch(item.href)}
+                    className={`group flex items-center rounded-xl py-2.5 text-xs font-medium transition-all duration-150 ${
+                      v ? "justify-center px-2" : "gap-3 px-3"
+                    } ${active ? "sidebar-link-active font-semibold" : "sidebar-link"}`}
+                  >
+                    <IconComponent
+                      className={`h-4 w-4 shrink-0 transition-colors ${
+                        active
+                          ? "text-brand-600 dark:text-brand-400"
+                          : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-200"
+                      }`}
+                    />
+                    {!v && <span className="truncate">{item.label}</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
       </div>
 
@@ -510,7 +496,11 @@ function ShellInner({
                 </span>
                 <span className="text-amber-800 dark:text-amber-300">
                   Anda sedang melihat sistem sebagai{" "}
-                  <strong>{ROLE_LABELS[impersonation.role]}</strong>
+                  <strong>
+                    {impersonation.accountName
+                      ? `${impersonation.accountName} (${ROLE_LABELS[impersonation.role]})`
+                      : ROLE_LABELS[impersonation.role]}
+                  </strong>
                 </span>
               </div>
               <form action={stopImpersonationAction}>

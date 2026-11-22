@@ -20,6 +20,7 @@ import { ExportMenu } from "@/components/export-menu";
 import { STATUS_KEBUTUHAN_LABEL } from "@/lib/kebutuhan";
 import { formatDate, todayISO } from "@/lib/date";
 import { Info } from "lucide-react";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 interface FormState {
   nama_kebutuhan: string;
@@ -62,10 +63,10 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
       } else {
         const { data: d } = await supabase
           .from("divisi")
-          .select("nama_divisi")
+          .select("nomor_divisi, nama_divisi")
           .eq("id", profile.divisi_id)
           .maybeSingle();
-        if (d?.nama_divisi) setNamaDivisi(d.nama_divisi);
+        if (d?.nama_divisi) setNamaDivisi(formatDivisiLabel(d.nomor_divisi, d.nama_divisi));
       }
     } catch {
       error("Gagal memuat data kebutuhan.");
@@ -179,7 +180,6 @@ export function KebutuhanClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Kebutuhan Divisi"
-        description="Daftar kebutuhan yang diajukan divisi"
         action={
           <>
             <ExportMenu

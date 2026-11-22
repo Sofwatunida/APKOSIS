@@ -79,11 +79,15 @@ export async function fetchSaldoAwalBendahara(
  * pengaturan saldo awal di halaman Transaksi.
  */
 export async function fetchFinanceSummary(
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient<Database>,
+  divisiId?: string | null
 ): Promise<FinanceSummary> {
-  const { data: txs } = await supabase
+  let query = supabase
     .from("transaksi_keuangan")
     .select("jenis_transaksi, nominal");
+  if (divisiId) query = query.eq("divisi_id", divisiId);
+
+  const { data: txs } = await query;
 
   let pemasukan = 0;
   let pengeluaran = 0;
@@ -93,7 +97,7 @@ export async function fetchFinanceSummary(
     else pengeluaran += n;
   });
 
-  const saldoAwal = await fetchSaldoAwal(supabase);
+  const saldoAwal = await fetchSaldoAwal(supabase, divisiId);
   return {
     saldoAwal,
     pemasukan,

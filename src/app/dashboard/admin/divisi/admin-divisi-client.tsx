@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Select } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import {
   TablePagination,
   usePagination,
@@ -58,15 +59,15 @@ export function AdminDivisiClient({
       <THead>
         <TR>
           <TH>Divisi</TH>
-          <TH>Nama</TH>
           <TH className="text-right">Periode</TH>
         </TR>
       </THead>
       <TBody>
         {visibleDivisi.map((d) => (
           <TR key={d.id}>
-            <TD className="font-medium">{d.nomorDivisi}</TD>
-            <TD>{d.namaDivisi}</TD>
+            <TD className="font-medium">
+              {formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}
+            </TD>
             <TD className="text-right">
               <Select
                 className="ml-auto w-auto"

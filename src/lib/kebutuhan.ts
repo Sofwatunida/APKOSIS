@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 import type { Kebutuhan, KebutuhanStatus } from "./types";
+import { formatDivisiLabel } from "./divisi-options";
 
 /**
  * ==========================================================
@@ -102,9 +103,12 @@ export async function fetchKebutuhanDetail(
   // 1. Nama divisi
   const { data: divisiList } = await supabase
     .from("divisi")
-    .select("id, nama_divisi");
+    .select("id, nomor_divisi, nama_divisi");
   const namaDivisi = new Map(
-    (divisiList ?? []).map((d) => [d.id, d.nama_divisi])
+    (divisiList ?? []).map((d) => [
+      d.id,
+      formatDivisiLabel(d.nomor_divisi, d.nama_divisi),
+    ])
   );
 
   // 2. Data laporan terkait (tanggal + pelapor + kegiatan)

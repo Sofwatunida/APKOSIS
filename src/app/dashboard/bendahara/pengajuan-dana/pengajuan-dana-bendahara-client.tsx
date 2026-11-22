@@ -13,16 +13,22 @@ import {
 } from "@/lib/pengajuan-dana";
 import { formatDate } from "@/lib/date";
 import { formatRupiah } from "@/lib/format";
-import { buildDivisiOptions } from "@/lib/divisi-options";
+import {
+  SEMUA_DIVISI_VALUE,
+  buildDivisiOptions,
+  getDivisiFilterLabel,
+  isSemuaDivisi,
+} from "@/lib/divisi-options";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { Select } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
-import { HandCoins, Check, X, Wallet, Trash2, Info } from "lucide-react";
+import { HandCoins, Check, X, Wallet, Trash2 } from "lucide-react";
 
 export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -33,7 +39,7 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
   const [divisiOptions, setDivisiOptions] = useState<
     { id: string; nama_divisi: string }[]
   >([]);
-  const [filterDivisi, setFilterDivisi] = useState("");
+  const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterStatus, setFilterStatus] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [konfirmasi, setKonfirmasi] = useState<{
@@ -49,7 +55,6 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
         .from("divisi")
         .select("id, nomor_divisi, nama_divisi")
         .order("nomor_divisi", { ascending: true });
-      // Dropdown selalu lengkap: "Semua Divisi" + Divisi 01 .. Divisi 20.
       setDivisiOptions(
         buildDivisiOptions(divisi).map((d) => ({ id: d.id, nama_divisi: d.nama }))
       );
@@ -64,34 +69,40 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const rekapSource = useMemo(
+    () =>
+      items.filter((p) =>
+        isSemuaDivisi(filterDivisi) ? true : p.divisi_id === filterDivisi
+      ),
+    [items, filterDivisi]
+  );
+
   const filtered = useMemo(
     () =>
-      items.filter((p) => {
-        if (filterDivisi && p.divisi_id !== filterDivisi) return false;
-        if (filterStatus) {
-          if (filterStatus === "perlu_tindakan")
-            return p.status_persetujuan === "belum" || p.status_pengambilan === "belum";
-          if (filterStatus === "selesai")
-            return p.status_persetujuan === "disetujui" && p.status_pengambilan === "sudah_diambil";
-        }
+      rekapSource.filter((p) => {
+        if (!filterStatus) return true;
+        if (filterStatus === "perlu_tindakan")
+          return p.status_persetujuan === "belum" || p.status_pengambilan === "belum";
+        if (filterStatus === "selesai")
+          return p.status_persetujuan === "disetujui" && p.status_pengambilan === "sudah_diambil";
         return true;
       }),
-    [items, filterDivisi, filterStatus]
+    [rekapSource, filterStatus]
   );
 
   const rekap = useMemo(() => {
-    const menunggu = items.filter((p) => p.status_persetujuan === "belum").length;
-    const menungguUang = items.filter(
+    const menunggu = rekapSource.filter((p) => p.status_persetujuan === "belum").length;
+    const menungguUang = rekapSource.filter(
       (p) => p.status_persetujuan === "disetujui" && p.status_pengambilan === "belum"
     ).length;
-    const selesai = items.filter(
+    const selesai = rekapSource.filter(
       (p) => p.status_persetujuan === "disetujui" && p.status_pengambilan === "sudah_diambil"
     ).length;
-    const nominalMenungguUang = items
+    const nominalMenungguUang = rekapSource
       .filter((p) => p.status_persetujuan === "disetujui" && p.status_pengambilan === "belum")
       .reduce((s, p) => s + p.nominal, 0);
     return { menunggu, menungguUang, selesai, nominalMenungguUang };
-  }, [items]);
+  }, [rekapSource]);
 
   /**
    * Semua perubahan status dilakukan lewat UPDATE pada tabel pengajuan_dana.
@@ -152,6 +163,8 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
 
   if (loading) return <Spinner />;
 
+  const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
+
   const judulKonfirmasi = {
     setujui: "Setujui Pengajuan Dana",
     tolak: "Cabut Persetujuan",
@@ -163,11 +176,11 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
     <div className="space-y-6">
       <PageHeader
         title="Pengajuan Dana"
-        description="Kelola persetujuan & pengambilan dana seluruh divisi"
         action={
           <ExportMenu
             title="Pengajuan Dana"
-            subtitle="Seluruh divisi"
+            subtitle={`Divisi: ${filterDivisiLabel}`}
+            division={filterDivisiLabel}
             filename="pengajuan-dana-bendahara"
             disabled={filtered.length === 0}
             columns={[
@@ -225,39 +238,28 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
             Total Pengajuan
           </p>
           <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
-            {items.length}
+            {rekapSource.length}
           </p>
         </div>
       </div>
 
-      {/* <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          Uang hanya bisa ditandai <strong>sudah diambil</strong> setelah
-          pengajuan disetujui. Setelah diambil, status kebutuhan terkait otomatis
-          ditandai <strong>Sudah Dipenuhi</strong> oleh sistem.
-        </p>
-      </div> */}
-
       <Card>
         <CardHeader
           title="Daftar Pengajuan"
-          subtitle={`${filtered.length} dari ${items.length} pengajuan`}
           icon={<HandCoins className="h-5 w-5" />}
           action={
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <select
+              <Select
                 value={filterDivisi}
                 onChange={(e) => setFilterDivisi(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="h-9 py-0 text-xs font-medium"
               >
-                <option value="">Semua Divisi</option>
                 {divisiOptions.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama_divisi}
                   </option>
                 ))}
-              </select>
+              </Select>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -274,7 +276,6 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
           {filtered.length === 0 ? (
             <EmptyState
               title="Tidak ada pengajuan"
-              description="Pengajuan dana yang dikirim divisi akan muncul di sini."
             />
           ) : (
             <TableWrap minWidth={1100}>

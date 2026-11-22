@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getRealProfile } from "@/lib/auth";
+import { getActiveImpersonation, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import {
   clearImpersonationCookie,
   setImpersonationCookie,
@@ -28,13 +29,17 @@ function fail(message: string): ImpersonationActionResult {
  * bisa memulai/menghentikan mode ini.
  */
 async function requireRealSuperAdmin(): Promise<
-  { supabase: Awaited<ReturnType<typeof createClient>> } | { error: ImpersonationActionResult }
+  | {
+      supabase: Awaited<ReturnType<typeof createClient>>;
+      real: NonNullable<Awaited<ReturnType<typeof getRealProfile>>>;
+    }
+  | { error: ImpersonationActionResult }
 > {
   const real = await getRealProfile();
   if (!real || real.role !== "super_admin") {
     return { error: fail("Hanya Super Admin yang boleh memakai Mode Penyamaran.") };
   }
-  return { supabase: await createClient() };
+  return { supabase: await createClient(), real };
 }
 
 /**
@@ -46,39 +51,60 @@ async function requireRealSuperAdmin(): Promise<
  * tidak pernah dihapus" sesuai kebijakan.
  */
 export async function startImpersonationAction(input: {
-  role: string;
+  accountId: string;
   divisiId?: string | null;
 }): Promise<ImpersonationActionResult> {
   const auth = await requireRealSuperAdmin();
   if ("error" in auth) return auth.error;
-  const { supabase } = auth;
+  const { supabase, real } = auth;
 
-  const role = input.role as Role;
+  const accountId = (input.accountId ?? "").trim();
+  if (!accountId) return fail("Akun tujuan tidak ditemukan.");
+
+  const { data: target, error } = await supabase
+    .from("profiles")
+    .select("id, nama, email, role, divisi_id")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (error || !target) return fail("Akun tujuan tidak ditemukan.");
+  if (target.id === real.id) {
+    return fail("Tidak dapat menyamar menggunakan akun sendiri.");
+  }
+
+  const role = target.role as Role;
   if (!IMPERSONATABLE_ROLES.includes(role)) {
-    return fail("Role tujuan tidak dikenal untuk Mode Penyamaran.");
+    return fail("Akun ini tidak diizinkan untuk Mode Penyamaran.");
   }
 
   let divisiId: string | null = null;
+  let divisiDetail = "";
   if (role === "division_admin") {
-    divisiId = (input.divisiId ?? "").trim() || null;
-    if (!divisiId) {
-      return fail("Pilih dulu divisi yang ingin ditiru untuk Admin Divisi.");
-    }
-    const { data } = await supabase
+    const requestedDivisiId = (input.divisiId ?? "").trim();
+    divisiId = requestedDivisiId || target.divisi_id || null;
+    if (!divisiId) return fail("Pilih dulu divisi yang ingin dimasuki.");
+    const { data: divisi } = await supabase
       .from("divisi")
-      .select("id, nama_divisi")
+      .select("id, nomor_divisi, nama_divisi")
       .eq("id", divisiId)
       .maybeSingle();
-    if (!data) return fail("Divisi tujuan tidak ditemukan.");
+    if (!divisi) return fail("Divisi tujuan tidak ditemukan.");
+    divisiDetail = ` (${formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi)})`;
   }
 
-  await setImpersonationCookie({ role, divisiId });
+  const accountName = target.nama?.trim() || target.email || "Akun tujuan";
+
+  await setImpersonationCookie({
+    role,
+    divisiId,
+    accountId: target.id,
+    accountName,
+  });
 
   await writeAuditLog({
     action: "mulai_mode_penyamaran",
-    targetType: "role",
-    targetId: role,
-    detail: divisiId ? `${role} (divisi ${divisiId})` : role,
+    targetType: "profile",
+    targetId: target.id,
+    detail: `akun ${accountName} (${target.email ?? "-"}) sebagai ${role}${divisiDetail}`,
     success: true,
   });
 
@@ -101,10 +127,13 @@ export async function stopImpersonationAction(): Promise<void> {
   const auth = await requireRealSuperAdmin();
   if ("error" in auth) redirect("/dashboard");
 
+  const active = await getActiveImpersonation();
   await writeAuditLog({
     action: "akhiri_mode_penyamaran",
     targetType: "role",
-    detail: "kembali ke tampilan Super Admin",
+    detail: `kembali ke tampilan Super Admin${
+      active?.accountName ? ` dari akun ${active.accountName}` : ""
+    }`,
     success: true,
   });
 

@@ -10,6 +10,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { usePeriode } from "@/lib/periode-context";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 
 export function ProfilDivisiClient({ profile }: { profile: Profile }) {
   const supabase = createClient();
@@ -214,7 +215,6 @@ async function handleSave() {
     <div className="space-y-6">
       <PageHeader
         title="Profil Divisi"
-        description="Identitas dan kepengurusan divisi"
         action={
           !isEditing && (
             <button
@@ -232,13 +232,8 @@ async function handleSave() {
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-              {isEditing ? "Form Edit Profil Divisi" : "Informasi Profil Divisi"}
+              {isEditing ? "Edit Identitas Divisi" : "Identitas & Kepengurusan"}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isEditing
-                ? "Ubah data nama divisi, periode, dan deskripsi."
-                : "Profil divisi yang tersimpan saat ini."}
-            </p>
           </div>
           {!isEditing && (
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -256,7 +251,9 @@ async function handleSave() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Nama Divisi
                   </p>
-                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200">{divisi.nama_divisi}</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-200">
+                    {formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi)}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -335,14 +332,12 @@ async function handleSave() {
                   <Input
                     value={form.ketua_divisi}
                     onChange={(e) => setForm({ ...form, ketua_divisi: e.target.value })}
-                    placeholder="Nama ketua divisi"
                   />
                 </Field>
                 <Field label="Wakil Divisi">
                   <Input
                     value={form.wakil_divisi}
                     onChange={(e) => setForm({ ...form, wakil_divisi: e.target.value })}
-                    placeholder="Nama wakil divisi"
                   />
                 </Field>
               </div>

@@ -49,10 +49,7 @@ export default async function SuperAdminAuditPage() {
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Log Aktivitas"
-          description="Riwayat hanya-baca (append-only) tindakan penting di sistem."
-        />
+        <PageHeader title="Log Aktivitas" />
 
         {error && (
           <div
@@ -69,7 +66,6 @@ export default async function SuperAdminAuditPage() {
         <Card>
           <CardHeader
             title={`Riwayat (${rows.length})`}
-            subtitle="Mencatat aktor, aksi, target, waktu, dan status sukses/gagal. Tidak bisa diubah atau dihapus."
             icon={<History className="h-5 w-5" />}
           />
           <CardContent>

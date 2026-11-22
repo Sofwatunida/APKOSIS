@@ -29,10 +29,7 @@ export default async function SuperAdminPeriodePage({
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Kelola Periode"
-          description="Buat periode baru, tentukan periode aktif, dan arsipkan periode lama tanpa menghapus data."
-        />
+        <PageHeader title="Kelola Periode" />
 
         {feedback && (
           <div

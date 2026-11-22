@@ -11,7 +11,6 @@ export default async function MonitoringLaporanPage() {
       <div className="space-y-6">
         <PageHeader
           title="Laporan Semua Divisi"
-          description="Rekap pengisian laporan harian setiap divisi"
         />
         <LaporanDivisiTable />
       </div>

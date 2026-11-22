@@ -1,6 +1,5 @@
 import { requireProfile, requireAdminAccess } from "@/lib/guard";
 import { AppShell } from "@/components/app-shell";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getPeriodeContext } from "@/lib/period";
 import { PasswordDivisiClient } from "./password-divisi-client";
@@ -32,34 +31,11 @@ export default async function AdminPasswordDivisiPage() {
           }))}
         />
 
-        <Card>
-          <CardHeader title="Aturan Kredensial Divisi" />
-          <CardContent>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-              <li>
-                Ketua dan wakil divisi <strong>tidak dapat</strong> mengganti
-                password sendiri.
-              </li>
-              <li>
-                Password di-hash (bcrypt) di database dan tidak pernah
-                ditampilkan kembali.
-              </li>
-              <li>
-                Admin hanya boleh mengubah password divisi pada periode yang
-                menjadi tanggung jawabnya.
-              </li>
-              <li>
-                Password divisi periode sebelumnya tetap tersimpan di arsip dan
-                tidak ikut berubah.
-              </li>
-            </ul>
-            <p className="mt-4 text-sm">
-              <a className="underline" href="/dashboard/admin/divisi">
-                Kelola divisi periode ini
-              </a>
-            </p>
-          </CardContent>
-        </Card>
+        <p className="text-sm">
+          <a className="underline" href="/dashboard/admin/divisi">
+            Kelola divisi periode ini
+          </a>
+        </p>
       </div>
     </AppShell>
   );

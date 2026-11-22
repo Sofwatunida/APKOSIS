@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import { saveDivisionPasswordAction } from "./actions";
 
 export interface DivisiPasswordRow {
@@ -28,8 +29,8 @@ export interface DivisiPasswordRow {
 
 const MIN_PASSWORD_LENGTH = 4;
 
-function label(nomor: number): string {
-  return `Divisi ${String(nomor).padStart(2, "0")}`;
+function label(nomor: number, nama: string): string {
+  return formatDivisiLabel(nomor, nama);
 }
 
 function formatWaktu(value: string | null): string | null {
@@ -120,7 +121,7 @@ export function PasswordDivisiClient({
     }));
     setBaruDisimpan(row.id);
     setPending(null);
-    success(`Password ${label(row.nomorDivisi)} berhasil diperbarui.`);
+    success(`Password ${label(row.nomorDivisi, row.namaDivisi)} berhasil diperbarui.`);
   }
 
   function batalSimpan() {
@@ -139,10 +140,7 @@ export function PasswordDivisiClient({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Pengaturan Password Divisi"
-        description="Anda yang menentukan password setiap divisi. Password di-hash (bcrypt) di server sebelum disimpan dan tidak pernah ditampilkan kembali."
-      />
+      <PageHeader title="Pengaturan Password Divisi" />
 
       {readOnly && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
@@ -150,7 +148,6 @@ export function PasswordDivisiClient({
           diatur terpisah dan password lama tetap berlaku untuk arsipnya.
         </div>
       )}
-
 
       <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs dark:border-slate-800/80 dark:bg-slate-900/60">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
@@ -191,11 +188,8 @@ export function PasswordDivisiClient({
                   >
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {label(row.nomorDivisi)}
-                        </p>
-                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                          {row.namaDivisi}
+                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                          {label(row.nomorDivisi, row.namaDivisi)}
                         </p>
                       </div>
                       {meta.hasPassword ? (
@@ -227,7 +221,7 @@ export function PasswordDivisiClient({
                           maxLength={128}
                           autoComplete="new-password"
                           spellCheck={false}
-                          aria-label={`Password baru ${label(row.nomorDivisi)}`}
+                          aria-label={`Password baru ${label(row.nomorDivisi, row.namaDivisi)}`}
                           placeholder="Password baru"
                           onChange={(e) => {
                             setValues((prev) => ({ ...prev, [row.id]: e.target.value }));
@@ -246,8 +240,8 @@ export function PasswordDivisiClient({
                           className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
                           aria-label={
                             isRevealed
-                              ? `Sembunyikan password ${label(row.nomorDivisi)}`
-                              : `Tampilkan password ${label(row.nomorDivisi)}`
+                              ? `Sembunyikan password ${label(row.nomorDivisi, row.namaDivisi)}`
+                              : `Tampilkan password ${label(row.nomorDivisi, row.namaDivisi)}`
                           }
                         >
                           {isRevealed ? (
@@ -274,7 +268,7 @@ export function PasswordDivisiClient({
                             size="md"
                             onClick={() => bersihkanNilai(meta)}
                             title="Kosongkan kolom password"
-                            aria-label={`Kosongkan kolom password ${label(row.nomorDivisi)}`}
+                            aria-label={`Kosongkan kolom password ${label(row.nomorDivisi, row.namaDivisi)}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -323,16 +317,16 @@ export function PasswordDivisiClient({
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {status[pending.id]?.hasPassword
-                ? `Apakah Anda yakin ingin mengubah password ${label(pending.nomorDivisi)}?`
-                : `Apakah Anda yakin ingin membuat password untuk ${label(pending.nomorDivisi)}?`}
+                ? `Apakah Anda yakin ingin mengubah password ${label(pending.nomorDivisi, pending.namaDivisi)}?`
+                : `Apakah Anda yakin ingin membuat password untuk ${label(pending.nomorDivisi, pending.namaDivisi)}?`}
             </p>
 
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 {status[pending.id]?.hasPassword
-                  ? `Password lama ${label(pending.nomorDivisi)} langsung tidak berlaku setelah disimpan.`
-                  : `Setelah dibuat, hanya Anda yang mengetahui password ${label(pending.nomorDivisi)}. Berikan langsung kepada user divisi.`}
+                  ? `Password lama ${label(pending.nomorDivisi, pending.namaDivisi)} langsung tidak berlaku setelah disimpan.`
+                  : `Setelah dibuat, hanya Anda yang mengetahui password ${label(pending.nomorDivisi, pending.namaDivisi)}. Berikan langsung kepada user divisi.`}
               </span>
             </div>
 

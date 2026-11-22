@@ -31,10 +31,7 @@ export default async function SuperAdminBackupPage() {
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Backup, Reset & Pemulihan"
-          description="Unduh backup JSON, reset data operasional per periode, atau pulihkan dari file backup. Hanya Super Admin."
-        />
+        <PageHeader title="Backup, Reset & Pemulihan" />
         <BackupClient periods={periods} />
       </div>
     </AppShell>

@@ -37,14 +37,12 @@ const TONES: Record<StatTone, { value: string; iconBg: string }> = {
 export function StatCard({
   label,
   value,
-  sub,
   tone = "brand",
   icon,
   className = "",
 }: {
   label: string;
   value: string;
-  sub?: string;
   tone?: StatTone;
   icon?: ReactNode;
   className?: string;
@@ -69,7 +67,6 @@ export function StatCard({
         <p className={`safe-text mt-3 text-2xl font-bold leading-tight tracking-tight ${current.value}`}>
           {value}
         </p>
-        {sub && <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">{sub}</p>}
       </CardContent>
     </Card>
   );

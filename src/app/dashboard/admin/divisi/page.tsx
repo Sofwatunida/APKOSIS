@@ -22,16 +22,10 @@ export default async function AdminDivisiPage() {
   return (
     <AppShell profile={profile}>
       <div className="space-y-6">
-        <PageHeader
-          title="Kelola Divisi Periode"
-          description="Siapkan divisi untuk periode yang sedang Anda kelola."
-        />
+        <PageHeader title="Kelola Divisi Periode" />
 
         <Card>
-          <CardHeader
-            title="Daftar Divisi"
-            subtitle="Tentukan periode yang menaungi setiap divisi. Perubahan langsung tersimpan."
-          />
+          <CardHeader title="Daftar Divisi" />
           <CardContent>
             <AdminDivisiClient
               divisi={(divisi ?? []).map((d) => ({

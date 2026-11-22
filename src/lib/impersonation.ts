@@ -38,6 +38,8 @@ export interface ImpersonationView {
   role: Role;
   /** Wajib diisi bila role = division_admin; selain itu selalu null. */
   divisiId: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
 }
 
 interface ImpersonationState extends ImpersonationView {
@@ -77,6 +79,12 @@ export const getImpersonation = cache(
       return {
         role: role as Role,
         divisiId,
+        accountId:
+          typeof parsed.accountId === "string" && UUID_RE.test(parsed.accountId)
+            ? parsed.accountId
+            : null,
+        accountName:
+          typeof parsed.accountName === "string" ? parsed.accountName : null,
         startedAt:
           typeof parsed.startedAt === "string"
             ? parsed.startedAt
@@ -105,6 +113,8 @@ export async function setImpersonationCookie(
   const payload: ImpersonationState = {
     role: state.role,
     divisiId: state.role === "division_admin" ? state.divisiId : null,
+    accountId: state.accountId ?? null,
+    accountName: state.accountName ?? null,
     startedAt: new Date().toISOString(),
   };
   store.set(IMPERSONATION_COOKIE, JSON.stringify(payload), {

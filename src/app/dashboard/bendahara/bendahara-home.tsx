@@ -40,7 +40,6 @@ export function BendaharaHome({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard Bendahara"
-        description="Ringkasan keuangan dan transaksi terbaru OSIS."
       />
       <FinanceSummary />
 

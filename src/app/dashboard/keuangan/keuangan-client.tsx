@@ -273,7 +273,6 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Keuangan Divisi"
-        description="Kelola dan pantau arus kas masuk, keluar, dan bukti struk transaksi."
         action={
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4" />
@@ -288,21 +287,18 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
           value={formatRupiah(pemasukan)}
           tone="green"
           icon={<TrendingUp className="h-4.5 w-4.5" />}
-          sub="Total dana kas masuk"
         />
         <StatCard
           label="Total Pengeluaran"
           value={formatRupiah(pengeluaran)}
           tone="red"
           icon={<TrendingDown className="h-4.5 w-4.5" />}
-          sub="Total belanja & pembiayaan"
         />
         <StatCard
           label="Saldo Akhir Divisi"
           value={formatRupiah(saldo)}
           tone={saldo >= 0 ? "brand" : "red"}
           icon={<Coins className="h-4.5 w-4.5" />}
-          sub="Sisa saldo kas saat ini"
         />
       </div>
 
@@ -310,7 +306,6 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Riwayat Transaksi"
-          subtitle={`Total ${transaksi.length} transaksi tercatat`}
           icon={<Wallet className="h-5 w-5" />}
           action={
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">

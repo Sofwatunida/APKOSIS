@@ -19,6 +19,8 @@ const ACTIONS = [
   "atur_password_divisi",
   "atur_periode_divisi",
   "buat_divisi",
+  "mulai_mode_penyamaran",
+  "akhiri_mode_penyamaran",
 ];
 
 function actionLabel(a: string): string {
@@ -31,6 +33,8 @@ function actionLabel(a: string): string {
     atur_password_divisi: "Atur Password Divisi",
     atur_periode_divisi: "Atur Periode Divisi",
     buat_divisi: "Tambah Divisi",
+    mulai_mode_penyamaran: "Mulai Mode Penyamaran",
+    akhiri_mode_penyamaran: "Akhiri Mode Penyamaran",
   };
   return map[a] ?? a;
 }
@@ -143,13 +147,8 @@ export function AuditClient({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">
-          Menampilkan {filtered.length} dari {rows.length} log
-          {rows.length >= limit ? ` (maksimal ${limit} terbaru)` : ""}
-        </span>
         <ExportMenu
           title="APKOSIS — Log Aktivitas"
-          subtitle="Riwayat tindakan penting di sistem"
           filename="log-aktivitas"
           columns={[
             { header: "Waktu", key: "waktu", width: 1.6 },

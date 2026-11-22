@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getProfile } from "@/lib/auth";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { getProfile, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import type { Json } from "@/lib/database.types";
 
 export interface PeriodActionResult {
@@ -52,6 +54,17 @@ function pesanDb(message: string): string {
   } catch {
     return teks;
   }
+}
+
+function pesanPasswordAdmin(message: string): string {
+  const teks = message.toLowerCase();
+  if (teks.includes("not found")) {
+    return "Akun tidak ditemukan di layanan autentikasi.";
+  }
+  if (teks.includes("password") || teks.includes("weak")) {
+    return "Password tidak memenuhi ketentuan keamanan.";
+  }
+  return "Gagal memperbarui password akun. Silakan coba lagi.";
 }
 
 /**
@@ -297,6 +310,86 @@ export async function setDivisionPasswordAction(
   };
 }
 
+/**
+ * Update password akun personal/role lewat Supabase Admin API.
+ * Kredensial divisi memakai jalur berbeda (division_credentials),
+ * jadi aksi ini sengaja hanya menyentuh auth.users.
+ */
+export async function setAccountPasswordAction(
+  formData: FormData
+): Promise<PeriodActionResult> {
+  const actor = await getRealProfile();
+  if (!actor || actor.role !== "super_admin") {
+    return fail("Hanya Super Admin yang boleh mengubah password akun role.");
+  }
+
+  const userId = String(formData.get("user_id") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (!userId) return fail("Akun tidak valid.");
+  if (userId === actor.id) {
+    return fail("Password akun sendiri tidak dapat diubah dari halaman ini.");
+  }
+  if (password.length < 8) return fail("Password akun minimal 8 karakter.");
+  if (password.length > 128) return fail("Password akun maksimal 128 karakter.");
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return fail("Password akun harus memiliki kombinasi huruf dan angka.");
+  }
+  if (password !== confirmPassword) {
+    return fail("Konfirmasi password tidak cocok.");
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) {
+    return fail("Konfigurasi autentikasi server belum lengkap. Hubungi administrator.");
+  }
+
+  const supabase = await createClient();
+  const { data: target, error: targetError } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (targetError || !target) {
+    return fail("Akun tidak ditemukan.");
+  }
+  if (target.role === "super_admin") {
+    return fail("Password akun Super Admin tidak dapat diubah dari halaman ini.");
+  }
+
+  const adminClient = createSupabaseClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { error } = await adminClient.auth.admin.updateUserById(userId, {
+    password,
+  });
+
+  if (error) {
+    console.error("[setAccountPasswordAction]", error.message);
+    await writeAuditLog({
+      action: "ubah_password_akun_role",
+      targetType: "user",
+      targetId: userId,
+      success: false,
+    });
+    return fail(pesanPasswordAdmin(error.message));
+  }
+
+  await writeAuditLog({
+    action: "ubah_password_akun_role",
+    targetType: "user",
+    targetId: userId,
+    success: true,
+  });
+
+  revalidatePath("/dashboard/superadmin/akun");
+  return ok("Password akun berhasil diperbarui.");
+}
+
 /** Mengaitkan / melepas divisi ke suatu periode. */
 export async function setDivisiPeriodAction(formData: FormData): Promise<PeriodActionResult> {
   const profile = await getProfile();
@@ -353,13 +446,13 @@ export async function createDivisiAction(
   });
 
   if (error) {
-    await writeAuditLog({ action: "buat_divisi", targetType: "divisi", detail: `${nomor} - ${nama}`, success: false });
+    await writeAuditLog({ action: "buat_divisi", targetType: "divisi", detail: formatDivisiLabel(nomor, nama), success: false });
     return fail(pesanDb(error.message));
   }
-  await writeAuditLog({ action: "buat_divisi", targetType: "divisi", detail: `${nomor} - ${nama}`, success: true });
+  await writeAuditLog({ action: "buat_divisi", targetType: "divisi", detail: formatDivisiLabel(nomor, nama), success: true });
   revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/superadmin/akun");
-  return ok(`Divisi ${nama} (nomor ${nomor}) berhasil ditambahkan.`);
+  return ok(`${formatDivisiLabel(nomor, nama)} berhasil ditambahkan.`);
 }
 
 /** Mengubah nama tampilan sebuah akun (hanya Super Admin). */
@@ -477,10 +570,10 @@ export async function updateDivisiAction(
     return fail(pesanDb(error.message));
   }
 
-  await writeAuditLog({ action: "ubah_divisi", targetType: "divisi", targetId: divisiId, detail: `${nomor} - ${nama}`, success: true });
+  await writeAuditLog({ action: "ubah_divisi", targetType: "divisi", targetId: divisiId, detail: formatDivisiLabel(nomor, nama), success: true });
   revalidatePath("/dashboard/superadmin/akun");
   revalidatePath("/dashboard/superadmin/divisi");
-  return ok(`Divisi ${nama} berhasil diperbarui.`);
+  return ok(`${formatDivisiLabel(nomor, nama)} berhasil diperbarui.`);
 }
 
 /** Menghapus divisi (hanya Super Admin). */

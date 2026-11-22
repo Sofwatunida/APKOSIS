@@ -479,22 +479,26 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Laporan Harian"
-        description={
-          reportToday
-            ? `Status hari ini: Laporan tanggal ${formatDate(todayISO())} sudah tercatat.`
-            : "Status hari ini: Belum ada laporan yang tercatat untuk hari ini."
-        }
         action={
-          reportToday && (
-            <button
-              type="button"
-              onClick={() => handleOpenDetail(reportToday)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <Eye className="h-3.5 w-3.5 text-slate-400" />
-              <span>Lihat Laporan Hari Ini</span>
-            </button>
-          )
+          <>
+            {reportToday ? (
+              <Badge color="green">
+                Laporan {formatDate(todayISO())} tercatat
+              </Badge>
+            ) : (
+              <Badge color="amber">Belum ada laporan hari ini</Badge>
+            )}
+            {reportToday && (
+              <button
+                type="button"
+                onClick={() => handleOpenDetail(reportToday)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <Eye className="h-3.5 w-3.5 text-slate-400" />
+                <span>Lihat Laporan Hari Ini</span>
+              </button>
+            )}
+          </>
         }
       />
 
@@ -508,7 +512,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           }
           subtitle={
             editingReport
-              ? "Perbarui isi laporan, kegiatan, dan kendala/solusi."
+              ? undefined
               : "Pilih tanggal kapan saja (hari ini, susulan/kemarin, atau rencana esok)."
           }
           icon={<ClipboardList className="h-5 w-5" />}
@@ -655,7 +659,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   {selectedKegiatan.length > 0 && (
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-sm dark:bg-emerald-900/20">
                       <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                        Kegiatan terpilih ({selectedKegiatan.length}):
+                        Kegiatan terpilih
                       </p>
                       <ul className="mt-1 space-y-0.5 text-slate-800 dark:text-slate-200">
                         {selectedKegiatan.map((k, i) => (
@@ -691,10 +695,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                     </Button>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-400">
-                      {opsiKegiatan.length} pilihan tersedia di daftar divisi ini.
-                    </p>
+                  <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={() => setManageOpen(true)}
@@ -798,7 +799,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Riwayat Laporan Divisi"
-          subtitle={`Total ${history.length} laporan terdokumentasi dalam sistem`}
           icon={<ClipboardList className="h-5 w-5" />}
           action={
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

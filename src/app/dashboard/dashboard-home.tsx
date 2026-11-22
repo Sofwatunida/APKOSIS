@@ -11,6 +11,7 @@ import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { parseBukti } from "@/lib/bukti";
 import type { Profile, Divisi, LaporanHarian, TransaksiKeuangan, KendalaSolusi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
+import { formatDivisiLabel } from "@/lib/divisi-options";
 import { fetchSaldoAwal } from "@/lib/finance";
 import { formatDate, todayISO } from "@/lib/date";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
@@ -54,13 +55,11 @@ export function DashboardHome({ profile }: { profile: Profile }) {
 function StatCard({
   label,
   value,
-  sub,
   color = "brand",
   icon: IconComponent,
 }: {
   label: string;
   value: string;
-  sub?: string;
   color?: "brand" | "green" | "red" | "amber" | "indigo";
   icon?: React.ComponentType<{ className?: string }>;
 }) {
@@ -113,7 +112,6 @@ function StatCard({
           )}
         </div>
         <p className={`mt-2 text-2xl font-bold tracking-tight ${current.text}`}>{value}</p>
-        {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
       </CardContent>
     </Card>
   );
@@ -284,7 +282,9 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
               <span className="truncate">Divisi OSIS • Periode {periodeLabel}</span>
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
-              {divisi?.nama_divisi ?? "Dashboard Divisi"}
+              {divisi
+                ? formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi)
+                : "Dashboard Divisi"}
             </h1>
             <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
               {divisi?.ketua_divisi ? `Ketua Divisi: ${divisi.ketua_divisi}` : "Ketua belum ditentukan"}
@@ -324,28 +324,24 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
           value={String(anggotaCount)}
           color="indigo"
           icon={Users}
-          sub="Anggota terdaftar divisi"
         />
         <StatCard
           label="Laporan Hari Ini"
           value={laporanToday ? "Sudah Terisi" : "Belum Terisi"}
           color={laporanToday ? "green" : "red"}
           icon={ClipboardCheck}
-          sub={laporanToday ? "Tercatat untuk hari ini" : "Perlu diisi sebelum akhir hari"}
         />
         <StatCard
           label="Total Laporan"
           value={String(jumlahLaporan)}
           color="brand"
           icon={FileText}
-          sub="Akumulasi seluruh laporan"
         />
         <StatCard
           label="Saldo Divisi"
           value={formatRupiah(saldoAwal + pemasukan - pengeluaran)}
           color={saldoAwal + pemasukan - pengeluaran >= 0 ? "green" : "red"}
           icon={Wallet}
-          sub="Saldo Awal + Pemasukan - Pengeluaran"
         />
       </div>
 
@@ -369,7 +365,6 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Laporan Terakhir Divisi"
-          subtitle="Ringkasan pelaporan aktivitas harian terbaru"
           icon={<ClipboardCheck className="h-5 w-5" />}
           action={
             <Link
@@ -432,7 +427,6 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
                 <FileText className="h-6 w-6 stroke-[1.5]" />
               </div>
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Belum ada laporan yang tercatat.</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mulai buat laporan untuk mendokumentasikan kegiatan harian divisi.</p>
               <Link
                 href="/dashboard/laporan"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition"
@@ -560,7 +554,6 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard Monitoring"
-        description="Pantau progres pelaporan harian seluruh divisi OSIS secara real-time"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -569,21 +562,18 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
           value={String(counts.total)}
           color="brand"
           icon={Layers}
-          sub="Seluruh divisi di OSIS"
         />
         <StatCard
           label="Sudah Mengisi Laporan Hari Ini"
           value={String(counts.sudah)}
           color="green"
           icon={CheckCircle2}
-          sub="Divisi aktif melapor"
         />
         <StatCard
           label="Belum Mengisi Hari Ini"
           value={String(counts.belum)}
           color="red"
           icon={Clock}
-          sub="Perlu konfirmasi lanjutan"
         />
       </div>
 
@@ -592,7 +582,6 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Status Laporan Divisi Hari Ini"
-          subtitle="Daftar divisi beserta pimpinan dan kelengkapan laporan"
           icon={<Layers className="h-5 w-5" />}
           action={
             <Link
@@ -613,14 +602,9 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
                   href="/dashboard/monitoring/divisi"
                   className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4.5 shadow-xs transition-all duration-150 hover:border-brand-400 hover:shadow-card hover:-translate-y-0.5"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition-colors">
-                      {d.nama_divisi}
-                    </span>
-                    <span className="shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                      Div #{d.nomor_divisi}
-                    </span>
-                  </div>
+                  <span className="block text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition-colors">
+                    {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
+                  </span>
                   <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">
                     Ketua: <span className="text-slate-700 dark:text-slate-300 font-medium">{d.ketua_divisi || "Belum diset"}</span>
                   </p>
@@ -662,7 +646,6 @@ function StaffDashboard({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title={`Dashboard ${profile.role === "sekretaris" ? "Sekretaris OSIS" : "Staff"}`}
-        description="Pusat dokumentasi, administrasi surat menyurat, dan rekapitulasi divisi"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -671,21 +654,18 @@ function StaffDashboard({ profile }: { profile: Profile }) {
           value={String(stats.divisi)}
           color="brand"
           icon={Layers}
-          sub="Divisi binaan OSIS"
         />
         <StatCard
           label="Total Laporan Terarsip"
           value={String(stats.laporan)}
           color="indigo"
           icon={FileText}
-          sub="Akumulasi seluruh laporan harian"
         />
         <StatCard
           label="Total Anggota Terdata"
           value={String(stats.anggota)}
           color="amber"
           icon={Users}
-          sub="Data keanggotaan seluruh divisi"
         />
       </div>
 
@@ -696,7 +676,12 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 
 /* ============ BENDAHARA ============ */
 interface RecentRow extends TransaksiKeuangan {
-  divisi?: { nama_divisi: string } | null;
+  divisi?: { nomor_divisi: number | null; nama_divisi: string } | null;
+}
+
+function recentDivisiLabel(divisi: RecentRow["divisi"]): string {
+  if (!divisi) return "-";
+  return formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi || "-");
 }
 
 function BendaharaDashboard({ profile }: { profile: Profile }) {
@@ -709,7 +694,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
     async function load() {
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
-        .select("*, divisi(nama_divisi)")
+        .select("*, divisi(nomor_divisi, nama_divisi)")
         .order("tanggal", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(10);
@@ -726,7 +711,6 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard Bendahara OSIS"
-        description="Monitoring kas induk, rekapitulasi pemasukan & pengeluaran divisi"
       />
 
       <FinanceSummary />
@@ -734,7 +718,6 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader
           title="Transaksi Keuangan Terbaru"
-          subtitle="10 riwayat mutasi dana masuk & keluar terakhir"
           icon={<Wallet className="h-5 w-5" />}
           action={
             <ExportMenu
@@ -752,7 +735,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                 const { cleanKeterangan } = parseBukti(t.keterangan);
                 return {
                   tanggal: formatDate(t.tanggal),
-                  divisi: t.divisi?.nama_divisi ?? "-",
+                  divisi: recentDivisiLabel(t.divisi),
                   jenis: t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran",
                   keterangan: cleanKeterangan,
                   nominal: formatRupiah(t.nominal),
@@ -787,7 +770,7 @@ function BendaharaDashboard({ profile }: { profile: Profile }) {
                         {formatDate(t.tanggal)}
                       </TD>
                       <TD className="min-w-[9rem] whitespace-nowrap text-xs font-semibold text-slate-900 dark:text-white">
-                        {t.divisi?.nama_divisi ?? "-"}
+                        {recentDivisiLabel(t.divisi)}
                       </TD>
                       <TD className="whitespace-nowrap">
                         <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
