@@ -1037,6 +1037,10 @@ Relationships: [
         Args: { p_user_id: string };
         Returns: undefined;
       };
+      admin_fetch_backup_data: {
+        Args: { p_periode_id: string };
+        Returns: Json;
+      };
       admin_reset_periode_data: {
         Args: { p_periode_id: string };
         Returns: Json;

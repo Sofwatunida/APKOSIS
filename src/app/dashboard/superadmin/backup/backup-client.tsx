@@ -25,6 +25,8 @@ const BACKUP_TABLES = [
   "transaksi_keuangan",
   "inventaris",
   "kendala_solusi",
+  "kebutuhan",
+  "opsi_kegiatan",
   "program_kerja",
 ] as const;
 
@@ -35,48 +37,60 @@ type BackupPayload = {
   transaksi_keuangan: Record<string, unknown>[];
   inventaris: Record<string, unknown>[];
   kendala_solusi: Record<string, unknown>[];
+  kebutuhan: Record<string, unknown>[];
+  opsi_kegiatan: Record<string, unknown>[];
   program_kerja: Record<string, unknown>[];
 };
 
+function asRows(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
+}
+
 async function fetchBackup(periodeId: string): Promise<BackupPayload> {
   const supabase = createClient();
+  const { data, error } = await supabase.rpc("admin_fetch_backup_data", {
+    p_periode_id: periodeId,
+  });
 
-  const [divisi, laporan, trx, inv, kendala, program] = await Promise.all([
-    supabase.from("divisi").select("id, nomor_divisi, nama_divisi").order("nomor_divisi"),
-    supabase
-      .from("laporan_harian")
-      .select("id, divisi_id, periode_id, tanggal, kegiatan_hari_ini, informasi_lain, penerima_laporan, created_at")
-      .eq("periode_id", periodeId),
-    supabase
-      .from("transaksi_keuangan")
-      .select("id, divisi_id, periode_id, tanggal, jenis_transaksi, sumber_pemasukan, digunakan_untuk, keterangan, nominal, created_at")
-      .eq("periode_id", periodeId),
-    supabase
-      .from("inventaris")
-      .select("id, divisi_id, periode_id, nama_barang, jumlah, kondisi, keterangan")
-      .eq("periode_id", periodeId),
-    supabase
-      .from("kendala_solusi")
-      .select("id, laporan_id, periode_id, kendala, solusi")
-      .eq("periode_id", periodeId),
-    supabase
-      .from("program_kerja")
-      .select("id, divisi_id, periode_id, nama_program, deskripsi, file_name")
-      .eq("periode_id", periodeId),
-  ]);
+  if (error) throw new Error(error.message);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Data backup tidak valid.");
+  }
 
-  const firstError =
-    divisi.error ?? laporan.error ?? trx.error ?? inv.error ?? kendala.error ?? program.error;
-  if (firstError) throw new Error(firstError.message);
-
+  const payload = data as Record<string, unknown>;
   return {
     meta: {},
-    divisi: (divisi.data ?? []) as Record<string, unknown>[],
-    laporan_harian: (laporan.data ?? []) as Record<string, unknown>[],
-    transaksi_keuangan: (trx.data ?? []) as Record<string, unknown>[],
-    inventaris: (inv.data ?? []) as Record<string, unknown>[],
-    kendala_solusi: (kendala.data ?? []) as Record<string, unknown>[],
-    program_kerja: (program.data ?? []) as Record<string, unknown>[],
+    divisi: asRows(payload.divisi),
+    laporan_harian: asRows(payload.laporan_harian),
+    transaksi_keuangan: asRows(payload.transaksi_keuangan),
+    inventaris: asRows(payload.inventaris),
+    kendala_solusi: asRows(payload.kendala_solusi),
+    kebutuhan: asRows(payload.kebutuhan),
+    opsi_kegiatan: asRows(payload.opsi_kegiatan),
+    program_kerja: asRows(payload.program_kerja),
+  };
+}
+
+function withBackupMeta(
+  data: BackupPayload,
+  periodeId: string,
+  periodeNama: string,
+  kind?: "pre-restore"
+) {
+  return {
+    ...data,
+    meta: {
+      app: "APKOSIS",
+      formatVersion: 2,
+      generatedAt: new Date().toISOString(),
+      periodeId,
+      periodeNama,
+      ...(kind ? { kind } : {}),
+      counts: BACKUP_TABLES.reduce<Record<string, number>>((acc, t) => {
+        acc[t] = (data[t] as unknown[]).length;
+        return acc;
+      }, {}),
+    },
   };
 }
 
@@ -109,20 +123,7 @@ export function BackupClient({ periods }: { periods: PeriodOption[] }) {
     setBackuping(true);
     try {
       const data = await fetchBackup(periodeId);
-      const payload = {
-        ...data,
-        meta: {
-          app: "APKOSIS",
-          formatVersion: 1,
-          generatedAt: new Date().toISOString(),
-          periodeId,
-          periodeNama,
-          counts: BACKUP_TABLES.reduce<Record<string, number>>((acc, t) => {
-            acc[t] = (data[t] as unknown[]).length;
-            return acc;
-          }, {}),
-        },
-      };
+      const payload = withBackupMeta(data, periodeId, periodeNama);
       downloadJson(payload, `backup-apkosis-${periodeNama.replace(/[^\w-]+/g, "-")}`);
       success("Backup berhasil diunduh.");
     } catch (e) {
@@ -158,8 +159,8 @@ export function BackupClient({ periods }: { periods: PeriodOption[] }) {
             </div>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Tabel yang disertakan: {BACKUP_TABLES.join(", ")}. Kata sandi divisi TIDAK pernah
-            disertakan dalam backup.
+            Tabel yang disertakan: {BACKUP_TABLES.join(", ")}. Unduh backup ini sebelum reset agar
+            seluruh data yang dihapus bisa dipulihkan. Kata sandi divisi TIDAK pernah disertakan.
           </p>
         </CardContent>
       </Card>
@@ -182,6 +183,7 @@ function RestoreSection({
   const [fileName, setFileName] = useState("");
   const [payloadText, setPayloadText] = useState("");
   const [preview, setPreview] = useState<{ label: string; count: number }[] | null>(null);
+  const [backingUp, setBackingUp] = useState(false);
 
   function handleFile(file: File | undefined) {
     if (!file) return;
@@ -207,6 +209,24 @@ function RestoreSection({
         setFileName("");
         error(e instanceof Error ? e.message : "File tidak bisa dibaca.");
       });
+  }
+
+  async function handlePreRestoreBackup() {
+    if (!periodeId) {
+      error("Pilih periode terlebih dahulu.");
+      return;
+    }
+    setBackingUp(true);
+    try {
+      const data = await fetchBackup(periodeId);
+      const payload = withBackupMeta(data, periodeId, periodeNama, "pre-restore");
+      downloadJson(payload, `backup-pra-pemulihan-${periodeNama.replace(/[^\w-]+/g, "-")}`);
+      success("Backup pra-pemulihan berhasil diunduh.");
+    } catch (e) {
+      error(e instanceof Error ? e.message : "Backup pra-pemulihan gagal.");
+    } finally {
+      setBackingUp(false);
+    }
   }
 
   function applyRestore() {
@@ -240,16 +260,15 @@ function RestoreSection({
             <Button
               variant="outline"
               className="gap-2"
-              disabled={!preview}
-              onClick={() =>
-                downloadJson(
-                  { meta: { kind: "pre-restore", periodeId, periodeNama, generatedAt: new Date().toISOString() } },
-                  `backup-pra-pemulihan-${periodeNama.replace(/[^\w-]+/g, "-")}`
-                )
-              }
+              disabled={!preview || backingUp || !periodeId}
+              onClick={handlePreRestoreBackup}
             >
-              <Download className="h-4 w-4" />
-              <span>Backup Pra-Pemulihan</span>
+              {backingUp ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span>{backingUp ? "Menyiapkan..." : "Backup Pra-Pemulihan"}</span>
             </Button>
             <Button
               className="gap-2"
