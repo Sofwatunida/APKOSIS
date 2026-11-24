@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getProfile, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
@@ -56,10 +55,35 @@ function pesanDb(message: string): string {
   }
 }
 
-function pesanPasswordAdmin(message: string): string {
+function pesanPasswordAkun(message: string): string {
   const teks = message.toLowerCase();
-  if (teks.includes("not found")) {
+  if (teks.includes("admin_set_account_password") && teks.includes("could not find")) {
+    return "Fitur ubah password akun belum aktif di database. Jalankan migration terbaru di Supabase.";
+  }
+  if (
+    teks.includes("user not found") ||
+    teks.includes("not found") ||
+    teks.includes("tidak ditemukan")
+  ) {
     return "Akun tidak ditemukan di layanan autentikasi.";
+  }
+  if (
+    teks.includes("invalid api key") ||
+    teks.includes("jwt") ||
+    teks.includes("service_role")
+  ) {
+    return "Konfigurasi autentikasi server tidak valid. Hubungi administrator.";
+  }
+  if (
+    teks.includes("minimal 8") ||
+    teks.includes("maksimal 128") ||
+    teks.includes("kombinasi huruf dan angka") ||
+    teks.includes("password akun harus")
+  ) {
+    return message;
+  }
+  if (teks.includes("hanya super admin") || teks.includes("tidak dapat diubah")) {
+    return message;
   }
   if (teks.includes("password") || teks.includes("weak")) {
     return "Password tidak memenuhi ketentuan keamanan.";
@@ -310,9 +334,10 @@ export async function setDivisionPasswordAction(
 }
 
 /**
- * Update password akun personal/role lewat Supabase Admin API.
- * Kredensial divisi memakai jalur berbeda (division_credentials),
- * jadi aksi ini sengaja hanya menyentuh auth.users.
+ * Update password akun personal/role via RPC SECURITY DEFINER.
+ * RPC menangani otorisasi Super Admin, validasi, hash bcrypt,
+ * update auth.users, dan pencabutan sesi. Service role key tidak
+ * dibutuhkan di environment aplikasi.
  */
 export async function setAccountPasswordAction(
   formData: FormData
@@ -322,7 +347,7 @@ export async function setAccountPasswordAction(
     return fail("Hanya Super Admin yang boleh mengubah password akun role.");
   }
 
-  const userId = String(formData.get("user_id") ?? "");
+  const userId = String(formData.get("user_id") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
 
@@ -339,12 +364,6 @@ export async function setAccountPasswordAction(
     return fail("Konfirmasi password tidak cocok.");
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) {
-    return fail("Konfigurasi autentikasi server belum lengkap. Hubungi administrator.");
-  }
-
   const supabase = await createClient();
   const { data: target, error: targetError } = await supabase
     .from("profiles")
@@ -359,12 +378,9 @@ export async function setAccountPasswordAction(
     return fail("Password akun Super Admin tidak dapat diubah dari halaman ini.");
   }
 
-  const adminClient = createSupabaseClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { error } = await adminClient.auth.admin.updateUserById(userId, {
-    password,
+  const { error } = await supabase.rpc("admin_set_account_password", {
+    p_user_id: userId,
+    p_password: password,
   });
 
   if (error) {
@@ -375,7 +391,7 @@ export async function setAccountPasswordAction(
       targetId: userId,
       success: false,
     });
-    return fail(pesanPasswordAdmin(error.message));
+    return fail(pesanPasswordAkun(pesanDb(error.message)));
   }
 
   await writeAuditLog({

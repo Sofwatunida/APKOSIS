@@ -1120,6 +1120,7 @@ function AccountPasswordModal({
   account: AccountRow;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const { success, error } = useToast();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1166,12 +1167,14 @@ function AccountPasswordModal({
       const result = await setAccountPasswordAction(fd);
 
       if (!result.ok) {
+        setFormError(result.message);
         error(result.message);
         return;
       }
 
       success(result.message);
       onClose();
+      router.refresh();
     } finally {
       setSaving(false);
     }

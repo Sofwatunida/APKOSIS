@@ -1033,6 +1033,10 @@ Relationships: [
         Args: { p_nomor: number; p_nama: string; p_periode_id?: string | null };
         Returns: string;
       };
+      admin_set_account_password: {
+        Args: { p_user_id: string; p_password: string };
+        Returns: undefined;
+      };
       admin_account_delete: {
         Args: { p_user_id: string };
         Returns: undefined;

@@ -103,8 +103,10 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` didukung sebagai fallback.
-**Jangan pernah** meletakkan kunci *service role* di kode atau `.env.local`
-yang ikut ter-deploy ke browser.
+Fitur ubah password akun role dijalankan lewat RPC `SECURITY DEFINER`
+di Supabase, sehingga **tidak membutuhkan** `SUPABASE_SERVICE_ROLE_KEY`
+di environment aplikasi/Vercel. Jangan pernah mengekspos kunci *service
+role* ke kode frontend atau variabel `NEXT_PUBLIC_*`.
 
 ## Setup Database
 
@@ -134,6 +136,10 @@ karena hanya memakai *publishable key*. Jalankan migration berurutan di
 20261001000005_drop_ambiguous_periode_refs.sql   # Wajib: hapus overload liar + qualification periode_id
 20261112000000_saldo_awal_per_divisi.sql         # Wajib: saldo awal per divisi + kolom id
 20261116000000_saldo_awal_rls_upsert_fix.sql     # Wajib: perbaikan RLS saldo awal + simpan tanpa duplikat
+20261119000000_revoke_bendahara_program_kerja.sql # Wajib: cabut akses Bendahara ke program kerja
+20261124000000_backup_restore_complete.sql       # Wajib: backup/restore JSON seluruh data periode
+20261124000001_password_bcrypt_index.sql         # Wajib: indeks status password + bcrypt konsisten
+20261125000000_admin_set_account_password.sql    # Wajib: ubah password akun role via RPC (tanpa service role key di app)
 ```
 
 > **WAJIB dijalankan setelah `20261112000000`.** Tanpa migration ini
