@@ -100,28 +100,30 @@ export function PasswordDivisiClient({
 
     setSavingId(row.id);
 
-    const result = await saveDivisionPasswordAction(row.id, value, periodeId);
+    try {
+      const result = await saveDivisionPasswordAction(row.id, value, periodeId);
 
-    setSavingId(null);
+      if (!result.ok) {
+        setPending(null);
+        setRowError((prev) => ({ ...prev, [row.id]: result.message ?? "Gagal menyimpan." }));
+        toastError(result.message ?? "Gagal menyimpan password divisi.");
+        return;
+      }
 
-    if (!result.ok) {
+      setStatus((prev) => ({
+        ...prev,
+        [row.id]: {
+          ...row,
+          hasPassword: true,
+          updatedAt: result.updatedAt ?? new Date().toISOString(),
+        },
+      }));
+      setBaruDisimpan(row.id);
       setPending(null);
-      setRowError((prev) => ({ ...prev, [row.id]: result.message ?? "Gagal menyimpan." }));
-      toastError(result.message ?? "Gagal menyimpan password divisi.");
-      return;
+      success(`Password ${label(row.nomorDivisi, row.namaDivisi)} berhasil diperbarui.`);
+    } finally {
+      setSavingId(null);
     }
-
-    setStatus((prev) => ({
-      ...prev,
-      [row.id]: {
-        ...row,
-        hasPassword: true,
-        updatedAt: result.updatedAt ?? new Date().toISOString(),
-      },
-    }));
-    setBaruDisimpan(row.id);
-    setPending(null);
-    success(`Password ${label(row.nomorDivisi, row.namaDivisi)} berhasil diperbarui.`);
   }
 
   function batalSimpan() {

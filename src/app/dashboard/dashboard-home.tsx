@@ -162,67 +162,78 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         setNeedsSetup(true);
         return;
       }
-      const { data: d } = await supabase
-        .from("divisi")
-        .select("*")
-        .eq("id", profile.divisi_id)
-        .single();
-      setDivisi(d ?? null);
 
-      if (d) {
-        const missingSetup =
-          !d.ketua_divisi && !d.wakil_divisi && anggotaCount === 0;
-        const { data: anggota } = await supabase
+      const divisiId = profile.divisi_id;
+      const today = todayISO();
+      const [
+        divisiResult,
+        anggotaResult,
+        laporanTodayResult,
+        lastReportResult,
+        laporanCountResult,
+        transaksiResult,
+        saldoAwalResult,
+      ] = await Promise.all([
+        supabase
+          .from("divisi")
+          .select("*")
+          .eq("id", divisiId)
+          .single(),
+        supabase
           .from("anggota_divisi")
           .select("id", { count: "exact", head: true })
-          .eq("divisi_id", d.id)
-          .eq("status", "aktif");
-        setAnggotaCount(anggota?.length ?? 0);
-
-        const today = todayISO();
-        const { data: lt } = await supabase
+          .eq("divisi_id", divisiId)
+          .eq("status", "aktif"),
+        supabase
           .from("laporan_harian")
           .select("*")
-          .eq("divisi_id", d.id)
+          .eq("divisi_id", divisiId)
           .eq("tanggal", today)
-          .maybeSingle();
-        setLaporanToday(lt ?? null);
-
-        const { data: lr } = await supabase
+          .maybeSingle(),
+        supabase
           .from("laporan_harian")
           .select("*")
-          .eq("divisi_id", d.id)
+          .eq("divisi_id", divisiId)
           .order("tanggal", { ascending: false })
           .limit(1)
-          .maybeSingle();
-        setLastReport(lr ?? null);
-
-        const { count } = await supabase
+          .maybeSingle(),
+        supabase
           .from("laporan_harian")
           .select("id", { count: "exact", head: true })
-          .eq("divisi_id", d.id);
-        setJumlahLaporan(count ?? 0);
-
-        const { data: tx } = await supabase
+          .eq("divisi_id", divisiId),
+        supabase
           .from("transaksi_keuangan")
           .select("nominal, jenis_transaksi")
-          .eq("divisi_id", d.id);
-        let masuk = 0;
-        let keluar = 0;
-        (tx ?? []).forEach((t) => {
-          const n = Number(t.nominal) || 0;
-          if (t.jenis_transaksi === "pemasukan") masuk += n;
-          else keluar += n;
-        });
-        setPemasukan(masuk);
-        setPengeluaran(keluar);
-        setSaldoAwal(await fetchSaldoAwal(supabase, d.id));
+          .eq("divisi_id", divisiId),
+        fetchSaldoAwal(supabase, divisiId),
+      ]);
 
-        setNeedsSetup(!missingSetup ? false : false);
-        if (!d.ketua_divisi && !d.wakil_divisi && (anggota?.length ?? 0) === 0) {
-          setNeedsSetup(true);
-        }
-      }
+      const d = divisiResult.data;
+      const anggotaCountResult = anggotaResult.data?.length ?? 0;
+      setDivisi(d ?? null);
+      setAnggotaCount(anggotaCountResult);
+      setLaporanToday(laporanTodayResult.data ?? null);
+      setLastReport(lastReportResult.data ?? null);
+      setJumlahLaporan(laporanCountResult.count ?? 0);
+
+      let masuk = 0;
+      let keluar = 0;
+      (transaksiResult.data ?? []).forEach((t) => {
+        const n = Number(t.nominal) || 0;
+        if (t.jenis_transaksi === "pemasukan") masuk += n;
+        else keluar += n;
+      });
+      setPemasukan(masuk);
+      setPengeluaran(keluar);
+      setSaldoAwal(saldoAwalResult);
+      setNeedsSetup(
+        Boolean(
+          d &&
+            !d.ketua_divisi &&
+            !d.wakil_divisi &&
+            anggotaCountResult === 0
+        )
+      );
       setLoading(false);
     }
     load();
@@ -626,14 +637,16 @@ function StaffDashboard({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     async function load() {
-      const { data: div } = await supabase.from("divisi").select("*");
-      const { data: laporan } = await supabase.from("laporan_harian").select("*");
-      const { data: anggota } = await supabase.from("anggota_divisi").select("*");
+      const [divisiResult, laporanResult, anggotaResult] = await Promise.all([
+        supabase.from("divisi").select("id", { count: "exact", head: true }),
+        supabase.from("laporan_harian").select("id", { count: "exact", head: true }),
+        supabase.from("anggota_divisi").select("id", { count: "exact", head: true }),
+      ]);
 
       setStats({
-        divisi: div?.length ?? 0,
-        laporan: laporan?.length ?? 0,
-        anggota: anggota?.length ?? 0,
+        divisi: divisiResult.count ?? 0,
+        laporan: laporanResult.count ?? 0,
+        anggota: anggotaResult.count ?? 0,
       });
       setLoading(false);
     }

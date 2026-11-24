@@ -158,10 +158,6 @@ export function BackupClient({ periods }: { periods: PeriodOption[] }) {
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Tabel yang disertakan: {BACKUP_TABLES.join(", ")}. Unduh backup ini sebelum reset agar
-            seluruh data yang dihapus bisa dipulihkan. Kata sandi divisi TIDAK pernah disertakan.
-          </p>
         </CardContent>
       </Card>
 
@@ -244,7 +240,6 @@ function RestoreSection({
     <Card>
       <CardHeader
         title="Pemulihan (Restore)"
-        subtitle="Muat file backup JSON, periksa isinya, lalu pulihkan. Data existing tidak ditimpa (hanya baris baru ditambahkan)."
         icon={<Upload className="h-5 w-5" />}
       />
       <CardContent>
@@ -338,7 +333,6 @@ function ResetSection({
     <Card className="border-rose-300 dark:border-rose-500/30">
       <CardHeader
         title="Reset Data Operasional Periode"
-        subtitle="Menghapus laporan, keuangan, kendala, inventaris, kebutuhan, dan opsi kegiatan untuk satu periode. Akun, divisi, dan program kerja TIDAK dihapus."
         icon={<ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
       />
       <CardContent>

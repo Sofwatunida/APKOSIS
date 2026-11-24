@@ -25,7 +25,7 @@ export const getRealProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, nama, email, role, divisi_id, periode_id, created_at, updated_at")
     .eq("id", user.id)
     .single();
 

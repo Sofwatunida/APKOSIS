@@ -2,11 +2,11 @@ import { requireProfile, requireSuperAdmin } from "@/lib/guard";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarPlus, List } from "lucide-react";
 import { createPeriodeFormAction } from "../../actions/periode-actions";
 import { PeriodeAdminClient } from "./periode-admin-client";
+import { PeriodeSubmitButton } from "./periode-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,13 @@ export default async function SuperAdminPeriodePage({
             <CardContent>
               <form action={createPeriodeFormAction} className="space-y-4">
                 <Field label="Nama Periode" hint="Format: 2027/2028">
-                  <Input name="nama_periode" placeholder="2027/2028" required />
+                  <Input
+                    name="nama_periode"
+                    placeholder="2027/2028"
+                    pattern="\d{4}/\d{4}"
+                    inputMode="numeric"
+                    required
+                  />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Tahun Mulai">
@@ -60,6 +66,9 @@ export default async function SuperAdminPeriodePage({
                       name="tahun_mulai"
                       type="number"
                       placeholder="2027"
+                      min="1900"
+                      max="2100"
+                      inputMode="numeric"
                       required
                     />
                   </Field>
@@ -68,13 +77,14 @@ export default async function SuperAdminPeriodePage({
                       name="tahun_selesai"
                       type="number"
                       placeholder="2028"
+                      min="1900"
+                      max="2100"
+                      inputMode="numeric"
                       required
                     />
                   </Field>
                 </div>
-                <Button type="submit" className="w-full">
-                  Buat Periode
-                </Button>
+                <PeriodeSubmitButton />
               </form>
             </CardContent>
           </Card>

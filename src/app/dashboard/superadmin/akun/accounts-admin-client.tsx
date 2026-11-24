@@ -756,7 +756,6 @@ function ImpersonationDivisionModal({
       success(result.message);
       onClose();
       router.push("/dashboard");
-      router.refresh();
     });
   }
 
@@ -827,7 +826,6 @@ function ImpersonationConfirmModal({
       success(result.message);
       onClose();
       router.push("/dashboard");
-      router.refresh();
     });
   }
 
@@ -1123,7 +1121,6 @@ function AccountPasswordModal({
   onClose: () => void;
 }) {
   const { success, error } = useToast();
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -1165,17 +1162,19 @@ function AccountPasswordModal({
     fd.set("password", password);
     fd.set("confirm_password", confirmPassword);
 
-    const result = await setAccountPasswordAction(fd);
-    setSaving(false);
+    try {
+      const result = await setAccountPasswordAction(fd);
 
-    if (!result.ok) {
-      error(result.message);
-      return;
+      if (!result.ok) {
+        error(result.message);
+        return;
+      }
+
+      success(result.message);
+      onClose();
+    } finally {
+      setSaving(false);
     }
-
-    success(result.message);
-    router.refresh();
-    onClose();
   }
 
   return (
@@ -1291,7 +1290,6 @@ function PasswordModal({
   onClose: () => void;
 }) {
   const { success, error } = useToast();
-  const router = useRouter();
   const [periodeId, setPeriodeId] = useState(
     division.periodeId || periods.find((p) => p.status === "active")?.id || ""
   );
@@ -1323,18 +1321,20 @@ function PasswordModal({
     fd.set("password", password);
     fd.set("periode_id", periodeId);
 
-    const result = await setDivisionPasswordAction(fd);
-    setSaving(false);
+    try {
+      const result = await setDivisionPasswordAction(fd);
 
-    if (!result.ok) {
-      setFormError(result.message);
-      error(result.message);
-      return;
+      if (!result.ok) {
+        setFormError(result.message);
+        error(result.message);
+        return;
+      }
+
+      success(result.message);
+      onClose();
+    } finally {
+      setSaving(false);
     }
-
-    success(result.message);
-    router.refresh();
-    onClose();
   }
 
   return (

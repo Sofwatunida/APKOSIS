@@ -296,7 +296,6 @@ export async function setDivisionPasswordAction(
 
   await writeAuditLog({ action: "atur_password_divisi", targetType: "divisi", targetId: divisiId, success: true });
 
-  revalidatePath("/dashboard/password-divisi");
   revalidatePath("/dashboard/admin/password-divisi");
   revalidatePath("/dashboard/admin/divisi");
   revalidatePath("/dashboard/superadmin/divisi");

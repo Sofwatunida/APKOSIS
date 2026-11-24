@@ -31,9 +31,11 @@ export async function writeAuditLog(input: AuditInput): Promise<void> {
   try {
     const user = await getCurrentUser();
     if (!user) return;
-    const real = await getRealProfile();
-    const imp = await getActiveImpersonation();
-    const supabase = await createClient();
+    const [real, imp, supabase] = await Promise.all([
+      getRealProfile(),
+      getActiveImpersonation(),
+      createClient(),
+    ]);
 
     const suffix = imp
       ? ` | bertindak sebagai ${ROLE_LABELS[imp.role] ?? imp.role}`

@@ -50,6 +50,13 @@ export const requireDivisionSelection = cache(async (): Promise<void> => {
 export const getActiveDivisiId = cache(
   async (profile: Profile): Promise<string | null> => {
     if (profile.role !== "division_admin") return profile.divisi_id;
+    const impersonation = await getActiveImpersonation();
+    if (
+      impersonation?.role === "division_admin" &&
+      impersonation.divisiId
+    ) {
+      return impersonation.divisiId;
+    }
     const session = await getDivisionSession();
     return session?.divisiId ?? profile.divisi_id;
   }

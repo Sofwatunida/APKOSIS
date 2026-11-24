@@ -20,28 +20,30 @@ export default async function SuperAdminAkunPage({
 
   // Akun dibaca langsung dari profiles supaya `divisi_id` ikut terbawa dan
   // tabel akun + divisi bisa digabung menjadi satu tampilan.
-  const { data: accounts, error: accountsError } = await supabase
-    .from("profiles")
-    .select("id, nama, email, role, divisi_id, periode_id")
-    .order("nama");
+  const [
+    accountsResult,
+    divisionsResult,
+    divisiBaseResult,
+    periods,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, nama, email, role, divisi_id, periode_id")
+      .order("nama"),
+    supabase.rpc("admin_division_account_list", {
+      p_periode_id: params.periode ?? null,
+    }),
+    supabase.from("divisi").select("id, periode_id"),
+    getPeriods(),
+  ]);
 
-  const { data: divisions, error: divisionsError } = await supabase.rpc(
-    "admin_division_account_list",
-    { p_periode_id: params.periode ?? null }
-  );
-
-  // RPC di atas mengembalikan periode efektif untuk kredensial (bisa ikut
-  // filter), bukan periode asli divisi. Ambil periode asli langsung dari
-  // tabel divisi supaya dropdown periode menampilkan data yang benar.
-  const { data: divisiBase, error: divisiBaseError } = await supabase
-    .from("divisi")
-    .select("id, periode_id");
+  const { data: accounts, error: accountsError } = accountsResult;
+  const { data: divisions, error: divisionsError } = divisionsResult;
+  const { data: divisiBase, error: divisiBaseError } = divisiBaseResult;
 
   const actualPeriodeById = new Map(
     (divisiBase ?? []).map((d) => [d.id, d.periode_id ?? ""])
   );
-
-  const periods = await getPeriods();
 
   // Error TIDAK boleh ditelan. Kalau RPC gagal, halaman harus
   // menampilkan nama RPC + kode + pesan PostgreSQL apa adanya,

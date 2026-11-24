@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, TransaksiKeuangan } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -71,6 +71,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const currentYear = periodeTahun;
 
   const [loading, setLoading] = useState(true);
+  const initialLoadRef = useRef(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
   const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterJenis, setFilterJenis] = useState("all");
@@ -300,6 +301,10 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   }
 
   useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
+    }
     load();
     const t = setTimeout(() => {}, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps

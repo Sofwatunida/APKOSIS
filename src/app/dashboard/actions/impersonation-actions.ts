@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { getActiveImpersonation, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
@@ -108,8 +107,6 @@ export async function startImpersonationAction(input: {
     success: true,
   });
 
-  revalidatePath("/", "layout");
-
   // Sengaja TIDAK memakai redirect(): aksi ini dipanggil langsung dari
   // client (bukan form), dan respons redirect membuat promise-nya
   // resolve `undefined`. Kembalikan hasil eksplisit; navigasi ke
@@ -138,6 +135,5 @@ export async function stopImpersonationAction(): Promise<void> {
   });
 
   await clearImpersonationCookie();
-  revalidatePath("/", "layout");
   redirect("/dashboard/superadmin");
 }

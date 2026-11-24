@@ -87,7 +87,10 @@ export async function fetchFinanceSummary(
     .select("jenis_transaksi, nominal");
   if (divisiId) query = query.eq("divisi_id", divisiId);
 
-  const { data: txs } = await query;
+  const [{ data: txs }, saldoAwal] = await Promise.all([
+    query,
+    fetchSaldoAwal(supabase, divisiId),
+  ]);
 
   let pemasukan = 0;
   let pengeluaran = 0;
@@ -97,7 +100,6 @@ export async function fetchFinanceSummary(
     else pengeluaran += n;
   });
 
-  const saldoAwal = await fetchSaldoAwal(supabase, divisiId);
   return {
     saldoAwal,
     pemasukan,
