@@ -1131,31 +1131,31 @@ function AccountPasswordModal({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const passwordKuat =
-    password.length >= MIN_ACCOUNT_PASSWORD_LENGTH &&
-    password.length <= 128 &&
-    /[A-Za-z]/.test(password) &&
-    /\d/.test(password);
-  const valid = passwordKuat && password === confirmPassword && !saving;
+  function gagalValidasi(message: string) {
+    setFormError(message);
+    error(message);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
 
     if (password.length < MIN_ACCOUNT_PASSWORD_LENGTH) {
-      setFormError(`Password akun minimal ${MIN_ACCOUNT_PASSWORD_LENGTH} karakter.`);
+      gagalValidasi(
+        `Password akun minimal ${MIN_ACCOUNT_PASSWORD_LENGTH} karakter.`
+      );
       return;
     }
     if (password.length > 128) {
-      setFormError("Password akun maksimal 128 karakter.");
+      gagalValidasi("Password akun maksimal 128 karakter.");
       return;
     }
     if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-      setFormError("Password akun harus memiliki kombinasi huruf dan angka.");
+      gagalValidasi("Password akun harus memiliki kombinasi huruf dan angka.");
       return;
     }
     if (password !== confirmPassword) {
-      setFormError("Konfirmasi password tidak cocok.");
+      gagalValidasi("Konfirmasi password tidak cocok.");
       return;
     }
 
@@ -1180,7 +1180,7 @@ function AccountPasswordModal({
 
   return (
     <Modal open onClose={onClose} title="Ubah Password Akun" size="sm">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
           <p className="font-medium">{account.nama}</p>
           <p className="text-xs text-muted-foreground">{account.email}</p>
@@ -1271,7 +1271,7 @@ function AccountPasswordModal({
           <Button type="button" variant="secondary" disabled={saving} onClick={onClose}>
             Batal
           </Button>
-          <Button type="submit" disabled={!valid} loading={saving}>
+          <Button type="submit" loading={saving}>
             <KeyRound className="h-4 w-4" />
             <span>Ubah Password</span>
           </Button>
@@ -1302,14 +1302,18 @@ function PasswordModal({
 
   const sudahDiatur = division.hasPassword;
   const terakhirDiubah = formatWaktu(division.updatedAt);
-  const valid = password.length >= MIN_PASSWORD_LENGTH && !saving;
+
+  function gagalValidasi(message: string) {
+    setFormError(message);
+    error(message);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setFormError(`Password divisi minimal ${MIN_PASSWORD_LENGTH} karakter.`);
+      gagalValidasi(`Password divisi minimal ${MIN_PASSWORD_LENGTH} karakter.`);
       return;
     }
 
@@ -1335,7 +1339,7 @@ function PasswordModal({
 
   return (
     <Modal open onClose={onClose} title="Atur Password Divisi" size="sm">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
           <p className="font-medium">
             {formatDivisiLabel(division.nomorDivisi, division.namaDivisi)}
@@ -1410,7 +1414,7 @@ function PasswordModal({
           <Button type="button" variant="secondary" disabled={saving} onClick={onClose}>
             Batal
           </Button>
-          <Button type="submit" disabled={!valid} loading={saving}>
+          <Button type="submit" loading={saving}>
             {sudahDiatur ? (
               <KeyRound className="h-4 w-4" />
             ) : (
