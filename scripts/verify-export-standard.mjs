@@ -120,8 +120,8 @@ const pdf = Buffer.from(await pdfResult.blob.arrayBuffer()).toString("latin1");
 check("ekstensi pdf", pdfResult.ext === "pdf");
 check("versi PDF 1.4", pdf.startsWith("%PDF-1.4"));
 check("kertas A4", pdf.includes("595.28") || pdf.includes("841.89"));
-check("kop organisasi tercetak", pdf.includes("ORGANISASI SISWA INTRA SEKOLAH"));
-check("nama sekolah dari konfigurasi", pdf.includes("SMA NEGERI CONTOH"));
+check("kop LAPORAN HARIAN tercetak", pdf.includes("LAPORAN HARIAN"));
+check("kop IP4A tercetak", pdf.includes("PENGURUS DIVISI") && (pdf.includes("(IP4A)") || pdf.includes("IP4A")));
 check("struktur ringkasan/keterangan/pengesahan", ["RINGKASAN", "KETERANGAN", "PENGESAHAN"].every((s) => pdf.includes(s)));
 check("nomor halaman X dari Y", /Halaman 1 dari \d+/.test(pdf));
 check("tabel berpindah halaman", /\/Count [2-9]/.test(pdf));
@@ -138,9 +138,9 @@ check("paket OOXML valid", ["[Content_Types].xml", "word/document.xml", "word/fo
 const documentXml = await zip.file("word/document.xml").async("string");
 const footerXml = await zip.file("word/footer1.xml").async("string");
 check("tabel Word asli dapat diedit", documentXml.includes("<w:tbl>") && documentXml.includes("<w:tblHeader/>"));
-check("kop & bagian laporan lengkap", ["ORGANISASI SISWA INTRA SEKOLAH", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].every((s) => documentXml.includes(s)));
+check("kop & bagian laporan lengkap", ["LAPORAN HARIAN", "PENGURUS DIVISI", "IP4A", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].every((s) => documentXml.includes(s)));
 check("field PAGE dan NUMPAGES", footerXml.includes('w:instr=" PAGE "') && footerXml.includes('w:instr=" NUMPAGES "'));
-check("footer identitas OSIS & sekolah", footerXml.includes("OSIS SMA NEGERI CONTOH"));
+check("footer identitas IP4A", footerXml.includes("IP4A Pondok Pesantren Al-Ittihad"));
 check("ukuran kertas A4", documentXml.includes('w:w="11906"'));
 const docOrder = ["DATA LAPORAN", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].map((s) => documentXml.indexOf(s));
 check("hierarki DOCX sesuai standar", docOrder.every((n, i) => n >= 0 && (i === 0 || n > docOrder[i - 1])));
@@ -165,7 +165,13 @@ const xlsxOrder = ["DATA LAPORAN", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].map(
   )
 );
 check("hierarki XLSX sesuai standar", xlsxOrder.every((n, i) => n >= 0 && (i === 0 || n > xlsxOrder[i - 1])));
-check("wrap text aktif", Boolean(ws.getCell(1, 1).alignment?.wrapText) || ws.getRows(1, ws.rowCount).flat().some((c) => c?.alignment?.wrapText));
+let hasWrapText = false;
+for (let r = 1; r <= ws.rowCount; r++) {
+  for (let c = 1; c <= ws.columnCount; c++) {
+    if (ws.getCell(r, c).alignment?.wrapText) hasWrapText = true;
+  }
+}
+check("wrap text aktif", hasWrapText);
 
 console.log("\n[5] Kasus tepi: data kosong & logo terkonfigurasi");
 const emptyPdf = await buildExportBlob({
@@ -175,22 +181,27 @@ const emptyPdf = await buildExportBlob({
 });
 const emptyText = Buffer.from(await emptyPdf.blob.arrayBuffer()).toString("latin1");
 check("data kosong tidak menghasilkan halaman kosong", /\/Count 1\b/.test(emptyText));
-check("data kosong tetap memuat kop & pengesahan", emptyText.includes("ORGANISASI SISWA INTRA SEKOLAH") && emptyText.includes("PENGESAHAN"));
+check("data kosong tetap memuat kop & pengesahan", emptyText.includes("LAPORAN HARIAN") && emptyText.includes("PENGESAHAN"));
 
+const pngBase64 = readFileSync(path.join(root, "public", "logo_osis.png")).toString("base64");
+const pngDataUrl = `data:image/png;base64,${pngBase64}`;
 const withLogo = {
   ...base,
   rows: rows.slice(0, 3),
-  logo: { dataUrl: "data:image/jpeg;base64,AAAA", width: 40, height: 40 },
+  kopLogos: {
+    left: { dataUrl: pngDataUrl, width: 1098, height: 1433, mimeType: "image/png" },
+    right: { dataUrl: pngDataUrl, width: 1098, height: 1433, mimeType: "image/png" },
+  },
 };
 const logoPdf = await buildExportBlob({ ...withLogo, format: "pdf" });
 const logoDoc = await buildExportBlob({ ...withLogo, format: "doc" });
 const logoExcel = await buildExportBlob({ ...withLogo, format: "excel" });
 check("logo tertanam di PDF", Buffer.from(await logoPdf.blob.arrayBuffer()).toString("latin1").includes("/Subtype /Image"));
 const logoZip = await JSZip.loadAsync(await logoDoc.blob.arrayBuffer());
-check("logo tertanam di DOCX", Boolean(logoZip.file("word/media/image1.jpeg")));
+check("logo PNG tertanam di DOCX", Boolean(logoZip.file("word/media/logo-left.png") && logoZip.file("word/media/logo-right.png")));
 const logoWb = new ExcelJS.Workbook();
 await logoWb.xlsx.load(await logoExcel.blob.arrayBuffer());
-check("logo tertanam di XLSX", logoWb.worksheets[0].getImages().length === 1);
+check("logo kiri/kanan tertanam di XLSX", logoWb.worksheets[0].getImages().length === 2);
 
 console.log("\n[6] Tabel banyak kolom (orientasi landscape otomatis)");
 const wideColumns = Array.from({ length: 8 }, (_, i) => ({

@@ -106,59 +106,62 @@ export function AnggotaClient({ profile }: { profile: Profile }) {
     if (!profile.divisi_id || !validate()) return;
     setSaving(true);
 
+    const payload = {
+      nama: form.nama,
+      jabatan: form.jabatan || null,
+      status: form.status,
+      tanggal_masuk: form.tanggal_masuk || null,
+      tanggal_keluar: form.tanggal_keluar || null,
+      keterangan: form.keterangan || null,
+    };
+
     if (editing) {
-      const { error: upErr } = await supabase
+      const { data, error: upErr } = await supabase
         .from("anggota_divisi")
-        .update({
-          nama: form.nama,
-          jabatan: form.jabatan || null,
-          status: form.status,
-          tanggal_masuk: form.tanggal_masuk || null,
-          tanggal_keluar: form.tanggal_keluar || null,
-          keterangan: form.keterangan || null,
-        })
-        .eq("id", editing.id);
+        .update(payload)
+        .eq("id", editing.id)
+        .select("*")
+        .single();
       if (upErr) {
         setSaving(false);
         error("Gagal memperbarui anggota.");
         return;
       }
+      if (data) setAnggota((prev) => prev.map((x) => (x.id === data.id ? data : x)));
       success("Anggota berhasil diperbarui.");
     } else {
-      const { error: insErr } = await supabase.from("anggota_divisi").insert({
-        divisi_id: profile.divisi_id,
-        nama: form.nama,
-        jabatan: form.jabatan || null,
-        status: form.status,
-        tanggal_masuk: form.tanggal_masuk || null,
-        tanggal_keluar: form.tanggal_keluar || null,
-        keterangan: form.keterangan || null,
-      });
+      const { data, error: insErr } = await supabase
+        .from("anggota_divisi")
+        .insert({ divisi_id: profile.divisi_id, ...payload })
+        .select("*")
+        .single();
       if (insErr) {
         setSaving(false);
         error("Gagal menambah anggota.");
         return;
       }
+      if (data) setAnggota((prev) => [...prev, data]);
       success("Anggota berhasil ditambahkan.");
     }
 
     setSaving(false);
     setOpen(false);
-    load();
   }
 
   async function handleDelete(a: AnggotaDivisi) {
     if (!confirm(`Hapus anggota "${a.nama}"?`)) return;
+    const prev = anggota;
+    setAnggota((cur) => cur.filter((x) => x.id !== a.id));
     const { error: delErr } = await supabase
       .from("anggota_divisi")
       .delete()
       .eq("id", a.id);
     if (delErr) {
+      setAnggota(prev);
       error("Gagal menghapus anggota.");
       return;
     }
     success("Anggota dihapus.");
-    load();
   }
 
   if (loading) return <Spinner />;

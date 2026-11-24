@@ -3,6 +3,7 @@
 import { buildDocxBlob } from "./docx-writer";
 import {
   computeSummary,
+  DEFAULT_KOP_LOGOS,
   DOCUMENT_ARGB,
   DOCUMENT_PALETTE,
   DOCUMENT_RGB,
@@ -16,6 +17,7 @@ import {
   type ExportInput,
   type ExportFormat,
   type KopLine,
+  type KopLogos,
   type LogoImage,
   type SummaryItem,
   type ApprovalSpec,
@@ -28,8 +30,10 @@ export {
   type ExportInput,
   type ExportOrientation,
   type KopLine,
+  type KopLogos,
   type LogoImage,
   type SummaryItem,
+  DEFAULT_KOP_LOGOS,
   DOCUMENT_PALETTE,
 } from "./export-document";
 
@@ -76,35 +80,55 @@ function triggerDownload(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Logo sekolah hanya dipakai bila administrator mengkonfigurasi URL-nya. */
+const LOGO_CACHE = new Map<string, Promise<LogoImage | undefined>>();
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function pngDimensions(bytes: Uint8Array): { width: number; height: number } | undefined {
+  if (bytes.length < 24) return undefined;
+  const png = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (!png.every((b, i) => bytes[i] === b)) return undefined;
+  return { width: (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], height: (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23] };
+}
+
+/** Ambil file PNG asli dari folder public tanpa menggambar ulang / mengubah warna. */
 async function resolveLogo(url?: string): Promise<LogoImage | undefined> {
-  if (!url?.trim() || typeof Image === "undefined" || typeof document === "undefined")
-    return undefined;
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const max = 160;
-        const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        const width = Math.max(1, Math.round(img.naturalWidth * scale));
-        const height = Math.max(1, Math.round(img.naturalHeight * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return resolve(undefined);
-        ctx.fillStyle = DOCUMENT_PALETTE.white;
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve({ dataUrl: canvas.toDataURL("image/jpeg", 0.85), width, height });
-      } catch {
-        resolve(undefined);
-      }
-    };
-    img.onerror = () => resolve(undefined);
-    img.src = url.trim();
-  });
+  if (!url?.trim() || typeof fetch === "undefined") return undefined;
+  const key = url.trim();
+  const cached = LOGO_CACHE.get(key);
+  if (cached) return cached;
+  const p = (async () => {
+    try {
+      const response = await fetch(key);
+      if (!response.ok) return undefined;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const mimeType: "image/png" | "image/jpeg" = key.toLowerCase().split("?")[0].endsWith(".png") ? "image/png" : "image/jpeg";
+      const dims = mimeType === "image/png" ? pngDimensions(bytes) : undefined;
+      if (!dims) return undefined;
+      return {
+        dataUrl: `data:${mimeType};base64,${bytesToBase64(bytes)}`,
+        width: dims.width,
+        height: dims.height,
+        mimeType,
+      };
+    } catch {
+      return undefined;
+    }
+  })();
+  LOGO_CACHE.set(key, p);
+  return p;
+}
+
+async function resolveKopLogos(input: ExportInput): Promise<KopLogos> {
+  const [left, right] = await Promise.all([
+    input.kopLogos?.left ?? resolveLogo(DEFAULT_KOP_LOGOS.left),
+    input.kopLogos?.right ?? resolveLogo(DEFAULT_KOP_LOGOS.right),
+  ]);
+  return { left: left ?? input.logo, right };
 }
 
 interface PreparedDocument {
@@ -117,6 +141,7 @@ interface PreparedDocument {
   periodLabel: string;
   documentType: string;
   logo?: LogoImage;
+  kopLogos: KopLogos;
   landscape: boolean;
 }
 
@@ -129,6 +154,7 @@ async function prepareDocument(input: ExportInput): Promise<PreparedDocument> {
       .find((s) => /^periode\b/i.test(s)) ||
     "Tanpa Periode";
   const documentType = input.documentType || resolveDocumentType(input.title);
+  const kopLogos = await resolveKopLogos(input);
   return {
     input,
     kop: kopLines(input.kop),
@@ -139,6 +165,7 @@ async function prepareDocument(input: ExportInput): Promise<PreparedDocument> {
     periodLabel,
     documentType,
     logo: input.logo ?? (await resolveLogo(input.kop?.logoUrl)),
+    kopLogos,
     landscape:
       input.orientation === "landscape" ||
       (input.orientation !== "portrait" && input.columns.length >= 6),
@@ -180,7 +207,7 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
     key: c.key,
     width: Math.min(Math.max(Math.round(ratios[i] * 54), 12), 58),
   }));
-  const identityStartCol = doc.logo && input.columns.length > 1 ? 2 : 1;
+  const identityStartCol = input.columns.length > 2 ? 2 : 1;
 
   const thin = { style: "thin" as const, color: { argb: DOCUMENT_ARGB.border } };
   const bodyBorder = { top: thin, left: thin, bottom: thin, right: thin };
@@ -215,10 +242,37 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
       vertical: "middle",
       wrapText: true,
     };
+    cellRef.border = { bottom: { style: "medium" as const, color: { argb: "FF000000" } } };
+    for (let col = identityStartCol; col <= input.columns.length; col++) {
+      const merged = row.getCell(col);
+      merged.alignment = cellRef.alignment;
+      merged.font = cellRef.font;
+      merged.border = cellRef.border;
+    }
     return rowIdx;
   }
 
-  if (doc.logo && input.columns.length > 1) {
+  if (input.columns.length > 2) {
+    const rowIdx = ws.rowCount + 1;
+    const row = ws.addRow([]);
+    row.height = 88;
+    const addKopImage = (logo: LogoImage | undefined, col: number) => {
+      if (!logo) return;
+      const isPng = logo.mimeType === "image/png" || logo.dataUrl.startsWith("data:image/png");
+      const imageId = wb.addImage({
+        extension: isPng ? "png" : "jpeg",
+        base64: logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, ""),
+      });
+      const max = 78;
+      const scale = Math.min(max / logo.width, max / logo.height);
+      ws.addImage(imageId, {
+        tl: { col, row: rowIdx - 1 },
+        ext: { width: Math.round(logo.width * scale), height: Math.round(logo.height * scale) },
+      });
+    };
+    addKopImage(doc.kopLogos.left, 0);
+    addKopImage(doc.kopLogos.right, input.columns.length - 1);
+  } else if (doc.logo) {
     const rowIdx = ws.rowCount + 1;
     const row = ws.addRow([]);
     row.height = 72;
@@ -227,7 +281,7 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
       base64: doc.logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, ""),
     });
     ws.addImage(imageId, {
-      tl: { col: 0, row: rowIdx - 1 },
+      tl: { col: identityStartCol - 1, row: rowIdx - 1 },
       ext: { width: 64, height: 64 },
     });
   }
@@ -237,12 +291,13 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
       size: line.size,
       bold: line.bold,
       color: line.color === "navy" ? DOCUMENT_ARGB.navy : DOCUMENT_ARGB.text,
+      height: line.size >= 15 ? 26 : 20,
     })
   );
   if (doc.kop.length) {
     const rowIdx = ws.rowCount + 1;
     const row = ws.addRow([]);
-    row.height = 8;
+    row.height = 10;
     ws.mergeCells(rowIdx, identityStartCol, rowIdx, input.columns.length);
     row.getCell(identityStartCol).border = { bottom: navyBorder };
   }
@@ -394,6 +449,7 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
   const lastRow = ws.rowCount;
   ws.pageSetup = {
     printArea: `A1:${columnLetter(input.columns.length)}${lastRow}`,
+    printTitlesRow: `1:${headerRowIndex}`,
     paperSize: 9,
     orientation: doc.landscape ? "landscape" : "portrait",
     fitToPage: true,
@@ -423,7 +479,7 @@ function num(n: number): string {
 }
 
 const WINANSI_MAP: Record<string, string> = {
-  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-",
+  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2014": "-",
   "\u2015": "-", "\u2212": "-",
   "\u2018": "'", "\u2019": "'", "\u201A": "'",
   "\u201C": '"', "\u201D": '"', "\u201E": '"',
@@ -521,7 +577,99 @@ function wrapText(str: string, size: number, maxWidth: number, bold: boolean = f
   return out.length > 0 ? out : [""];
 }
 
-function buildPdfBlob(doc: PreparedDocument): Blob {
+function bytesToStream(bytes: Uint8Array): string {
+  let stream = "";
+  for (const byte of bytes) stream += String.fromCharCode(byte);
+  return stream;
+}
+
+async function inflateBytes(bytes: Uint8Array): Promise<Uint8Array> {
+  const part = bytes.slice().buffer as ArrayBuffer;
+  const stream = new Blob([part]).stream().pipeThrough(new DecompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function deflateBytes(bytes: Uint8Array): Promise<Uint8Array> {
+  if (typeof CompressionStream === "undefined") return bytes;
+  const part = bytes.slice().buffer as ArrayBuffer;
+  const stream = new Blob([part]).stream().pipeThrough(new CompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function unfilterScanlines(data: Uint8Array, width: number, height: number, channels: number): Uint8Array {
+  const stride = width * channels;
+  const out = new Uint8Array(stride * height);
+  let offset = 0;
+  let prev = new Uint8Array(stride);
+  for (let y = 0; y < height; y++) {
+    const filter = data[offset++];
+    const row = data.slice(offset, offset + stride);
+    offset += stride;
+    const cur = new Uint8Array(stride);
+    for (let x = 0; x < stride; x++) {
+      const a = x >= channels ? cur[x - channels] : 0;
+      const b = prev[x];
+      const c = x >= channels ? prev[x - channels] : 0;
+      let value = row[x];
+      if (filter === 1) value += a;
+      else if (filter === 2) value += b;
+      else if (filter === 3) value += Math.floor((a + b) / 2);
+      else if (filter === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        value += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      } else if (filter !== 0) throw new Error("Unsupported PNG filter");
+      cur[x] = value & 0xff;
+    }
+    out.set(cur, y * stride);
+    prev = cur;
+  }
+  return out;
+}
+
+function parsePngForPdf(bytes: Uint8Array):
+  | { width: number; height: number; colorType: number; idat: Uint8Array }
+  | undefined {
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (!signature.every((b, i) => bytes[i] === b)) return undefined;
+  let offset = 8;
+  let header: { width: number; height: number; colorType: number } | undefined;
+  const idatChunks: Uint8Array[] = [];
+  while (offset + 12 <= bytes.length) {
+    const length = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+    const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+    const data = bytes.slice(offset + 8, offset + 8 + length);
+    if (type === "IHDR") {
+      if (data[8] !== 8 || data[12] !== 0) return undefined;
+      header = {
+        width: (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3],
+        height: (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7],
+        colorType: data[9],
+      };
+    } else if (type === "IDAT") {
+      idatChunks.push(data);
+    } else if (type === "IEND") break;
+    offset += 12 + length;
+  }
+  if (!header || idatChunks.length === 0 || ![2, 6].includes(header.colorType)) return undefined;
+  const idatLength = idatChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const idat = new Uint8Array(idatLength);
+  let idatOffset = 0;
+  idatChunks.forEach((chunk) => {
+    idat.set(chunk, idatOffset);
+    idatOffset += chunk.length;
+  });
+  return { ...header, idat };
+}
+
+function streamObject(dict: Record<string, string>, bytes: Uint8Array): string {
+  const attrs = Object.entries(dict).map(([key, value]) => `${key} ${value}`).join(" ");
+  return `<</Type /XObject /Subtype /Image ${attrs} /Length ${bytes.length}>>\nstream\n${bytesToStream(bytes)}\nendstream`;
+}
+
+async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   const { input } = doc;
   const PAGE_W = doc.landscape ? 841.89 : 595.28;
   const PAGE_H = doc.landscape ? 595.28 : 841.89;
@@ -611,30 +759,40 @@ function buildPdfBlob(doc: PreparedDocument): Blob {
     drawHeaderRow();
   }
 
-  // KOP organisasi (selalu tampil; identitas sekolah dari konfigurasi).
-  let kopIndent = 0;
-  if (doc.logo) {
-    const logoW = Math.min(46, doc.logo.width);
-    const logoH = logoW * (doc.logo.height / doc.logo.width);
-    ops.push("q", `${num(logoW)} 0 0 ${num(logoH)} ${num(MARGIN_LEFT)} ${num(PAGE_H - topY - logoH)} cm`, "/Im0 Do", "Q");
-    kopIndent = logoW + 8;
-    topY += logoH + 2;
-  }
+  // KOP surat resmi OSIS/IP4A: logo kiri/kanan + teks tengah + garis tegas.
+  const kopStartY = topY;
+  const logoBox = 62;
+  const textX = MARGIN_LEFT + logoBox + 10;
+  const textW = CONTENT_W - (logoBox + 10) * 2;
+  const drawKopLogo = (logo: LogoImage | undefined, x: number, imageName: "/ImLeft" | "/ImRight") => {
+    if (!logo) return;
+    const scale = Math.min(logoBox / logo.width, logoBox / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+    const lx = x + (logoBox - w) / 2;
+    const ly = kopStartY + (logoBox - h) / 2;
+    ops.push("q", `${num(w)} 0 0 ${num(h)} ${num(lx)} ${num(PAGE_H - ly - h)} cm`, `${imageName} Do`, "Q");
+  };
+  drawKopLogo(doc.kopLogos.left, MARGIN_LEFT, "/ImLeft");
+  drawKopLogo(doc.kopLogos.right, MARGIN_LEFT + CONTENT_W - logoBox, "/ImRight");
+
+  let textY = kopStartY + 1;
   doc.kop.forEach((line) => {
-    drawText(line.text, line.size, line.bold, MARGIN_LEFT + kopIndent, topY,
-      line.color === "navy" ? DOCUMENT_RGB.navy : DOCUMENT_RGB.text, CONTENT_W - kopIndent, "center");
-    topY += line.size + 3.5;
+    const color = line.color === "navy" ? DOCUMENT_RGB.navy : DOCUMENT_RGB.text;
+    const lines = wrapText(line.text, line.size, textW, line.bold);
+    lines.forEach((lineText) => {
+      drawText(lineText, line.size, line.bold, textX, textY, color, textW, "center", "F2");
+      textY += line.size + 4.2;
+    });
   });
-  topY += 2;
-  fillRect(MARGIN_LEFT, topY, CONTENT_W, 1.4, DOCUMENT_RGB.navy);
-  fillRect(MARGIN_LEFT, topY + 2.6, CONTENT_W, 0.5, DOCUMENT_RGB.blue);
-  topY += 11;
+  const kopBottom = Math.max(kopStartY + logoBox, textY);
+  topY = kopBottom + 4;
+  fillRect(MARGIN_LEFT, topY, CONTENT_W, 1.8, [0, 0, 0]);
+  topY += 14;
 
   drawText(input.title, 13.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "center", "F2");
   topY += 17;
   drawText(doc.documentType, 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.blue, CONTENT_W, "center", "F2");
-  topY += 13;
-  drawText(`Dicetak pada ${todayLabel()}`, 7.5, false, MARGIN_LEFT, topY, DOCUMENT_RGB.muted, CONTENT_W, "center");
   topY += 14;
 
   // Identitas laporan.
@@ -787,19 +945,47 @@ function buildPdfBlob(doc: PreparedDocument): Blob {
   const f3 = objects.length + 1;
   objects.push("<</Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding>>");
 
-  let logoId: number | undefined;
-  if (doc.logo) {
-    const base64 = doc.logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
+  async function addImageObject(logo?: LogoImage): Promise<number | undefined> {
+    if (!logo) return undefined;
+    const base64 = logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i) & 0xff;
-    let stream = "";
-    for (const b of bytes) stream += String.fromCharCode(b);
-    logoId = objects.length + 1;
-    objects.push(
-      `<</Type /XObject /Subtype /Image /Width ${doc.logo.width} /Height ${doc.logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${stream.length}>>\nstream\n${stream}\nendstream`
-    );
+    if (logo.mimeType === "image/png" || logo.dataUrl.startsWith("data:image/png")) {
+      const png = parsePngForPdf(bytes);
+      if (!png) return undefined;
+      const raw = unfilterScanlines(await inflateBytes(png.idat), png.width, png.height, png.colorType === 6 ? 4 : 3);
+      const rgb = new Uint8Array(png.width * png.height * 3);
+      const alpha = png.colorType === 6 ? new Uint8Array(png.width * png.height) : undefined;
+      const channels = png.colorType === 6 ? 4 : 3;
+      for (let i = 0, p = 0; i < raw.length; i += channels, p += 3) {
+        rgb[p] = raw[i];
+        rgb[p + 1] = raw[i + 1];
+        rgb[p + 2] = raw[i + 2];
+        if (alpha) alpha[p / 3] = raw[i + 3];
+      }
+      const filter: Record<string, string> = typeof CompressionStream === "undefined" ? {} : { "/Filter": "/FlateDecode" };
+      const rgbStream = await deflateBytes(rgb);
+      const filterAttrs = Object.entries(filter).map(([k, v]) => `${k} ${v}`).join(" ");
+      if (alpha) {
+        const alphaStream = await deflateBytes(alpha!);
+        const smaskId = objects.length + 1;
+        objects.push(streamObject({ "/Width": `${png.width}`, "/Height": `${png.height}`, "/ColorSpace": "/DeviceGray", "/BitsPerComponent": "8", ...filter }, alphaStream));
+        const imageId = objects.length + 1;
+        objects.push(streamObject({ "/Width": `${png.width}`, "/Height": `${png.height}`, "/ColorSpace": "/DeviceRGB", "/BitsPerComponent": "8", "/SMask": `${smaskId} 0 R`, ...filter }, rgbStream));
+        return imageId;
+      }
+      const imageId = objects.length + 1;
+      objects.push(streamObject({ "/Width": `${png.width}`, "/Height": `${png.height}`, "/ColorSpace": "/DeviceRGB", "/BitsPerComponent": "8", ...filter }, rgbStream));
+      return imageId;
+    }
+    const imageId = objects.length + 1;
+    objects.push(streamObject({ "/Width": `${logo.width}`, "/Height": `${logo.height}`, "/ColorSpace": "/DeviceRGB", "/BitsPerComponent": "8", "/Filter": "/DCTDecode" }, bytes));
+    return imageId;
   }
+  const logoId = await addImageObject(doc.logo);
+  const leftLogoId = await addImageObject(doc.kopLogos.left);
+  const rightLogoId = await addImageObject(doc.kopLogos.right);
 
   const contentIds: number[] = [];
   pages.forEach((pageOps) => {
@@ -813,7 +999,12 @@ function buildPdfBlob(doc: PreparedDocument): Blob {
   const pageIds: number[] = [];
   pages.forEach((_, i) => {
     const id = objects.length + 1;
-    const xobject = logoId ? ` /XObject <</Im0 ${logoId} 0 R>>` : "";
+    const xobjs = [
+      logoId ? `/Im0 ${logoId} 0 R` : "",
+      leftLogoId ? `/ImLeft ${leftLogoId} 0 R` : "",
+      rightLogoId ? `/ImRight ${rightLogoId} 0 R` : "",
+    ].filter(Boolean).join(" ");
+    const xobject = xobjs ? ` /XObject <<${xobjs}>>` : "";
     objects.push(
       `<</Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${num(PAGE_W)} ${num(PAGE_H)}] /Resources <</Font <</F1 ${f1} 0 R /F2 ${f2} 0 R /F3 ${f3} 0 R>>${xobject}>> /Contents ${contentIds[i]} 0 R>>`
     );
@@ -863,11 +1054,13 @@ export async function buildExportBlob(options: ExportInput & { format: ExportFor
         approval: doc.approval,
         periodLabel: doc.periodLabel,
         documentType: doc.documentType,
+        kopLogos: doc.kopLogos,
+        footerIdentity: footerIdentity(input.kop),
       }),
       ext: "docx",
     };
   }
-  return { blob: buildPdfBlob(doc), ext: "pdf" };
+  return { blob: await buildPdfBlob(doc), ext: "pdf" };
 }
 
 export async function downloadExport(options: ExportInput & { format: ExportFormat }): Promise<void> {

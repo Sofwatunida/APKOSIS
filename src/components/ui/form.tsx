@@ -1,9 +1,11 @@
 import type {
   InputHTMLAttributes,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
   ReactNode,
 } from "react";
+
+export { Select } from "./select";
+export type { SelectProps } from "./select";
 
 export function Label({ children }: { children: ReactNode }) {
   return (
@@ -54,17 +56,5 @@ export function Textarea({
       className={`${baseInput} min-h-[90px] resize-y ${className}`}
       {...props}
     />
-  );
-}
-
-export function Select({
-  className = "",
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select className={`${baseInput} cursor-pointer ${className}`} {...props}>
-      {children}
-    </select>
   );
 }

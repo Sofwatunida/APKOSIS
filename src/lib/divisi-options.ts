@@ -47,7 +47,7 @@ export function getDivisiFilterLabel(
   return match?.nama ?? match?.nama_divisi ?? match?.namaDivisi ?? SEMUA_DIVISI_LABEL;
 }
 
-/** Format tampilan divisi: "KEAMANAN — Divisi 01", "KESENIAN — Divisi 02", dst. */
+/** Format tampilan divisi: cukup nama divisinya saja (tanpa nomor/sufiks). */
 export function formatDivisiLabel(
   nomor: number | null | undefined,
   nama: string | null | undefined
@@ -57,8 +57,9 @@ export function formatDivisiLabel(
     .replace(/^divisi\s*\d+\s*/i, "")
     .trim()
     .toUpperCase();
-  if (typeof nomor !== "number") return clean || "DIVISI";
-  return clean ? `${clean} — Divisi ${pad2(nomor)}` : `Divisi ${pad2(nomor)}`;
+  if (clean) return clean;
+  if (typeof nomor === "number") return `Divisi ${pad2(nomor)}`;
+  return "DIVISI";
 }
 
 export function buildDivisiOptions(

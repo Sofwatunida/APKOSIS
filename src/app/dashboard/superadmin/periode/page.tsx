@@ -51,12 +51,10 @@ export default async function SuperAdminPeriodePage({
             />
             <CardContent>
               <form action={createPeriodeFormAction} className="space-y-4">
-                <Field label="Nama Periode" hint="Format: 2027/2028">
+                <Field label="Nama Periode" hint="">
                   <Input
                     name="nama_periode"
-                    placeholder="2027/2028"
-                    pattern="\d{4}/\d{4}"
-                    inputMode="numeric"
+                    placeholder="Contoh: Mu25aniya"
                     required
                   />
                 </Field>

@@ -117,8 +117,8 @@ export async function createPeriodeAction(formData: FormData): Promise<PeriodAct
   const tahunMulai = Number(formData.get("tahun_mulai"));
   const tahunSelesai = Number(formData.get("tahun_selesai"));
 
-  if (!/^\d{4}\/\d{4}$/.test(namaPeriode)) {
-    return fail("Format periode harus 2026/2027.");
+  if (!namaPeriode) {
+    return fail("Nama periode tidak boleh kosong.");
   }
   if (!Number.isInteger(tahunMulai) || !Number.isInteger(tahunSelesai)) {
     return fail("Tahun mulai dan tahun selesai harus berupa angka.");

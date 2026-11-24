@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
-import { Field, Input, Textarea } from "@/components/ui/form";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
@@ -307,10 +307,9 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
             error={errors.kebutuhan_id}
             hint="Hanya kebutuhan berstatus Disetujui yang bisa dipilih."
           >
-            <select
+            <Select
               value={form.kebutuhan_id}
               onChange={(e) => handleKebutuhanChange(e.target.value)}
-              className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
             >
               <option value="">Pilih kebutuhan</option>
               {pilihanKebutuhan.map((k) => (
@@ -320,7 +319,7 @@ export function PengajuanDanaClient({ profile }: { profile: Profile }) {
                   {formatDate(k.tanggal)}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Tanggal Pengajuan" error={errors.tanggal_pengajuan}>
             <Input

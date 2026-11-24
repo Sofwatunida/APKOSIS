@@ -43,11 +43,13 @@ export function DivisiPeriodeClient({
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [editing, setEditing] = useState<DivisiRow | null>(null);
+  const [rows, setRows] = useState<DivisiRow[]>(divisi);
   const [periodeByDivisi, setPeriodeByDivisi] = useState<Record<string, string>>(
     () => Object.fromEntries(divisi.map((d) => [d.id, d.periodeId]))
   );
 
   useEffect(() => {
+    setRows(divisi);
     setPeriodeByDivisi(Object.fromEntries(divisi.map((d) => [d.id, d.periodeId])));
   }, [divisi]);
 
@@ -57,16 +59,18 @@ export function DivisiPeriodeClient({
   }, [search]);
 
   const visible = useMemo(() => {
-    if (!debounced) return divisi;
-    return divisi.filter(
+    if (!debounced) return rows;
+    return rows.filter(
       (d) =>
         String(d.nomorDivisi).includes(debounced) ||
         d.namaDivisi.toLowerCase().includes(debounced)
     );
-  }, [divisi, debounced]);
+  }, [rows, debounced]);
 
   function handlePeriode(divisiId: string, periodeId: string) {
-    setPeriodeByDivisi((prev) => ({ ...prev, [divisiId]: periodeId }));
+    const prev = periodeByDivisi[divisiId] ?? "";
+    setPeriodeByDivisi((cur) => ({ ...cur, [divisiId]: periodeId }));
+    setRows((cur) => cur.map((d) => (d.id === divisiId ? { ...d, periodeId } : d)));
     const fd = new FormData();
     fd.set("divisi_id", divisiId);
     fd.set("periode_id", periodeId);
@@ -75,8 +79,9 @@ export function DivisiPeriodeClient({
       if (result.ok) {
         success(result.message);
       } else {
+        setPeriodeByDivisi((cur) => ({ ...cur, [divisiId]: prev }));
+        setRows((cur) => cur.map((d) => (d.id === divisiId ? { ...d, periodeId: prev } : d)));
         error(result.message);
-        router.refresh();
       }
     });
   }
@@ -93,12 +98,14 @@ export function DivisiPeriodeClient({
 
     const fd = new FormData();
     fd.set("divisi_id", d.id);
+    const prev = rows;
+    setRows((cur) => cur.filter((x) => x.id !== d.id));
     startTransition(async () => {
       const result = await deleteDivisiAction(fd);
       if (result.ok) {
         success(result.message);
-        router.refresh();
       } else {
+        setRows(prev);
         error(result.message);
       }
     });
@@ -109,8 +116,8 @@ export function DivisiPeriodeClient({
       <TambahDivisiForm
         periods={periods}
         disabled={pending}
-        existingNomor={divisi.map((d) => d.nomorDivisi)}
-        onDone={() => router.refresh()}
+        existingNomor={rows.map((d) => d.nomorDivisi)}
+        onDone={() => {}}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

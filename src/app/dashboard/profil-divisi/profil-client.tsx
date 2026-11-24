@@ -196,7 +196,6 @@ async function handleSave() {
     );
     setIsEditing(false); // Switch button to Edit Profil (Requirement 4)
     success("Profil divisi berhasil disimpan.");
-    router.refresh();
   }
 
   if (loading) return <Spinner />;

@@ -2,7 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { PeriodStatus } from "./database.types";
-import { createClient } from "./supabase/server";
+import { createRawClient } from "./supabase/server";
 import { getProfile } from "./auth";
 import type { Profile } from "./types";
 import {
@@ -45,7 +45,7 @@ function isSuperAdmin(profile: Profile | null): boolean {
  * fungsi ini. Jangan pernah membuat daftar tahun hardcoded.
  */
 export const getPeriods = cache(async (): Promise<PeriodeOption[]> => {
-  const supabase = await createClient();
+  const supabase = await createRawClient();
   const { data, error } = await supabase
     .from("periods")
     .select("id, nama_periode, tahun_mulai, tahun_selesai, status")

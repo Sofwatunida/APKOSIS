@@ -1,7 +1,9 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Select } from "@/components/ui/form";
 import { Bold, Italic, Strikethrough, List, ListOrdered } from "lucide-react";
+
 
 type Heading = "p" | "h1" | "h2" | "h3";
 
@@ -107,8 +109,9 @@ export function RichTextEditor({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-300 bg-white transition-shadow focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/20 dark:border-slate-600 dark:bg-slate-900 dark:focus-within:border-brand-500 dark:focus-within:ring-brand-500/20">
       <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-700 dark:bg-slate-800/60">
-        <select
-          className="h-8 rounded-md border border-slate-200 bg-white px-2.5 pr-7 text-xs font-medium text-slate-700 shadow-sm transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+        <Select
+          wrapperClassName="w-auto"
+          className="h-8 w-auto rounded-[10px] px-2.5 py-0 pr-8 text-xs font-medium"
           value={active.block}
           onChange={(e) => setBlock(e.target.value as Heading)}
           aria-label="Heading"
@@ -117,7 +120,8 @@ export function RichTextEditor({
           <option value="h1">H1</option>
           <option value="h2">H2</option>
           <option value="h3">H3</option>
-        </select>
+        </Select>
+
 
         <div className="mx-0.5 h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden />
 

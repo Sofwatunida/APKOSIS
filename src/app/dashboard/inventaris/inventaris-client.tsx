@@ -100,40 +100,45 @@ export function InventarisClient({ profile }: { profile: Profile }) {
     };
 
     if (editing) {
-      const { error: upErr } = await supabase
+      const { data, error: upErr } = await supabase
         .from("inventaris")
         .update(payload)
-        .eq("id", editing.id);
+        .eq("id", editing.id)
+        .select("*")
+        .single();
       if (upErr) {
         setSaving(false);
         error("Gagal memperbarui inventaris.");
         return;
       }
+      if (data) setItems((prev) => prev.map((x) => (x.id === data.id ? data : x)));
       success("Inventaris diperbarui.");
     } else {
-      const { error: insErr } = await supabase.from("inventaris").insert(payload);
+      const { data, error: insErr } = await supabase.from("inventaris").insert(payload).select("*").single();
       if (insErr) {
         setSaving(false);
         error("Gagal menambah inventaris.");
         return;
       }
+      if (data) setItems((prev) => [data, ...prev]);
       success("Inventaris ditambahkan.");
     }
 
     setSaving(false);
     setOpen(false);
-    load();
   }
 
   async function handleDelete(i: Inventaris) {
     if (!confirm(`Hapus barang "${i.nama_barang}"?`)) return;
+    const prev = items;
+    setItems((cur) => cur.filter((x) => x.id !== i.id));
     const { error: delErr } = await supabase.from("inventaris").delete().eq("id", i.id);
     if (delErr) {
+      setItems(prev);
       error("Gagal menghapus inventaris.");
       return;
     }
     success("Inventaris dihapus.");
-    load();
   }
 
   if (loading) return <Spinner />;

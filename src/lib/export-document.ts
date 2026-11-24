@@ -57,13 +57,26 @@ export interface ExportInput {
   extraSummary?: SummaryItem[];
   /** Data URL JPEG logo, sudah dinormalisasi oleh export-client. */
   logo?: LogoImage;
+  /** Logo kiri/kanan kop surat resmi. */
+  kopLogos?: KopLogos;
 }
 
 export interface LogoImage {
   dataUrl: string;
   width: number;
   height: number;
+  mimeType?: "image/png" | "image/jpeg";
 }
+
+export interface KopLogos {
+  left?: LogoImage;
+  right?: LogoImage;
+}
+
+export const DEFAULT_KOP_LOGOS = {
+  left: "/logo_osis.png",
+  right: "/logo_tamir.png",
+} as const;
 
 export interface KopLine {
   text: string;
@@ -123,25 +136,19 @@ export function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/** Kop organisasi: identitas resmi, bukan screenshot tabel aplikasi. */
-export function kopLines(kop?: SchoolKop): KopLine[] {
-  if (!kop) return [];
-  const lines: KopLine[] = [];
-  const organization =
-    kop.organization?.trim() || "ORGANISASI SISWA INTRA SEKOLAH (OSIS)";
-  lines.push({ text: organization, size: 10.5, bold: true, color: "navy" });
-  if (kop.namaSekolah?.trim())
-    lines.push({ text: kop.namaSekolah.trim(), size: 14, bold: true, color: "navy" });
-  if (kop.alamat?.trim())
-    lines.push({ text: kop.alamat.trim(), size: 8.5, bold: false, color: "text" });
-  if (kop.kontak?.trim())
-    lines.push({ text: kop.kontak.trim(), size: 8, bold: false, color: "muted" });
-  return lines;
+/** Kop surat resmi OSIS/IP4A untuk seluruh dokumen ekspor. */
+export function kopLines(_kop?: SchoolKop): KopLine[] {
+  return [
+    { text: "LAPORAN HARIAN", size: 16, bold: true, color: "navy" },
+    { text: "PENGURUS DIVISI", size: 12, bold: true, color: "navy" },
+    { text: "IKATAN PELAJAR PUTRI PONDOK PESANTREN AL-ITTIHAD", size: 11, bold: true, color: "navy" },
+    { text: "(IP4A)", size: 11, bold: true, color: "navy" },
+    { text: "MASA KHIDMAT 2026–2027", size: 10.5, bold: true, color: "navy" },
+  ];
 }
 
-export function footerIdentity(kop?: SchoolKop): string {
-  const school = kop?.namaSekolah?.trim() || "[NAMA SEKOLAH]";
-  return `OSIS ${school}`;
+export function footerIdentity(_kop?: SchoolKop): string {
+  return "IP4A Pondok Pesantren Al-Ittihad";
 }
 
 /** Jenis dokumen ditentukan dari judul, bukan diasumsikan sama untuk semua laporan. */

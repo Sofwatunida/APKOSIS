@@ -25,7 +25,7 @@ import { scopeBuilderWithPeriod } from "../period-scope";
  */
 
 /** Klien tanpa period scope, dipakai untuk mencari periode aktif. */
-async function createRawClient(): Promise<SupabaseClient<Database>> {
+export const createRawClient = cache(async (): Promise<SupabaseClient<Database>> => {
   const cookieStore = await cookies();
 
   const divisiToken = cookieStore.get(DIVISI_TOKEN_COOKIE)?.value ?? null;
@@ -61,7 +61,7 @@ async function createRawClient(): Promise<SupabaseClient<Database>> {
       },
     }
   );
-}
+});
 
 /**
  * Mengubah nilai cookie menjadi id periode yang konkret.
@@ -109,8 +109,10 @@ export async function createClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies();
 
   const rawPeriod = cookieStore.get(PERIOD_COOKIE)?.value ?? null;
-  const periodeId = await resolvePeriodId(rawPeriod);
-  const client = await createRawClient();
+  const [periodeId, client] = await Promise.all([
+    resolvePeriodId(rawPeriod),
+    createRawClient(),
+  ]);
 
   return new Proxy(client, {
     get(target, prop, receiver) {

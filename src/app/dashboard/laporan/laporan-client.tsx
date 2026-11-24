@@ -89,76 +89,100 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       return;
     }
 
-    // 1. Fetch History
-    const { data: reports } = await supabase
-      .from("laporan_harian")
-      .select("*")
-      .eq("divisi_id", profile.divisi_id)
-      .order("tanggal", { ascending: false })
-      .limit(100);
-    setHistory(reports ?? []);
+    const divisiId = profile.divisi_id;
+    const today = todayISO();
 
-    // 1b. Fetch daftar kegiatan dropdown (dikelola ketua/wakil)
-    const { data: opsiData } = await supabase
-      .from("opsi_kegiatan")
-      .select("*")
-      .eq("divisi_id", profile.divisi_id)
-      .order("created_at", { ascending: true });
-    setOpsiKegiatan(opsiData ?? []);
+    const [reportsRes, opsiRes, divisiRes, anggotaRes, todayReportRes] =
+      await Promise.all([
+        supabase
+          .from("laporan_harian")
+          .select("*")
+          .eq("divisi_id", divisiId)
+          .order("tanggal", { ascending: false })
+          .limit(100),
+        supabase
+          .from("opsi_kegiatan")
+          .select("*")
+          .eq("divisi_id", divisiId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("divisi")
+          .select("ketua_divisi, wakil_divisi")
+          .eq("id", divisiId)
+          .single(),
+        supabase
+          .from("anggota_divisi")
+          .select("id, nama, jabatan")
+          .eq("divisi_id", divisiId),
+        supabase
+          .from("laporan_harian")
+          .select("*")
+          .eq("divisi_id", divisiId)
+          .eq("tanggal", today)
+          .maybeSingle(),
+      ]);
 
-    // 2. Fetch Divisi to get ONLY Ketua & Wakil (Requirement 2)
-    const { data: divData } = await supabase
-      .from("divisi")
-      .select("ketua_divisi, wakil_divisi")
-      .eq("id", profile.divisi_id)
-      .single();
+    const reports = reportsRes.data ?? [];
+    const opsiData = opsiRes.data ?? [];
+    const divData = divisiRes.data;
+    const existingAnggota = anggotaRes.data ?? [];
 
-    const { data: existingAnggota } = await supabase
-      .from("anggota_divisi")
-      .select("id, nama, jabatan")
-      .eq("divisi_id", profile.divisi_id);
+    setHistory(reports);
+    setOpsiKegiatan(opsiData);
+    setReportToday(todayReportRes.data ?? null);
 
     const options: { id: string; nama: string }[] = [];
     const ketuaName = divData?.ketua_divisi?.trim() || "";
     const wakilName = divData?.wakil_divisi?.trim() || "";
 
-    // Match or ensure Ketua in anggota_divisi so foreign key is satisfied
-    let ketuaAnggota = (existingAnggota ?? []).find(
-      (a) => a.jabatan === "Ketua" || (ketuaName && a.nama.toLowerCase() === ketuaName.toLowerCase())
+    let ketuaAnggota = existingAnggota.find(
+      (a) =>
+        a.jabatan === "Ketua" ||
+        (ketuaName && a.nama.toLowerCase() === ketuaName.toLowerCase())
     );
+    let wakilAnggota = existingAnggota.find(
+      (a) =>
+        a.jabatan === "Wakil Ketua" ||
+        (wakilName && a.nama.toLowerCase() === wakilName.toLowerCase())
+    );
+
+    const inserts: Promise<unknown>[] = [];
     if (!ketuaAnggota && ketuaName) {
-      const { data: insK } = await supabase
-        .from("anggota_divisi")
-        .insert({
-          divisi_id: profile.divisi_id,
-          nama: ketuaName,
-          jabatan: "Ketua",
-          status: "aktif",
-        })
-        .select()
-        .single();
-      if (insK) ketuaAnggota = insK;
+      inserts.push(
+        (async () => {
+          const { data } = await supabase
+            .from("anggota_divisi")
+            .insert({
+              divisi_id: divisiId,
+              nama: ketuaName,
+              jabatan: "Ketua",
+              status: "aktif",
+            })
+            .select()
+            .single();
+          if (data) ketuaAnggota = data;
+        })()
+      );
     }
-
-    // Match or ensure Wakil in anggota_divisi so foreign key is satisfied
-    let wakilAnggota = (existingAnggota ?? []).find(
-      (a) => a.jabatan === "Wakil Ketua" || (wakilName && a.nama.toLowerCase() === wakilName.toLowerCase())
-    );
     if (!wakilAnggota && wakilName) {
-      const { data: insW } = await supabase
-        .from("anggota_divisi")
-        .insert({
-          divisi_id: profile.divisi_id,
-          nama: wakilName,
-          jabatan: "Wakil Ketua",
-          status: "aktif",
-        })
-        .select()
-        .single();
-      if (insW) wakilAnggota = insW;
+      inserts.push(
+        (async () => {
+          const { data } = await supabase
+            .from("anggota_divisi")
+            .insert({
+              divisi_id: divisiId,
+              nama: wakilName,
+              jabatan: "Wakil Ketua",
+              status: "aktif",
+            })
+            .select()
+            .single();
+          if (data) wakilAnggota = data;
+        })()
+      );
     }
+    if (inserts.length > 0) await Promise.all(inserts);
 
-    // Dropdown strictly contains ONLY 2 names: Ketua and Wakil
     if (ketuaAnggota) {
       options.push({ id: ketuaAnggota.id, nama: `${ketuaAnggota.nama} (Ketua)` });
     } else if (ketuaName) {
@@ -176,17 +200,6 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     }
 
     setPelaporOptions(options);
-
-    // Check today's report
-    const today = todayISO();
-    const { data: todayReport } = await supabase
-      .from("laporan_harian")
-      .select("*")
-      .eq("divisi_id", profile.divisi_id)
-      .eq("tanggal", today)
-      .maybeSingle();
-    setReportToday(todayReport ?? null);
-
     setLoading(false);
   }
 
@@ -542,8 +555,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               </Field>
 
               <Field label="Pelapor (Ketua / Wakil)" error={formErrors.pelapor_id}>
-                <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600"
+                <Select
                   value={form.pelapor_id}
                   onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
                 >
@@ -553,12 +565,11 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                       {p.nama}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
 
               <Field label="Penerima Laporan" error={formErrors.penerima_laporan}>
-                <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 cursor-pointer dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-slate-600"
+                <Select
                   value={form.penerima_laporan}
                   onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
                 >
@@ -566,7 +577,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                   <option value="ketua_umum">Ketua Umum</option>
                   <option value="ketua_1">Ketua 1</option>
                   <option value="ketua_2 OSIS">Ketua 2</option>
-                </select>
+                </Select>
               </Field>
             </div>
 

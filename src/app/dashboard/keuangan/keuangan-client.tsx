@@ -211,45 +211,71 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
     };
 
     if (editing) {
-      const { error: upErr } = await supabase
+      const { data, error: upErr } = await supabase
         .from("transaksi_keuangan")
         .update(payload)
-        .eq("id", editing.id);
+        .eq("id", editing.id)
+        .select("*")
+        .single();
       if (upErr) {
         setSaving(false);
         error("Gagal memperbarui transaksi: " + upErr.message);
         return;
       }
+      if (data) {
+        setTransaksi((prev) => prev.map((x) => (x.id === data.id ? data : x)));
+        const oldN = Number(editing.nominal) || 0;
+        const newN = Number(data.nominal) || 0;
+        if (editing.jenis_transaksi === "pemasukan") setPemasukan((v) => v - oldN);
+        else setPengeluaran((v) => v - oldN);
+        if (data.jenis_transaksi === "pemasukan") setPemasukan((v) => v + newN);
+        else setPengeluaran((v) => v + newN);
+      }
       success("Transaksi diperbarui.");
     } else {
-      const { error: insErr } = await supabase
+      const { data, error: insErr } = await supabase
         .from("transaksi_keuangan")
-        .insert(payload);
+        .insert(payload)
+        .select("*")
+        .single();
       if (insErr) {
         setSaving(false);
         error("Gagal menambah transaksi: " + insErr.message);
         return;
+      }
+      if (data) {
+        setTransaksi((prev) => [data, ...prev]);
+        const n = Number(data.nominal) || 0;
+        if (data.jenis_transaksi === "pemasukan") setPemasukan((v) => v + n);
+        else setPengeluaran((v) => v + n);
       }
       success("Transaksi ditambahkan.");
     }
 
     setSaving(false);
     setOpen(false);
-    load();
   }
 
   async function handleDelete(t: TransaksiKeuangan) {
     if (!confirm("Hapus transaksi ini?")) return;
+    const prev = transaksi;
+    setTransaksi((cur) => cur.filter((x) => x.id !== t.id));
+    const n = Number(t.nominal) || 0;
+    if (t.jenis_transaksi === "pemasukan") setPemasukan((v) => v - n);
+    else setPengeluaran((v) => v - n);
+
     const { error: delErr } = await supabase
       .from("transaksi_keuangan")
       .delete()
       .eq("id", t.id);
     if (delErr) {
+      setTransaksi(prev);
+      if (t.jenis_transaksi === "pemasukan") setPemasukan((v) => v + n);
+      else setPengeluaran((v) => v + n);
       error("Gagal menghapus transaksi.");
       return;
     }
     success("Transaksi dihapus.");
-    load();
   }
 
   if (loading) return <Spinner />;

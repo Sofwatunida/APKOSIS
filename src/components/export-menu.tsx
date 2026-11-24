@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DropdownPanel } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import {
   downloadExport,
@@ -102,19 +103,11 @@ export function ExportMenu({
   const { periodeId, allPeriodsMode, options } = usePeriode();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<ExportFormat | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
 
   const periodeLabel = allPeriodsMode
     ? "Semua Periode"
     : options.find((p) => p.id === periodeId)?.namaPeriode ?? "Tanpa Periode";
-
-  useEffect(() => {
-    function onMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, []);
 
   async function handleExport(format: ExportFormat) {
     if (busy) return;
@@ -151,63 +144,82 @@ export function ExportMenu({
   }
 
   return (
-    <div className="relative" ref={ref}>
-      <Button
-        type="button"
-        variant="outline"
-        size={size}
-        disabled={disabled || Boolean(busy)}
-        onClick={() => setOpen((o) => !o)}
-        className="gap-2 font-medium"
-      >
-        {busy ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-400" />
-            <span>Mengekspor {busy.toUpperCase()}...</span>
-          </>
-        ) : (
-          <>
-            <Download className="h-4 w-4 text-slate-500" />
-            <span>Ekspor</span>
-            <ChevronDown
-              className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
-                open ? "rotate-180" : ""
-              }`}
-            />
-          </>
-        )}
-      </Button>
+    <>
+      <div className="relative" ref={anchorRef}>
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          disabled={disabled || Boolean(busy)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="gap-2 rounded-[14px] font-medium"
+        >
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-400" />
+              <span>Mengekspor {busy.toUpperCase()}...</span>
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4 text-slate-500" />
+              <span>Ekspor</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+                  open ? "rotate-180" : ""
+                }`}
+              />
+            </>
+          )}
+        </Button>
+      </div>
 
-      {open && (
-        <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-elevated backdrop-blur-md animate-slide-up dark:border-slate-800/80 dark:bg-slate-900/95">
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Pilih Format Ekspor
-          </p>
-          <div className="space-y-0.5">
-            {FORMATS.map((f) => {
-              const IconComp = f.icon;
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => handleExport(f.key)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs transition hover:bg-slate-50 active:scale-[0.98] dark:hover:bg-slate-800"
+      <DropdownPanel
+        open={open}
+        anchorRef={anchorRef}
+        align="end"
+        className="w-56"
+        role="menu"
+        ariaLabel="Pilih Format Ekspor"
+        onClose={() => setOpen(false)}
+        onEscape={() => {
+          setOpen(false);
+          anchorRef.current?.querySelector("button")?.focus();
+        }}
+      >
+        <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          Pilih Format Ekspor
+        </p>
+        <div className="space-y-0.5">
+          {FORMATS.map((f) => {
+            const IconComp = f.icon;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                role="menuitem"
+                onClick={() => handleExport(f.key)}
+                className="select-option gap-3"
+              >
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${f.bgColor} ${f.iconColor}`}
                 >
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${f.bgColor} ${f.iconColor}`}
-                  >
-                    <IconComp className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 dark:text-slate-100">{f.label}</p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">{f.hint}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  <IconComp className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-800 dark:text-slate-100">
+                    {f.label}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                    {f.hint}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </DropdownPanel>
+    </>
   );
 }

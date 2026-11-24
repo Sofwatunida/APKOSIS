@@ -318,10 +318,10 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
                   </option>
                 ))}
               </Select>
-              <select
+              <Select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs transition hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="h-9 py-0 text-xs font-medium"
               >
                 <option value="">Semua Status</option>
                 {STATUS_KEBUTUHAN.map((s) => (
@@ -329,7 +329,7 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
                     {STATUS_KEBUTUHAN_LABEL[s]}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           }
         />
