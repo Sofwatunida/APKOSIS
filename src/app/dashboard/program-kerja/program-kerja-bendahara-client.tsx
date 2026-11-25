@@ -389,7 +389,13 @@ export function ProgramKerjaBendaharaClient({
         <CardHeader title="Pilih Divisi" />
         <CardContent>
           <div className="w-full sm:w-96">
-            <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
+            <Select
+              value={divisiId}
+              onChange={(e) => setDivisiId(e.target.value)}
+              searchable={canControl}
+              searchPlaceholder="Cari nama divisi..."
+              searchEmptyLabel="Divisi tidak ditemukan"
+            >
               <option value="">-- Pilih Divisi --</option>
               {divisiList.map((d) => (
                 <option key={d.id} value={d.id}>

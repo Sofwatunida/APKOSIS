@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileBarChart2, Loader2, Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileBarChart2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
 import { ExportMenu } from "@/components/export-menu";
@@ -122,7 +121,10 @@ export function ReportsClient({
   }, [jenis, periodeId, divisiId, dateFrom, dateTo, divisiName]);
 
   const judul = useMemo(
-    () => `Laporan ${JENIS.find((j) => j.key === jenis)?.label}`,
+    () =>
+      jenis === "harian"
+        ? "LAPORAN HARIAN"
+        : `Laporan ${JENIS.find((j) => j.key === jenis)?.label ?? ""}`,
     [jenis]
   );
 
@@ -137,22 +139,12 @@ export function ReportsClient({
     return [p, d, rentang].filter(Boolean).join(" · ");
   }, [periodeId, divisiId, dateFrom, dateTo, periods, divisiSelect]);
 
-  function handlePrint() {
-    document.body.classList.add("print-report");
-    const cleanup = () => {
-      document.body.classList.remove("print-report");
-      window.removeEventListener("afterprint", cleanup);
-    };
-    window.addEventListener("afterprint", cleanup);
-    window.print();
-  }
-
   const kosong = !result || result.rows.length === 0;
 
   return (
     <div className="space-y-5">
       {/* Filter */}
-      <Card className="no-print">
+      <Card>
         <CardHeader
           title="Filter Laporan"
           icon={<FileBarChart2 className="h-5 w-5" />}
@@ -197,22 +189,12 @@ export function ReportsClient({
         </CardContent>
       </Card>
 
-      {/* Aksi ekspor + cetak */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3">
+      {/* Aksi ekspor */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           {loading ? "Memuat laporan..." : !result ? "Tidak ada data" : ""}
         </span>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            disabled={loading || kosong}
-            onClick={handlePrint}
-          >
-            <Printer className="h-4 w-4" />
-            <span>Cetak</span>
-          </Button>
           <ExportMenu
             size="md"
             title={judul}
@@ -223,11 +205,13 @@ export function ReportsClient({
             rows={result?.rows ?? []}
             division={getDivisiFilterLabel(divisiId, divisiSelect)}
             documentType={
-              jenis === "rekap"
-                ? "REKAPITULASI"
-                : jenis === "keuangan"
-                  ? "LAPORAN KEUANGAN"
-                  : "LAPORAN"
+              jenis === "harian"
+                ? "LAPORAN HARIAN"
+                : jenis === "rekap"
+                  ? "REKAPITULASI"
+                  : jenis === "keuangan"
+                    ? "LAPORAN KEUANGAN"
+                    : "LAPORAN"
             }
           />
         </div>
@@ -243,7 +227,7 @@ export function ReportsClient({
       )}
 
       {/* Pratinjau */}
-      <div id="report-print">
+      <div>
         <Card>
           <CardHeader
             title={judul}

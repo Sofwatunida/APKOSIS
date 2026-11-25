@@ -9,11 +9,10 @@ import {
   DOCUMENT_RGB,
   footerIdentity,
   kopLines,
+  reportMainTitle,
   reportMetaRows,
-  reportNotes,
   resolveApproval,
   resolveDocumentType,
-  todayLabel,
   type ExportInput,
   type ExportFormat,
   type KopLine,
@@ -133,10 +132,10 @@ async function resolveKopLogos(input: ExportInput): Promise<KopLogos> {
 
 interface PreparedDocument {
   input: ExportInput;
+  title: string;
   kop: KopLine[];
   metaRows: [string, string][];
   summary: SummaryItem[];
-  notes: string[];
   approval: ApprovalSpec;
   periodLabel: string;
   documentType: string;
@@ -153,14 +152,16 @@ async function prepareDocument(input: ExportInput): Promise<PreparedDocument> {
       .map((s) => s.trim())
       .find((s) => /^periode\b/i.test(s)) ||
     "Tanpa Periode";
-  const documentType = input.documentType || resolveDocumentType(input.title);
+  const documentType = input.title.toLowerCase().includes("laporan harian")
+    ? "LAPORAN HARIAN"
+    : input.documentType || resolveDocumentType(input.title);
   const kopLogos = await resolveKopLogos(input);
   return {
     input,
+    title: reportMainTitle(input.title),
     kop: kopLines(input.kop),
     metaRows: reportMetaRows(input, periodLabel),
     summary: computeSummary(input.columns, input.rows, input.extraSummary),
-    notes: reportNotes(input),
     approval: resolveApproval(input.title, input.kop, input.approval),
     periodLabel,
     documentType,
@@ -302,8 +303,12 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
     row.getCell(identityStartCol).border = { bottom: navyBorder };
   }
 
-  identityRow(doc.input.title, { size: 15, bold: true, color: DOCUMENT_ARGB.navy, height: 28 });
-  identityRow(doc.documentType, { size: 9, bold: true, color: DOCUMENT_ARGB.blue, height: 18 });
+  if (doc.title !== "LAPORAN HARIAN") {
+    identityRow(doc.title, { size: 15, bold: true, color: DOCUMENT_ARGB.navy, height: 28 });
+  }
+  if (doc.documentType !== doc.title) {
+    identityRow(doc.documentType, { size: 9, bold: true, color: DOCUMENT_ARGB.blue, height: 18 });
+  }
   doc.metaRows.forEach(([label, value]) =>
     identityRow(`${label}: ${value}`, { size: 9, align: "left", height: 18 })
   );
@@ -406,17 +411,6 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
     })
   );
 
-  identityRow("KETERANGAN", {
-    size: 10,
-    bold: true,
-    color: DOCUMENT_ARGB.navy,
-    align: "left",
-    height: 20,
-  });
-  doc.notes.forEach((note, i) =>
-    identityRow(`${i + 1}. ${note}`, { size: 9, align: "left", height: 20 })
-  );
-
   identityRow(doc.approval.heading ?? "PENGESAHAN", {
     size: 10,
     bold: true,
@@ -425,16 +419,20 @@ async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
     height: 22,
   });
   const signatories = doc.approval.signatories;
-  const span = Math.max(1, Math.floor(input.columns.length / signatories.length));
   signatories.forEach((s, i) => {
-    const from = i * span + 1;
-    const to = i === signatories.length - 1 ? input.columns.length : Math.min(from + span - 1, input.columns.length);
+    const span =
+      signatories.length === 1
+        ? Math.max(2, Math.ceil(input.columns.length * 0.35))
+        : Math.max(1, Math.floor(input.columns.length / signatories.length));
+    const to = input.columns.length - (signatories.length - 1 - i) * span;
+    const from = Math.max(1, to - span + 1);
     const rowIdx = ws.rowCount + 1;
     const row = ws.addRow([]);
     row.height = 70;
     ws.mergeCells(rowIdx, from, rowIdx, to);
     const c = row.getCell(from);
-    c.value = `${s.label.replace(/\n/g, " ")}\n\n\n${s.name}`;
+    const name = s.name.trim();
+    c.value = `${s.label}\n\n........................................${name ? `\n${name}` : ""}`;
     c.font = { size: 9, name: "Aptos", color: { argb: DOCUMENT_ARGB.text } };
     c.alignment = { horizontal: "left", vertical: "top", wrapText: true };
   });
@@ -479,7 +477,7 @@ function num(n: number): string {
 }
 
 const WINANSI_MAP: Record<string, string> = {
-  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2014": "-",
+  "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-",
   "\u2015": "-", "\u2212": "-",
   "\u2018": "'", "\u2019": "'", "\u201A": "'",
   "\u201C": '"', "\u201D": '"', "\u201E": '"',
@@ -717,7 +715,7 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   }
 
   function drawRunningHeader() {
-    drawText(input.title, 8, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W * 0.65, "left", "F2");
+    drawText(doc.title, 8, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W * 0.65, "left", "F2");
     drawText(footerIdentity(input.kop), 7.5, false, MARGIN_LEFT + CONTENT_W * 0.65, topY, DOCUMENT_RGB.muted, CONTENT_W * 0.35, "right");
     topY += 11;
     fillRect(MARGIN_LEFT, topY, CONTENT_W, 0.6, DOCUMENT_RGB.border);
@@ -790,10 +788,14 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   fillRect(MARGIN_LEFT, topY, CONTENT_W, 1.8, [0, 0, 0]);
   topY += 14;
 
-  drawText(input.title, 13.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "center", "F2");
-  topY += 17;
-  drawText(doc.documentType, 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.blue, CONTENT_W, "center", "F2");
-  topY += 14;
+  if (doc.title !== "LAPORAN HARIAN") {
+    drawText(doc.title, 13.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "center", "F2");
+    topY += 17;
+  }
+  if (doc.documentType !== doc.title) {
+    drawText(doc.documentType, 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.blue, CONTENT_W, "center", "F2");
+    topY += 14;
+  }
 
   // Identitas laporan.
   const metaHeight = doc.metaRows.length * 11 + 10;
@@ -891,31 +893,24 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
 
   drawSummary();
 
-  // KETERANGAN — informasi asli dari subtitle/filter dipertahankan.
-  const noteLines = doc.notes.flatMap((n, i) =>
-    wrapText(`${i + 1}. ${n}`, 8, CONTENT_W - 8).map((line, li) => ({ line, indent: li > 0 }))
-  );
-  const noteHeight = 18 + noteLines.length * 10.5;
-  ensureSpace(noteHeight + 90);
-  drawText("KETERANGAN", 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "left", "F2");
-  topY += 15;
-  noteLines.forEach((n, i) =>
-    drawText(n.line, 8, false, MARGIN_LEFT + (n.indent ? 12 : 0), topY + i * 10.5, DOCUMENT_RGB.text, CONTENT_W - 12)
-  );
-  topY += noteHeight - 6;
-
-  // PENGESAHAN — berbeda sesuai kewenangan jenis laporan.
+  // PENGESAHAN — dua kolom: pengaju di kiri dan pihak mengetahui di kanan.
+  ensureSpace(88);
   const signatories = doc.approval.signatories;
   const sigColW = CONTENT_W / signatories.length;
   drawText(doc.approval.heading ?? "PENGESAHAN", 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "left", "F2");
   topY += 18;
   signatories.forEach((s, i) => {
-    const x = MARGIN_LEFT + i * sigColW;
+    const blockW = Math.min(sigColW, 190);
+    const x = signatories.length === 1
+      ? MARGIN_LEFT + CONTENT_W - blockW
+      : MARGIN_LEFT + i * (CONTENT_W - blockW);
     s.label.split("\n").forEach((line, li) =>
-      drawText(line, 8, true, x, topY + li * 10, DOCUMENT_RGB.text, sigColW - 8, "left", "F2")
+      drawText(line, 8, true, x, topY + li * 10, DOCUMENT_RGB.text, blockW, "left", "F2")
     );
-    drawText("........................................", 8, false, x, topY + 28, DOCUMENT_RGB.border, sigColW - 8);
-    drawText(s.name, 8.5, true, x, topY + 40, DOCUMENT_RGB.navy, sigColW - 8, "left", "F2");
+    drawText("........................................", 8, false, x, topY + 28, DOCUMENT_RGB.border, blockW);
+    if (s.name.trim()) {
+      drawText(s.name, 8.5, true, x, topY + 40, DOCUMENT_RGB.navy, blockW, "left", "F2");
+    }
   });
   topY += 58;
 
@@ -1050,7 +1045,6 @@ export async function buildExportBlob(options: ExportInput & { format: ExportFor
         kopLines: doc.kop,
         metaRows: doc.metaRows,
         summary: doc.summary,
-        notes: doc.notes,
         approval: doc.approval,
         periodLabel: doc.periodLabel,
         documentType: doc.documentType,

@@ -199,6 +199,26 @@
     @apply h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400;
   }
 
+  .select-search {
+    @apply relative mb-1;
+  }
+
+  .select-search-icon {
+    @apply pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500;
+  }
+
+  .select-search-input {
+    @apply w-full rounded-[11px] border border-slate-200 bg-slate-50/80 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors duration-150 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900;
+  }
+
+  .select-options-scroll {
+    @apply max-h-64 overflow-y-auto overscroll-contain;
+  }
+
+  .select-empty {
+    @apply px-3 py-3 text-center text-sm text-slate-500 dark:text-slate-400;
+  }
+
   /* Kartu & konten utama: `min-w-0` mencegah child yang lebar (tabel, teks
      panjang) ikut memaksa layout melebar keluar viewport. */
   .card-base,
@@ -334,27 +354,5 @@ input[type="password"]::-ms-reveal {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-}
-
-/* Cetak area laporan (hanya aktif saat `body.print-report` dipasang oleh
-   tombol Cetak di halaman Cetak Laporan). Tidak memengaruhi halaman lain. */
-@media print {
-  body.print-report > * {
-    visibility: hidden;
-  }
-  body.print-report #report-print,
-  body.print-report #report-print * {
-    visibility: visible;
-  }
-  body.print-report #report-print {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    margin: 0;
-    padding: 16px;
-  }
-  body.print-report .no-print {
-    display: none !important;
   }
 }

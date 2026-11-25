@@ -4,6 +4,7 @@ import {
   Children,
   isValidElement,
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -14,7 +15,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { DropdownPanel } from "@/components/ui/dropdown";
 
 interface SelectOption {
@@ -31,6 +32,9 @@ export interface SelectProps
   wrapperClassName?: string;
   menuClassName?: string;
   leftIcon?: ReactNode;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  searchEmptyLabel?: string;
 }
 
 function optionText(node: ReactNode): string {
@@ -77,6 +81,9 @@ export function Select({
   wrapperClassName = "",
   menuClassName = "",
   leftIcon,
+  searchable = false,
+  searchPlaceholder = "Cari...",
+  searchEmptyLabel = "Tidak ada hasil",
   value,
   defaultValue,
   onChange,
@@ -102,6 +109,24 @@ export function Select({
     [options],
   );
 
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const shownOptions = useMemo(() => {
+    if (!searchable || !normalizedQuery) return options;
+    return options.filter((option) =>
+      optionText(option.label).toLocaleLowerCase().includes(normalizedQuery),
+    );
+  }, [options, searchable, normalizedQuery]);
+  const shownEnabledIndexes = useMemo(
+    () =>
+      shownOptions.reduce<number[]>((acc, option, index) => {
+        if (!option.disabled) acc.push(index);
+        return acc;
+      }, []),
+    [shownOptions],
+  );
+
   const isControlled = value !== undefined;
   const [internalValue, setInternalValue] = useState(() => {
     if (defaultValue !== undefined) return String(defaultValue);
@@ -119,8 +144,13 @@ export function Select({
     Math.max(0, options.findIndex((option) => option.value === currentValue)),
   );
 
+  useEffect(() => {
+    if (open && searchable) searchRef.current?.focus();
+  }, [open, searchable]);
+
   const closeMenu = useCallback(() => {
     setOpen(false);
+    setQuery("");
     triggerRef.current?.focus();
   }, []);
 
@@ -128,6 +158,7 @@ export function Select({
     const selectedIndex = options.findIndex(
       (option) => option.value === currentValue && !option.disabled,
     );
+    setQuery("");
     setActiveIndex(
       selectedIndex >= 0 ? selectedIndex : Math.max(0, enabledIndexes[0] ?? 0),
     );
@@ -167,9 +198,9 @@ export function Select({
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     onKeyDown?.(event);
-    if (event.defaultPrevented || disabled || enabledIndexes.length === 0) return;
+    if (event.defaultPrevented || disabled || shownEnabledIndexes.length === 0) return;
 
-    const position = enabledIndexes.indexOf(activeIndex);
+    const position = shownEnabledIndexes.indexOf(activeIndex);
     switch (event.key) {
       case "ArrowDown":
       case "ArrowUp": {
@@ -182,23 +213,25 @@ export function Select({
         const nextPosition =
           position < 0
             ? 0
-            : (position + step + enabledIndexes.length) % enabledIndexes.length;
-        setActiveIndex(enabledIndexes[nextPosition]);
+            : (position + step + shownEnabledIndexes.length) % shownEnabledIndexes.length;
+        setActiveIndex(shownEnabledIndexes[nextPosition]);
         return;
       }
       case "Home":
         event.preventDefault();
-        if (open) setActiveIndex(enabledIndexes[0]);
+        if (open) setActiveIndex(shownEnabledIndexes[0]);
         return;
       case "End":
         event.preventDefault();
-        if (open) setActiveIndex(enabledIndexes[enabledIndexes.length - 1]);
+        if (open) setActiveIndex(shownEnabledIndexes[shownEnabledIndexes.length - 1]);
         return;
       case "Enter":
       case " ":
         event.preventDefault();
-        if (open) commit(options[activeIndex]);
-        else openMenu();
+        if (open) {
+          const option = shownOptions[activeIndex];
+          if (option) commit(option);
+        } else openMenu();
         return;
       case "Escape":
         if (open) {
@@ -212,6 +245,59 @@ export function Select({
         return;
     }
   }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (shownEnabledIndexes.length === 0) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const position = shownEnabledIndexes.indexOf(activeIndex);
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      const nextPosition =
+        position < 0
+          ? 0
+          : (position + step + shownEnabledIndexes.length) % shownEnabledIndexes.length;
+      setActiveIndex(shownEnabledIndexes[nextPosition]);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const option = shownOptions[activeIndex];
+      if (option && !option.disabled) commit(option);
+    } else if (event.key === "Tab") {
+      setOpen(false);
+    }
+  }
+
+  const optionList =
+    shownOptions.length === 0 ? (
+      <p className="select-empty">
+        {searchable && normalizedQuery ? searchEmptyLabel : "Tidak ada pilihan"}
+      </p>
+    ) : (
+      shownOptions.map((option, index) => {
+        const isSelected = option.value === currentValue;
+        const isActive = index === activeIndex;
+        return (
+          <button
+            key={option.key}
+            id={`${listId}-option-${index}`}
+            type="button"
+            role="option"
+            aria-selected={isSelected}
+            data-active={isActive || undefined}
+            disabled={option.disabled}
+            tabIndex={-1}
+            className={`select-option ${isSelected ? "select-option--selected" : ""}`}
+            onMouseDown={(event) => event.preventDefault()}
+            onMouseEnter={() => setActiveIndex(index)}
+            onClick={() => commit(option)}
+          >
+            <span className="select-option-label">{option.label}</span>
+            {isSelected && (
+              <Check aria-hidden className="select-option-check" strokeWidth={2.5} />
+            )}
+          </button>
+        );
+      })
+    );
 
   return (
     <div className={`select-shell ${wrapperClassName}`}>
@@ -228,9 +314,9 @@ export function Select({
         autoFocus={autoFocus}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-controls={listId}
+        aria-controls={searchable ? `${listId}-options` : listId}
         aria-activedescendant={
-          open && options[activeIndex] ? `${listId}-option-${activeIndex}` : undefined
+          open && shownOptions[activeIndex] ? `${listId}-option-${activeIndex}` : undefined
         }
         aria-required={required || undefined}
         disabled={disabled}
@@ -254,44 +340,42 @@ export function Select({
       <DropdownPanel
         open={open}
         anchorRef={triggerRef}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setQuery("");
+        }}
         onEscape={closeMenu}
         className={menuClassName}
-        role="listbox"
+        role={searchable ? "dialog" : "listbox"}
         id={listId}
         ariaLabel={rest["aria-label"]}
         ariaLabelledBy={rest["aria-labelledby"]}
       >
-        {options.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">
-            Tidak ada pilihan
-          </p>
+        {searchable && (
+          <div className="select-search">
+            <Search aria-hidden className="select-search-icon" strokeWidth={2} />
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              autoComplete="off"
+              className="select-search-input"
+            />
+          </div>
+        )}
+        {searchable ? (
+          <div id={`${listId}-options`} role="listbox" className="select-options-scroll">
+            {optionList}
+          </div>
         ) : (
-          options.map((option, index) => {
-            const isSelected = option.value === currentValue;
-            const isActive = index === activeIndex;
-            return (
-              <button
-                key={option.key}
-                id={`${listId}-option-${index}`}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                data-active={isActive || undefined}
-                disabled={option.disabled}
-                tabIndex={-1}
-                className={`select-option ${isSelected ? "select-option--selected" : ""}`}
-                onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => commit(option)}
-              >
-                <span className="select-option-label">{option.label}</span>
-                {isSelected && (
-                  <Check aria-hidden className="select-option-check" strokeWidth={2.5} />
-                )}
-              </button>
-            );
-          })
+          optionList
         )}
       </DropdownPanel>
     </div>

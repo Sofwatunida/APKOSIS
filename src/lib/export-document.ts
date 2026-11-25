@@ -154,6 +154,7 @@ export function footerIdentity(_kop?: SchoolKop): string {
 /** Jenis dokumen ditentukan dari judul, bukan diasumsikan sama untuk semua laporan. */
 export function resolveDocumentType(title: string): string {
   const t = title.toLowerCase();
+  if (t.includes("laporan harian")) return "LAPORAN HARIAN";
   if (t.includes("pengajuan")) return "PENGAJUAN DANA";
   if (t.includes("rekapitulasi") || t.includes("rekap")) return "REKAPITULASI";
   if (t.includes("log aktivitas") || t.includes("pengelolaan akun")) return "DOKUMEN ADMINISTRASI SISTEM";
@@ -161,6 +162,12 @@ export function resolveDocumentType(title: string): string {
   if (t.includes("inventaris") || t.includes("kebutuhan") || t.includes("anggota"))
     return "DAFTAR DATA";
   return "DOKUMEN ORGANISASI";
+}
+
+/** Judul dokumen dinormalisasi agar "Laporan Laporan Harian" tidak terulang. */
+export function reportMainTitle(title: string): string {
+  const clean = title.trim().replace(/\s+/g, " ");
+  return clean.replace(/^(laporan\s+){2,}/i, "Laporan ").toUpperCase();
 }
 
 /** Divisi/unit diambil dari subtitle asli bila pemanggil tidak mengirim prop khusus. */
@@ -182,77 +189,27 @@ export function resolveDivision(subtitle?: string, title?: string): string {
   return raw[0] || "Seluruh Divisi";
 }
 
-/**
- * Pengesahan mengikuti kewenangan jenis laporan.
- * Nama diambil dari konfigurasi organisasi; placeholder tidak dianggap data fiktif.
- */
+/** Pengesahan dua kolom: pengaju di kiri dan pihak mengetahui di kanan. */
 export function resolveApproval(
   title: string,
-  kop?: SchoolKop,
+  _kop?: SchoolKop,
   override?: ApprovalSpec
 ): ApprovalSpec {
-  if (override?.signatories?.length) return override;
+  if (override) return override;
   const t = title.toLowerCase();
-  const ketua = kop?.ketuaOsis?.trim() || "[NAMA KETUA OSIS]";
-  const pembina = kop?.pembinaOsis?.trim() || "[NAMA PEMBINA OSIS]";
-  const bendahara = kop?.bendaharaOsis?.trim() || "[NAMA BENDAHARA OSIS]";
-  const sekretaris = kop?.sekretarisOsis?.trim() || "[NAMA SEKRETARIS OSIS]";
-  const ketuaDivisi = kop?.ketuaDivisi?.trim() || "[NAMA KETUA DIVISI]";
-  const admin = "[NAMA ADMIN SISTEM]";
-
-  if (t.includes("pengajuan dana")) {
-    return {
-      heading: "PENGESAHAN PENGAJUAN DANA",
-      signatories: [
-        { label: "Diajukan oleh,\nKetua Divisi", name: ketuaDivisi },
-        { label: "Diperiksa oleh,\nBendahara OSIS", name: bendahara },
-        { label: "Mengetahui,\nKetua OSIS", name: ketua },
-      ],
-    };
-  }
-  if (
-    t.includes("keuangan") ||
-    t.includes("transaksi") ||
-    t.includes("saldo") ||
-    t.includes("rekap bulanan")
-  ) {
-    return {
-      heading: "PENGESAHAN LAPORAN KEUANGAN",
-      signatories: [
-        { label: "Disusun oleh,\nBendahara OSIS", name: bendahara },
-        { label: "Mengetahui,\nKetua OSIS", name: ketua },
-      ],
-    };
-  }
-  if (t.includes("log aktivitas") || t.includes("pengelolaan akun") || t.includes("audit")) {
-    return {
-      heading: "PENGESAHAN DOKUMEN ADMINISTRASI",
-      signatories: [
-        { label: "Diverifikasi oleh,\nAdmin Sistem", name: admin },
-        { label: "Mengetahui,\nKetua OSIS", name: ketua },
-      ],
-    };
-  }
-  if (
-    t.includes("rekap") ||
-    t.includes("monitoring") ||
-    t.includes("data divisi") ||
-    t.includes("periode kepengurusan")
-  ) {
-    return {
-      heading: "PENGESAHAN REKAPITULASI",
-      signatories: [
-        { label: "Disusun oleh,\nSekretaris OSIS", name: sekretaris },
-        { label: "Mengetahui,\nKetua OSIS", name: ketua },
-        { label: "Mengetahui,\nPembina OSIS", name: pembina },
-      ],
-    };
+  let label = "Diajukan oleh,\nKetua Divisi";
+  if (t.includes("keuangan") || t.includes("bendahara")) {
+    label = "Disusun oleh,\nBendahara OSIS";
+  } else if (t.includes("rekap")) {
+    label = "Disusun oleh,\nSekretaris OSIS";
+  } else if (t.includes("admin") || t.includes("akun")) {
+    label = "Diverifikasi oleh,\nAdmin Sistem";
   }
   return {
-    heading: "PENGESAHAN LAPORAN",
+    heading: "PENGESAHAN",
     signatories: [
-      { label: "Diajukan oleh,\nKetua Divisi", name: ketuaDivisi },
-      { label: "Mengetahui,\nKetua OSIS", name: ketua },
+      { label, name: "" },
+      { label: "Mengetahui,\nKetua OSIS", name: "" },
     ],
   };
 }
@@ -355,21 +312,67 @@ export function computeSummary(
     .slice(0, 7);
 }
 
+const MONTHS_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+function parseReportDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slash) return new Date(Number(slash[3]), Number(slash[2]) - 1, Number(slash[1]));
+  const textual = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/i);
+  if (textual) {
+    const month = MONTHS_ID.findIndex(
+      (m) => m.toLowerCase() === textual[2].toLowerCase(),
+    );
+    if (month >= 0) return new Date(Number(textual[3]), month, Number(textual[1]));
+  }
+  return null;
+}
+
+function formatReportDate(date: Date): string {
+  return `${date.getDate()} ${MONTHS_ID[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function reportDateRange(input: ExportInput): string {
+  const fromSubtitle = (input.subtitle ?? "")
+    .split("·")
+    .map((s) => s.trim())
+    .find((s) => /^tanggal\s*:/i.test(s));
+  if (fromSubtitle) {
+    const range = fromSubtitle.replace(/^tanggal\s*:\s*/i, "").trim();
+    if (range) return range;
+  }
+  const dateKey =
+    input.columns.find((c) => /tanggal/i.test(c.key))?.key ??
+    input.columns.find((c) => /tanggal/i.test(c.header))?.key;
+  if (!dateKey) return "-";
+  const dates = input.rows
+    .filter((r) => !r.__total)
+    .map((r) => parseReportDate(r[dateKey]))
+    .filter((d): d is Date => d !== null);
+  if (dates.length === 0) return "-";
+  const min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  return `${formatReportDate(min)} – ${formatReportDate(max)}`;
+}
+
 /** Teks normal dipakai ulang di tiga format agar tidak ada perbedaan isi. */
 export function reportMetaRows(input: ExportInput, periodLabel: string): [string, string][] {
+  const today = new Date().toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   return [
     ["Unit / Divisi", input.division?.trim() || resolveDivision(input.subtitle, input.title)],
     ["Periode Kepengurusan", periodLabel],
-    ["Jenis Dokumen", input.documentType || resolveDocumentType(input.title)],
-    ["Tanggal Pencetakan", todayLabel()],
+    ["Rentang Tanggal", reportDateRange(input)],
+    ["Tanggal Pencetakan", today],
   ];
-}
-
-export function reportNotes(input: ExportInput): string[] {
-  const notes: string[] = [];
-  if (input.subtitle?.trim()) notes.push(input.subtitle.trim());
-  if (input.notes?.length) input.notes.forEach((n) => n.trim() && notes.push(n.trim()));
-  if (notes.length === 0)
-    notes.push("Data bersumber langsung dari basis data APKOSIS sesuai filter yang diterapkan.");
-  return notes;
 }

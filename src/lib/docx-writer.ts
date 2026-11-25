@@ -156,26 +156,40 @@ function headerBlock(
 }
 
 function approvalBlock(approval: ApprovalSpec, width: number): string {
-  const count = approval.signatories.length;
-  const colWidth = Math.floor(width / count);
-  const cells = approval.signatories
-    .map((s, i) =>
-      cell(
-        `${run(s.label, { size: 9, bold: true, color: DOCUMENT_PALETTE.navy })}${run("\n\n\n\n", { size: 9 })}${run(s.name, { size: 9.5, bold: true })}${run("\n" + "".padStart(s.name.length, " "), { size: 9 })}`,
-        i === count - 1 ? width - colWidth * (count - 1) : colWidth,
-        { align: "left", valign: "top" }
-      )
-    )
-    .join("");
+  const signatories = approval.signatories;
+  const count = signatories.length;
+  const signatureCell = (label: string, name: string, cellWidth: number) =>
+    cell(
+      `${run(label, { size: 9, bold: true, color: DOCUMENT_PALETTE.navy })}${run("\n\n\n\n", { size: 9 })}${run("........................................", { size: 9, color: DOCUMENT_PALETTE.muted })}${name ? run(`\n${name}`, { size: 9.5, bold: true }) : ""}`,
+      cellWidth,
+      { align: "left", valign: "top" }
+    );
+
+  const leftW = Math.round(width * 0.65);
+  const rightW = width - leftW;
+  const colWidth = Math.floor(width / Math.max(count, 1));
+  const widths =
+    count === 1
+      ? [leftW, rightW]
+      : Array.from({ length: count }, (_, i) =>
+          i === count - 1 ? width - colWidth * (count - 1) : colWidth
+        );
+  const cells =
+    count === 1
+      ? `${cell("", leftW)}${signatureCell(signatories[0].label, signatories[0].name.trim(), rightW)}`
+      : signatories
+          .map((s, i) =>
+            signatureCell(s.label, s.name.trim(), i === count - 1 ? widths[i] : colWidth)
+          )
+          .join("");
+
   return `${textParagraph(approval.heading ?? "PENGESAHAN", {
     bold: true,
     size: 10,
     color: DOCUMENT_PALETTE.navy,
     before: 220,
     after: 100,
-  })}${table([cells], Array.from({ length: count }, (_, i) =>
-    i === count - 1 ? width - colWidth * (count - 1) : colWidth
-  ))}`;
+  })}${table([cells], widths)}`;
 }
 
 function footerXml(identity: string): string {
@@ -192,7 +206,6 @@ export async function buildDocxBlob(
     kopLines: KopLine[];
     metaRows: [string, string][];
     summary: SummaryItem[];
-    notes: string[];
     approval: ApprovalSpec;
     periodLabel: string;
     documentType: string;
@@ -283,10 +296,6 @@ export async function buildDocxBlob(
   );
   body.push(textParagraph("RINGKASAN", { bold: true, size: 10, color: DOCUMENT_PALETTE.navy, before: 200, after: 80 }));
   body.push(table(summaryRows, [contentW * 0.6, contentW * 0.4]));
-  body.push(textParagraph("KETERANGAN", { bold: true, size: 10, color: DOCUMENT_PALETTE.navy, before: 200, after: 80 }));
-  options.notes.forEach((note, i) =>
-    body.push(textParagraph(`${i + 1}. ${note}`, { size: 9, after: 40 }))
-  );
   body.push(approvalBlock(options.approval, contentW));
 
   const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

@@ -50,9 +50,14 @@ if (!existsSync(compiled)) {
 
 const require = createRequire(import.meta.url);
 const { buildExportBlob } = require(compiled);
-const { computeSummary, parseNumeric, resolveApproval, resolveDocumentType } = require(
-  path.join(verifyDir, "export-document.js")
-);
+const {
+  computeSummary,
+  parseNumeric,
+  reportMainTitle,
+  reportMetaRows,
+  resolveApproval,
+  resolveDocumentType,
+} = require(path.join(verifyDir, "export-document.js"));
 const JSZip = require("jszip");
 const ExcelJS = require("exceljs");
 
@@ -60,8 +65,6 @@ const kop = {
   organization: "ORGANISASI SISWA INTRA SEKOLAH (OSIS)",
   namaSekolah: "SMA NEGERI CONTOH",
   alamat: "Jalan Pendidikan No. 1",
-  ketuaOsis: "Nama Ketua OSIS",
-  bendaharaOsis: "Nama Bendahara OSIS",
   pembinaOsis: "Nama Pembina OSIS",
 };
 
@@ -105,13 +108,36 @@ check(
   "baris __total tidak dijumlahkan dua kali",
   !summary.some((s) => s.label === "Total Nominal" && s.value.includes("1.640.000"))
 );
+const approval = resolveApproval(base.title, kop);
 check(
-  "pengesahan keuangan memakai Bendahara & Ketua OSIS",
-  resolveApproval(base.title, kop).signatories.some((s) => s.name === "Nama Bendahara OSIS")
+  "pengesahan dua kolom tanpa placeholder nama",
+  approval.signatories.length === 2 &&
+    approval.signatories[0].label === "Disusun oleh,\nBendahara OSIS" &&
+    approval.signatories[0].name === "" &&
+    approval.signatories[1].label === "Mengetahui,\nKetua OSIS" &&
+    approval.signatories[1].name === ""
 );
 check(
-  "jenis dokumen mengikuti judul",
-  resolveDocumentType("Rekap Keuangan Bulanan") === "REKAPITULASI"
+  "judul harian tidak menggandakan kata Laporan",
+  reportMainTitle("Laporan Laporan Harian") === "LAPORAN HARIAN"
+);
+const metaRows = reportMetaRows(
+  { ...base, subtitle: "Divisi: Keuangan · Periode: 2026/2027 · Tanggal: 16 November 2026 – 25 November 2026" },
+  "2026/2027"
+);
+const metaLabels = metaRows.map(([label]) => label);
+check(
+  "kartu biru berisi unit/divisi, periode, rentang tanggal, dan tanggal cetak",
+  metaRows.length === 4 &&
+    ["Unit / Divisi", "Periode Kepengurusan", "Rentang Tanggal", "Tanggal Pencetakan"].every((label) =>
+      metaLabels.includes(label)
+    ) &&
+    !metaLabels.includes("Jenis Dokumen")
+);
+check(
+  "jenis dokumen LAPORAN HARIAN dan tidak mengikuti aturan umum",
+  resolveDocumentType("Laporan Laporan Harian") === "LAPORAN HARIAN" &&
+    resolveDocumentType("Rekap Keuangan Bulanan") === "REKAPITULASI"
 );
 
 console.log("\n[2] PDF");
@@ -122,12 +148,43 @@ check("versi PDF 1.4", pdf.startsWith("%PDF-1.4"));
 check("kertas A4", pdf.includes("595.28") || pdf.includes("841.89"));
 check("kop LAPORAN HARIAN tercetak", pdf.includes("LAPORAN HARIAN"));
 check("kop IP4A tercetak", pdf.includes("PENGURUS DIVISI") && (pdf.includes("(IP4A)") || pdf.includes("IP4A")));
-check("struktur ringkasan/keterangan/pengesahan", ["RINGKASAN", "KETERANGAN", "PENGESAHAN"].every((s) => pdf.includes(s)));
+check("struktur ringkasan/pengesahan", ["RINGKASAN", "PENGESAHAN"].every((s) => pdf.includes(s)));
+check("bagian KETERANGAN dihapus dari PDF", !pdf.includes("KETERANGAN"));
 check("nomor halaman X dari Y", /Halaman 1 dari \d+/.test(pdf));
 check("tabel berpindah halaman", /\/Count [2-9]/.test(pdf));
 check("header tabel diulang", (pdf.match(/Tanggal/g) || []).length >= 2);
-const pdfOrder = ["DATA LAPORAN", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].map((s) => pdf.indexOf(s));
-check("hierarki isi → ringkasan → keterangan → pengesahan", pdfOrder.every((n, i) => n >= 0 && (i === 0 || n > pdfOrder[i - 1])));
+const pdfOrder = ["DATA LAPORAN", "RINGKASAN", "PENGESAHAN"].map((s) => pdf.indexOf(s));
+check("hierarki isi → ringkasan → pengesahan", pdfOrder.every((n, i) => n >= 0 && (i === 0 || n > pdfOrder[i - 1])));
+
+const dailyPdf = await buildExportBlob({
+  ...base,
+  title: "Laporan Laporan Harian",
+  subtitle:
+    "Divisi: Keuangan · Periode: 2026/2027 · Tanggal: 16 November 2026 – 25 November 2026",
+  periodLabel: "2026/2027",
+  rows: rows.slice(0, 2),
+  format: "pdf",
+});
+const dailyText = Buffer.from(await dailyPdf.blob.arrayBuffer()).toString("latin1");
+check(
+  "judul utama LAPORAN HARIAN tanpa duplikasi",
+  dailyText.includes("LAPORAN HARIAN") && !/Laporan Laporan/i.test(dailyText)
+);
+check(
+  "kartu info memuat Rentang Tanggal dari filter dan Tanggal Pencetakan",
+  dailyText.includes("Rentang Tanggal") &&
+    /16 November 2026\s*-\s*25 November 2026/.test(dailyText) &&
+    dailyText.includes("Tanggal Pencetakan") &&
+    !dailyText.includes("Jenis Dokumen")
+);
+check(
+  "pengesahan PDF dua kolom tanpa placeholder nama",
+  !/\[NAMA/.test(dailyText) &&
+    dailyText.includes("Diajukan oleh,") &&
+    dailyText.includes("Mengetahui,") &&
+    (dailyText.match(/\.{10,}/g) ?? []).length >= 2
+);
+check("bagian KETERANGAN tidak tampil di PDF harian", !dailyText.includes("KETERANGAN"));
 
 console.log("\n[3] DOCX");
 const docResult = await buildExportBlob({ ...base, format: "doc" });
@@ -138,11 +195,19 @@ check("paket OOXML valid", ["[Content_Types].xml", "word/document.xml", "word/fo
 const documentXml = await zip.file("word/document.xml").async("string");
 const footerXml = await zip.file("word/footer1.xml").async("string");
 check("tabel Word asli dapat diedit", documentXml.includes("<w:tbl>") && documentXml.includes("<w:tblHeader/>"));
-check("kop & bagian laporan lengkap", ["LAPORAN HARIAN", "PENGURUS DIVISI", "IP4A", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].every((s) => documentXml.includes(s)));
+check(
+  "pengesahan DOCX dua kolom tanpa placeholder nama",
+  !/\[NAMA/.test(documentXml) &&
+    documentXml.includes("Disusun oleh,") &&
+    documentXml.includes("Mengetahui,") &&
+    (documentXml.match(/\.{10,}/g) ?? []).length >= 2
+);
+check("bagian KETERANGAN dihapus dari DOCX", !documentXml.includes("KETERANGAN"));
+check("kop & bagian laporan lengkap", ["LAPORAN HARIAN", "PENGURUS DIVISI", "IP4A", "RINGKASAN", "PENGESAHAN"].every((s) => documentXml.includes(s)));
 check("field PAGE dan NUMPAGES", footerXml.includes('w:instr=" PAGE "') && footerXml.includes('w:instr=" NUMPAGES "'));
 check("footer identitas IP4A", footerXml.includes("IP4A Pondok Pesantren Al-Ittihad"));
 check("ukuran kertas A4", documentXml.includes('w:w="11906"'));
-const docOrder = ["DATA LAPORAN", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].map((s) => documentXml.indexOf(s));
+const docOrder = ["DATA LAPORAN", "RINGKASAN", "PENGESAHAN"].map((s) => documentXml.indexOf(s));
 check("hierarki DOCX sesuai standar", docOrder.every((n, i) => n >= 0 && (i === 0 || n > docOrder[i - 1])));
 
 console.log("\n[4] XLSX");
@@ -159,7 +224,15 @@ check("footer & nomor halaman", String(ws.headerFooter?.oddFooter ?? "").include
 const allText = ws.getRows(1, ws.rowCount).flatMap((row) => row.values ?? []).map((v) => String(v ?? "")).join(" ");
 check("data tidak hilang", allText.includes("Kegiatan ke-40") && allText.includes("Kegiatan ke-1"));
 check("ringkasan & pengesahan tercetak", allText.includes("RINGKASAN") && allText.includes("PENGESAHAN"));
-const xlsxOrder = ["DATA LAPORAN", "RINGKASAN", "KETERANGAN", "PENGESAHAN"].map((label) =>
+check("bagian KETERANGAN dihapus dari XLSX", !allText.includes("KETERANGAN"));
+check(
+  "pengesahan XLSX dua kolom tanpa placeholder nama",
+  !/\[NAMA/.test(allText) &&
+    allText.includes("Disusun oleh,") &&
+    allText.includes("Mengetahui,") &&
+    (allText.match(/\.{10,}/g) ?? []).length >= 2
+);
+const xlsxOrder = ["DATA LAPORAN", "RINGKASAN", "PENGESAHAN"].map((label) =>
   ws.getRows(1, ws.rowCount).findIndex((row) =>
     (row.values ?? []).some((v) => typeof v === "string" && v.startsWith(label))
   )
