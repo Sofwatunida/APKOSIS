@@ -10,7 +10,7 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { EmptyState, Spinner } from "@/components/ui/feedback";
 import { ExportMenu } from "@/components/export-menu";
 import { createClient } from "@/lib/supabase/client";
-import { MONTH_NAMES_ID, endOfMonthISO, startOfMonthISO } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO, formatDate, startOfMonthISO } from "@/lib/date";
 import {
   SEMUA_DIVISI_LABEL,
   formatDivisiLabel,
@@ -46,7 +46,6 @@ interface KendalaItem {
 const BASE_PATH = "/dashboard/sekretaris/rekap-kendala";
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH = new Date().getMonth() + 1;
-const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => CURRENT_YEAR - i);
 
 function nomorLabel(nomor: number | null): string {
   return typeof nomor === "number" ? String(nomor).padStart(2, "0") : "-";
@@ -98,9 +97,12 @@ function RekapKendalaDetail({
   const router = useRouter();
   const [filterMonth, setFilterMonth] = useState(CURRENT_MONTH);
   const [filterYear, setFilterYear] = useState(CURRENT_YEAR);
+  const [startDate, setStartDate] = useState(startOfMonthISO(CURRENT_YEAR, CURRENT_MONTH));
+  const [endDate, setEndDate] = useState(endOfMonthISO(CURRENT_YEAR, CURRENT_MONTH));
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [kendala, setKendala] = useState<KendalaItem[]>([]);
+  const yearOptions = Array.from({ length: 8 }, (_, i) => CURRENT_YEAR - i);
 
   const semuaDivisi = isSemuaDivisi(divisi.id);
   const namaDivisi = semuaDivisi
@@ -109,16 +111,24 @@ function RekapKendalaDetail({
   const nomorDivisi = semuaDivisi ? "ALL" : nomorLabel(divisi.nomorDivisi);
 
   useEffect(() => {
+    setStartDate(startOfMonthISO(filterYear, filterMonth));
+    setEndDate(endOfMonthISO(filterYear, filterMonth));
+  }, [filterMonth, filterYear]);
+
+  useEffect(() => {
     let active = true;
 
     async function load() {
       setLoading(true);
       const supabase = createClient();
+      const from = startDate || startOfMonthISO(filterYear, filterMonth);
+      const to = endDate || from;
+      const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
       let query = supabase
         .from("laporan_harian")
         .select("id, tanggal, divisi_id")
-        .gte("tanggal", startOfMonthISO(filterYear, filterMonth))
-        .lte("tanggal", endOfMonthISO(filterYear, filterMonth))
+        .gte("tanggal", rangeStart)
+        .lte("tanggal", rangeEnd)
         .order("tanggal", { ascending: false });
       if (!semuaDivisi) query = query.eq("divisi_id", divisi.id);
 
@@ -173,7 +183,7 @@ function RekapKendalaDetail({
     return () => {
       active = false;
     };
-  }, [divisi.id, divisiList, semuaDivisi, filterMonth, filterYear]);
+  }, [divisi.id, divisiList, semuaDivisi, startDate, endDate, filterMonth, filterYear]);
 
   const query = search.trim().toLowerCase();
   const filteredKendala = useMemo(() => {
@@ -203,6 +213,10 @@ function RekapKendalaDetail({
     () => buildRekapKendalaRows(displayItems),
     [displayItems]
   );
+  const from = startDate || startOfMonthISO(CURRENT_YEAR, CURRENT_MONTH);
+  const to = endDate || from;
+  const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
+  const periodeLabel = `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
 
   function handleBack() {
     router.push(BASE_PATH);
@@ -230,30 +244,26 @@ function RekapKendalaDetail({
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Bulan">
-              <Select
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(Number(e.target.value))}
-              >
+              <Select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
                 {MONTH_NAMES_ID.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
+                  <option key={m} value={i + 1}>{m}</option>
                 ))}
               </Select>
             </Field>
             <Field label="Tahun">
-              <Select
-                value={filterYear}
-                onChange={(e) => setFilterYear(Number(e.target.value))}
-              >
-                {YEAR_OPTIONS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
+              <Select value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
           <div className="mt-4">
@@ -274,7 +284,7 @@ function RekapKendalaDetail({
           action={
             <ExportMenu
               title="Rekap Kendala & Solusi"
-              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - ${namaDivisi}`}
+              subtitle={`${periodeLabel} - ${namaDivisi}`}
               filename={`rekap-kendala-${semuaDivisi ? "semua-divisi" : `divisi-${nomorDivisi}`}`}
               division={namaDivisi}
               disabled={exportRows.length === 0}
@@ -290,7 +300,7 @@ function RekapKendalaDetail({
             <RekapKendalaList
               items={displayItems}
               emptyTitle="Tidak ada kendala pada periode ini"
-              emptyDescription="Ubah bulan, tahun, atau kata kunci pencarian untuk melihat data lain."
+              emptyDescription="Ubah rentang tanggal atau kata kunci pencarian untuk melihat data lain."
             />
           )}
         </CardContent>

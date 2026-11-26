@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO, formatDate, startOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
@@ -37,6 +37,8 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
   const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
+  const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
   const [searchKendala, setSearchKendala] = useState("");
 
   const [kendalaData, setKendalaData] = useState<Record<string, KendalaWithDate[]>>({});
@@ -55,20 +57,23 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
   }, []);
 
   useEffect(() => {
+    setStartDate(startOfMonthISO(filterYear, filterMonth));
+    setEndDate(endOfMonthISO(filterYear, filterMonth));
+  }, [filterMonth, filterYear]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
-      const year = String(filterYear);
-      const month = String(filterMonth).padStart(2, "0");
-
-      const startDate = `${year}-${month}-01`;
-      const endDate = endOfMonthISO(filterYear, filterMonth);
+      const from = startDate || startOfMonthISO(filterYear, filterMonth);
+      const to = endDate || from;
+      const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
 
       // Fetch reports for kendala
       const { data: reports } = await supabase
         .from("laporan_harian")
         .select("id, divisi_id, tanggal")
-        .gte("tanggal", startDate)
-        .lte("tanggal", endDate);
+        .gte("tanggal", rangeStart)
+        .lte("tanggal", rangeEnd);
       const reportsList = reports ?? [];
       const reportIds = reportsList.map((r) => r.id);
 
@@ -89,7 +94,7 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
       setLoading(false);
     }
     load();
-  }, [filterMonth, filterYear]);
+  }, [startDate, endDate, filterMonth, filterYear]);
 
   // Filter kendala by search
   const filteredKendalaData: Record<string, KendalaWithDate[]> = {};
@@ -124,8 +129,12 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
 
   if (loading) return <Spinner />;
 
-  const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
   const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
+  const from = startDate || startOfMonthISO(filterYear, filterMonth);
+  const to = endDate || from;
+  const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
+  const periodeLabel = `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+  const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
   return (
     <div className="space-y-6">
@@ -136,24 +145,26 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Field label="Bulan">
               <Select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
                 {MONTH_NAMES_ID.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
+                  <option key={m} value={i + 1}>{m}</option>
                 ))}
               </Select>
             </Field>
             <Field label="Tahun">
               <Select value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}>
                 {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
+                  <option key={y} value={y}>{y}</option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>
@@ -174,7 +185,7 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
           action={
             <ExportMenu
               title="Rekap Kendala & Solusi"
-              subtitle={`${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear} - ${filterDivisiLabel}`}
+              subtitle={`${periodeLabel} - ${filterDivisiLabel}`}
               division={filterDivisiLabel}
               filename="rekap-kendala-solusi"
               disabled={exportRows.length === 0}
@@ -195,7 +206,7 @@ export function RekapKendalaClient({ profile }: { profile: Profile }) {
           <RekapKendalaList
             items={flatItems}
             emptyTitle="Tidak ada kendala pada periode ini"
-            emptyDescription="Ubah bulan, tahun, divisi, atau kata kunci pencarian untuk melihat data lain."
+            emptyDescription="Ubah rentang tanggal, divisi, atau kata kunci pencarian untuk melihat data lain."
           />
         </CardContent>
       </Card>

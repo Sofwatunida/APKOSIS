@@ -22,7 +22,7 @@ import {
 } from "@/lib/divisi-options";
 import { fetchSaldoAwal } from "@/lib/finance";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { Spinner, EmptyState } from "@/components/ui/feedback";
@@ -85,6 +85,8 @@ export function DetailKeuanganClient({
   );
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
+  const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
   const [filterJenis, setFilterJenis] = useState<"all" | "pemasukan" | "pengeluaran">("all");
   const [rows, setRows] = useState<Row[]>([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
@@ -115,6 +117,16 @@ export function DetailKeuanganClient({
   }, [divisiId, divisiOptions, semuaDivisi]);
 
   useEffect(() => {
+    if (periode === "bulanan") {
+      setStartDate(startOfMonthISO(filterYear, filterMonth));
+      setEndDate(endOfMonthISO(filterYear, filterMonth));
+    } else {
+      setStartDate(`${filterYear}-01-01`);
+      setEndDate(`${filterYear}-12-31`);
+    }
+  }, [periode, filterMonth, filterYear]);
+
+  useEffect(() => {
     async function load() {
       // Belum ada pilihan & daftar divisi belum siap: tunggu.
       if (semuaDivisi && !optReady) {
@@ -123,8 +135,9 @@ export function DetailKeuanganClient({
       }
       setLoading(true);
 
-      const start = periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`;
-      const end = periode === "bulanan" ? endOfMonthISO(filterYear, filterMonth) : `${filterYear}-12-31`;
+      const from = startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`);
+      const to = endDate || from;
+      const [start, end] = from <= to ? [from, to] : [to, from];
 
       let query = supabase
         .from("transaksi_keuangan")
@@ -144,7 +157,7 @@ export function DetailKeuanganClient({
       setLoading(false);
     }
     load();
-  }, [divisiId, optReady, periode, filterMonth, filterYear, semuaDivisi]);
+  }, [divisiId, optReady, periode, filterMonth, filterYear, startDate, endDate, semuaDivisi]);
 
   const total = useMemo(() => {
     let masuk = 0;
@@ -192,10 +205,10 @@ export function DetailKeuanganClient({
     [rows, filterJenis]
   );
 
-  const labelPeriode =
-    periode === "bulanan"
-      ? `${MONTH_NAMES_ID[filterMonth - 1]} ${filterYear}`
-      : `Tahun ${filterYear}`;
+  const from = startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`);
+  const to = endDate || from;
+  const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
+  const labelPeriode = `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
@@ -298,6 +311,12 @@ export function DetailKeuanganClient({
                   </option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
         </CardContent>

@@ -9,6 +9,7 @@ import {
   DOCUMENT_RGB,
   footerIdentity,
   kopLines,
+  parseNumeric,
   reportMainTitle,
   reportMetaRows,
   resolveApproval,
@@ -196,270 +197,112 @@ function columnLetter(n: number): string {
 
 /* ----------------------------------- excel ----------------------------------- */
 
+const EXCEL_HEADER_ARGB = "FF1F4E79";
+const EXCEL_ZEBRA_ARGB = "FFF2F6FA";
+const EXCEL_TOTAL_ARGB = "FFDCEBFA";
+const EXCEL_BORDER_ARGB = "FFD0D7DE";
+
+function isDateColumn(col: ExportInput["columns"][number], rows: Record<string, unknown>[]): boolean {
+  const key = `${col.key} ${col.header}`.toLowerCase();
+  if (/tanggal|date|waktu|periode/.test(key)) return true;
+  const vals = rows.filter((r) => !r.__total).map((r) => String(r[col.key] ?? "").trim()).filter(Boolean).slice(0, 12);
+  return vals.length > 0 && vals.every((v) => /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2})?$/.test(v) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v) || /^\d{1,2}\s+[A-Za-z]+\s+\d{4}$/i.test(v));
+}
+
+function isNumericColumn(col: ExportInput["columns"][number], rows: Record<string, unknown>[]): boolean {
+  if (col.align === "right") return true;
+  const key = `${col.key} ${col.header}`.toLowerCase();
+  if (/nominal|jumlah|saldo|total|harga|dana|pemasukan|pengeluaran|nilai|qty|kuantitas/.test(key)) return true;
+  const vals = rows.filter((r) => !r.__total).map((r) => r[col.key]).filter((v) => v !== null && v !== undefined && String(v).trim() !== "").slice(0, 12);
+  return vals.length > 0 && vals.every((v) => typeof v === "number" || parseNumeric(v) !== null);
+}
+
+function excelDisplayValue(col: ExportInput["columns"][number], row: Record<string, unknown>, dateCol: boolean, numericCol: boolean): string | number {
+  const raw = row[col.key];
+  if (raw === null || raw === undefined || raw === "") return "-";
+  if (!dateCol && numericCol && !row.__total && typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (!dateCol && numericCol && typeof raw === "string") {
+    const n = parseNumeric(raw);
+    if (n !== null && /rp\b|[\d.,]/i.test(raw)) return raw.replace(/^Rp\s*/i, "Rp ").trim();
+  }
+  return prepText(String(raw));
+}
+
+function excelColumnWidth(col: ExportInput["columns"][number], rows: Record<string, unknown>[], dateCol: boolean, numericCol: boolean): number {
+  const headerLen = Math.max(col.header.length, 8);
+  const sample = rows.slice(0, 60).map((r) => String(excelDisplayValue(col, r, dateCol, numericCol) ?? "").replace(/\n/g, " "));
+  const contentLen = sample.reduce((max, v) => Math.max(max, Math.min(v.length, 60)), 0);
+  const base = Math.max(headerLen, contentLen);
+  const pad = numericCol ? 2 : 3;
+  const max = /deskripsi|keterangan|kendala|solusi|catatan|uraian|tujuan|hasil|detail|alamat/.test(`${col.key} ${col.header}`.toLowerCase()) ? 52 : 34;
+  return Math.min(Math.max(base + pad, 10), max);
+}
+
 async function buildExcelBlob(doc: PreparedDocument): Promise<Blob> {
   const ExcelJS = (await import("exceljs")).default;
   const { input } = doc;
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Laporan OSIS", {
-    properties: { defaultRowHeight: 18 },
+  wb.views = [{ x: 0, y: 0, width: 20000, height: 12000, firstSheet: 0, activeTab: 0, visibility: "visible" }];
+  const ws = wb.addWorksheet("Data", {
+    properties: { defaultRowHeight: 20 },
+    views: [{ state: "frozen", ySplit: 1, xSplit: 0, topLeftCell: "A2", activeCell: "A2", showGridLines: false, zoomScale: 100, zoomScaleNormal: 100 }],
   });
-  const ratios = columnRatios(input);
+
+  const dateCols = input.columns.map((c) => isDateColumn(c, input.rows));
+  const numericCols = input.columns.map((c) => !dateCols[input.columns.indexOf(c)] && isNumericColumn(c, input.rows));
   ws.columns = input.columns.map((c, i) => ({
     key: c.key,
-    width: Math.min(Math.max(Math.round(ratios[i] * 54), 12), 58),
+    width: excelColumnWidth(c, input.rows, dateCols[i], numericCols[i]),
   }));
-  const identityStartCol = input.columns.length > 2 ? 2 : 1;
 
-  const thin = { style: "thin" as const, color: { argb: DOCUMENT_ARGB.border } };
-  const bodyBorder = { top: thin, left: thin, bottom: thin, right: thin };
-  const navyBorder = { style: "medium" as const, color: { argb: DOCUMENT_ARGB.navy } };
+  const thin = { style: "thin" as const, color: { argb: EXCEL_BORDER_ARGB } };
+  const border = { top: thin, left: thin, bottom: thin, right: thin };
 
-  function identityRow(
-    text: string,
-    opts: {
-      size?: number;
-      bold?: boolean;
-      color?: string;
-      italic?: boolean;
-      height?: number;
-      align?: "left" | "center" | "right";
-    } = {}
-  ) {
-    const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow([]);
-    row.height = opts.height ?? (opts.size && opts.size >= 12 ? 24 : 17);
-    ws.mergeCells(rowIdx, identityStartCol, rowIdx, input.columns.length);
-    const cellRef = row.getCell(identityStartCol);
-    cellRef.value = text;
-    cellRef.font = {
-      size: opts.size ?? 10,
-      bold: Boolean(opts.bold),
-      italic: Boolean(opts.italic),
-      color: { argb: opts.color ?? DOCUMENT_ARGB.text },
-      name: "Aptos",
-    };
-    cellRef.alignment = {
-      horizontal: opts.align ?? "center",
-      vertical: "middle",
-      wrapText: true,
-    };
-    cellRef.border = { bottom: { style: "medium" as const, color: { argb: "FF000000" } } };
-    for (let col = identityStartCol; col <= input.columns.length; col++) {
-      const merged = row.getCell(col);
-      merged.alignment = cellRef.alignment;
-      merged.font = cellRef.font;
-      merged.border = cellRef.border;
-    }
-    return rowIdx;
-  }
-
-  if (input.columns.length > 2) {
-    const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow([]);
-    row.height = 88;
-    const addKopImage = (logo: LogoImage | undefined, col: number) => {
-      if (!logo) return;
-      const isPng = logo.mimeType === "image/png" || logo.dataUrl.startsWith("data:image/png");
-      const imageId = wb.addImage({
-        extension: isPng ? "png" : "jpeg",
-        base64: logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, ""),
-      });
-      const max = 78;
-      const scale = Math.min(max / logo.width, max / logo.height);
-      ws.addImage(imageId, {
-        tl: { col, row: rowIdx - 1 },
-        ext: { width: Math.round(logo.width * scale), height: Math.round(logo.height * scale) },
-      });
-    };
-    addKopImage(doc.kopLogos.left, 0);
-    addKopImage(doc.kopLogos.right, input.columns.length - 1);
-  } else if (doc.logo) {
-    const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow([]);
-    row.height = 72;
-    const imageId = wb.addImage({
-      extension: "jpeg",
-      base64: doc.logo.dataUrl.replace(/^data:image\/[^;]+;base64,/, ""),
-    });
-    ws.addImage(imageId, {
-      tl: { col: identityStartCol - 1, row: rowIdx - 1 },
-      ext: { width: 64, height: 64 },
-    });
-  }
-
-  doc.kop.forEach((line) =>
-    identityRow(line.text, {
-      size: line.size,
-      bold: line.bold,
-      color: line.color === "navy" ? DOCUMENT_ARGB.navy : DOCUMENT_ARGB.text,
-      height: line.size >= 15 ? 26 : 20,
-    })
-  );
-  if (doc.kop.length) {
-    const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow([]);
-    row.height = 10;
-    ws.mergeCells(rowIdx, identityStartCol, rowIdx, input.columns.length);
-    row.getCell(identityStartCol).border = { bottom: navyBorder };
-  }
-
-  if (doc.title !== "LAPORAN HARIAN") {
-    identityRow(doc.title, { size: 15, bold: true, color: DOCUMENT_ARGB.navy, height: 28 });
-  }
-  if (doc.documentType !== doc.title) {
-    identityRow(doc.documentType, { size: 9, bold: true, color: DOCUMENT_ARGB.blue, height: 18 });
-  }
-  doc.metaRows.forEach(([label, value]) =>
-    identityRow(`${label}: ${value}`, { size: 9, align: "left", height: 18 })
-  );
-
-  identityRow("DATA LAPORAN", {
-    size: 10,
-    bold: true,
-    color: DOCUMENT_ARGB.navy,
-    align: "left",
-    height: 20,
-  });
-
-  const headerRowIndex = ws.rowCount + 1;
   const headerRow = ws.addRow(input.columns.map((c) => c.header));
-  headerRow.height = 28;
-  headerRow.eachCell((cellRef) => {
-    cellRef.font = { bold: true, color: { argb: DOCUMENT_ARGB.white }, name: "Aptos", size: 9 };
-    cellRef.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: DOCUMENT_ARGB.navy },
-    };
-    cellRef.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cellRef.border = bodyBorder;
+  headerRow.height = 24;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" }, name: "Calibri", size: 11 };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: EXCEL_HEADER_ARGB } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.border = border;
   });
 
   if (input.rows.length === 0) {
     const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow(["Belum ada data yang tercatat untuk laporan / periode ini."]);
+    const row = ws.addRow(["Tidak ada data"]);
     ws.mergeCells(rowIdx, 1, rowIdx, input.columns.length);
     const c = row.getCell(1);
-    c.font = { italic: true, size: 10, color: { argb: DOCUMENT_ARGB.muted } };
-    c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    c.border = bodyBorder;
-    row.height = 28;
+    c.font = { italic: true, size: 11, color: { argb: "FF64748B" }, name: "Calibri" };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    c.border = border;
+    row.height = 24;
   }
 
   input.rows.forEach((r, idx) => {
     const isTotal = Boolean(r.__total);
-    const row = ws.addRow(
-      input.columns.map((c) => cellValue(r, c.key))
-    );
+    const row = ws.addRow(input.columns.map((c, i) => excelDisplayValue(c, r, dateCols[i], numericCols[i])));
     let maxLines = 1;
-    row.eachCell((cellRef, col) => {
-      const column = input.columns[col - 1];
-      cellRef.alignment = {
-        vertical: "top",
-        wrapText: true,
-        horizontal: cellAlign(column),
-      };
-      cellRef.border = bodyBorder;
-      cellRef.font = {
-        size: 9,
-        bold: isTotal,
-        color: { argb: isTotal ? DOCUMENT_ARGB.navy : DOCUMENT_ARGB.text },
-        name: "Aptos",
-      };
-      if (isTotal) {
-        cellRef.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: DOCUMENT_ARGB.lightBlue },
-        };
-      } else if (idx % 2 === 1) {
-        cellRef.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF7FAFD" } };
-      }
-      const width = ws.columns[col - 1]?.width ?? 20;
-      const text = String(cellRef.value ?? "");
-      let lines = 1;
-      text.split("\n").forEach((seg) => {
-        lines += Math.ceil(seg.length / Math.max(width * 1.15, 8));
-      });
+    row.eachCell((cell, colNum) => {
+      const col = input.columns[colNum - 1];
+      const text = String(cell.value ?? "");
+      const width = ws.columns[colNum - 1]?.width ?? 16;
+      const lines = text.split("\n").reduce((acc, seg) => acc + Math.max(1, Math.ceil(seg.length / Math.max(width - 1, 8))), 0);
       maxLines = Math.max(maxLines, lines);
+      cell.border = border;
+      cell.font = { name: "Calibri", size: 11, bold: isTotal, color: { argb: isTotal ? EXCEL_HEADER_ARGB : "FF1F2937" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isTotal ? EXCEL_TOTAL_ARGB : idx % 2 === 1 ? EXCEL_ZEBRA_ARGB : "FFFFFFFF" } };
+      cell.alignment = {
+        vertical: "top",
+        horizontal: col.align === "right" || numericCols[colNum - 1] ? "right" : col.align === "center" || dateCols[colNum - 1] ? "center" : "left",
+        wrapText: true,
+      };
+      if (typeof cell.value === "number") cell.numFmt = "0";
     });
-    row.height = Math.max(22, maxLines * 15 + 6);
+    row.height = Math.max(22, Math.min(maxLines, 8) * 15 + 6);
   });
 
-  const lastDataRow = headerRowIndex + input.rows.length;
-  if (input.rows.length > 0) {
-    ws.autoFilter = {
-      from: { row: headerRowIndex, column: 1 },
-      to: { row: Math.max(headerRowIndex, lastDataRow), column: input.columns.length },
-    };
-  }
-  ws.views = [{ state: "frozen", ySplit: headerRowIndex }];
-
-  identityRow("RINGKASAN", {
-    size: 10,
-    bold: true,
-    color: DOCUMENT_ARGB.navy,
-    align: "left",
-    height: 20,
-  });
-  doc.summary.forEach((item) =>
-    identityRow(`${item.label}: ${item.value}`, {
-      size: 9,
-      align: "left",
-      height: 18,
-      color: DOCUMENT_ARGB.text,
-    })
-  );
-
-  identityRow(doc.approval.heading ?? "PENGESAHAN", {
-    size: 10,
-    bold: true,
-    color: DOCUMENT_ARGB.navy,
-    align: "left",
-    height: 22,
-  });
-  const signatories = doc.approval.signatories;
-  signatories.forEach((s, i) => {
-    const span =
-      signatories.length === 1
-        ? Math.max(2, Math.ceil(input.columns.length * 0.35))
-        : Math.max(1, Math.floor(input.columns.length / signatories.length));
-    const to = input.columns.length - (signatories.length - 1 - i) * span;
-    const from = Math.max(1, to - span + 1);
-    const rowIdx = ws.rowCount + 1;
-    const row = ws.addRow([]);
-    row.height = 70;
-    ws.mergeCells(rowIdx, from, rowIdx, to);
-    const c = row.getCell(from);
-    const name = s.name.trim();
-    c.value = `${s.label}\n\n........................................${name ? `\n${name}` : ""}`;
-    c.font = { size: 9, name: "Aptos", color: { argb: DOCUMENT_ARGB.text } };
-    c.alignment = { horizontal: "left", vertical: "top", wrapText: true };
-  });
-
-  identityRow(`${footerIdentity(input.kop)} - Dokumen resmi organisasi`, {
-    size: 8,
-    italic: true,
-    color: DOCUMENT_ARGB.muted,
-    height: 18,
-  });
-
-  const lastRow = ws.rowCount;
-  ws.pageSetup = {
-    printArea: `A1:${columnLetter(input.columns.length)}${lastRow}`,
-    printTitlesRow: `1:${headerRowIndex}`,
-    paperSize: 9,
-    orientation: doc.landscape ? "landscape" : "portrait",
-    fitToPage: true,
-    fitToWidth: 1,
-    fitToHeight: 0,
-    horizontalCentered: true,
-    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
-  };
-  ws.headerFooter = {
-    ...ws.headerFooter,
-    oddFooter: `&L${footerIdentity(input.kop)}&C${doc.documentType}&RHalaman &P dari &N`,
-  };
+  const lastRow = Math.max(ws.rowCount, 1);
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: lastRow, column: input.columns.length } };
 
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], {
@@ -1035,10 +878,10 @@ export async function buildExportBlob(options: ExportInput & { format: ExportFor
   ext: string;
 }> {
   const input: ExportInput = { ...options };
-  const doc = await prepareDocument(input);
   if (options.format === "excel") {
-    return { blob: await buildExcelBlob(doc), ext: "xlsx" };
+    return { blob: await buildExcelBlob({ input } as PreparedDocument), ext: "xlsx" };
   }
+  const doc = await prepareDocument(input);
   if (options.format === "doc") {
     return {
       blob: await buildDocxBlob(input, {

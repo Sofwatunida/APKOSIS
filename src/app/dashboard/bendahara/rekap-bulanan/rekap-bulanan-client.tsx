@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
-import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO, formatDate, startOfMonthISO } from "@/lib/date";
 import { fetchSaldoAwal, fetchSaldoAwalMap } from "@/lib/finance";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
@@ -36,24 +36,32 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
+  const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
   const [perDivisi, setPerDivisi] = useState<
     Array<{ id: string; nama: string; saldoAwal: number; masuk: number; keluar: number }>
   >([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
 
   useEffect(() => {
+    setStartDate(startOfMonthISO(filterYear, filterMonth));
+    setEndDate(endOfMonthISO(filterYear, filterMonth));
+  }, [filterMonth, filterYear]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
-      const year = String(filterYear);
-      const month = String(filterMonth).padStart(2, "0");
+      const from = startDate || startOfMonthISO(filterYear, filterMonth);
+      const to = endDate || from;
+      const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
 
       const { data: div } = await supabase.from("divisi").select("id, nomor_divisi, nama_divisi").order("nomor_divisi");
       const saldoMap = await fetchSaldoAwalMap(supabase);
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
         .select("divisi_id, jenis_transaksi, nominal")
-        .gte("tanggal", `${year}-${month}-01`)
-        .lte("tanggal", endOfMonthISO(filterYear, filterMonth));
+        .gte("tanggal", rangeStart)
+        .lte("tanggal", rangeEnd);
 
       const map = new Map<string, { masuk: number; keluar: number }>();
       (txs ?? []).forEach((t) => {
@@ -77,7 +85,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       setLoading(false);
     }
     load();
-  }, [filterMonth, filterYear]);
+  }, [filterMonth, filterYear, startDate, endDate]);
 
   const totalMasuk = perDivisi.reduce((s, d) => s + d.masuk, 0);
   const totalKeluar = perDivisi.reduce((s, d) => s + d.keluar, 0);
@@ -108,7 +116,7 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Bulan">
               <Select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
                 {MONTH_NAMES_ID.map((m, i) => (
@@ -126,6 +134,12 @@ export function RekapBulananClient({ profile }: { profile: Profile }) {
                   </option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
         </CardContent>

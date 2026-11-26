@@ -78,6 +78,8 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
   const [filterTanggal, setFilterTanggal] = useState("");
   const [filterBulan, setFilterBulan] = useState("all");
   const [filterTahun, setFilterTahun] = useState(String(currentYear));
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [rows, setRows] = useState<Row[]>([]);
   const [pemasukan, setPemasukan] = useState(0);
@@ -213,8 +215,14 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     if (!isSemuaDivisi(filterDivisi)) query = query.eq("divisi_id", filterDivisi);
     if (filterJenis !== "all")
       query = query.eq("jenis_transaksi", filterJenis as "pemasukan" | "pengeluaran");
-    if (filterTanggal) query = query.eq("tanggal", filterTanggal);
-    if (filterBulan !== "all") {
+    if (startDate || endDate) {
+      const from = startDate || endDate;
+      const to = endDate || startDate;
+      const [rangeStart, rangeEnd] = from! <= to! ? [from!, to!] : [to!, from!];
+      query = query.gte("tanggal", rangeStart).lte("tanggal", rangeEnd);
+    } else if (filterTanggal) {
+      query = query.eq("tanggal", filterTanggal);
+    } else if (filterBulan !== "all") {
       const bNum = parseInt(filterBulan, 10);
       const tNum = parseInt(filterTahun, 10);
       query = query
@@ -310,7 +318,7 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterDivisi, filterJenis, filterTanggal, filterBulan, filterTahun]);
+  }, [filterDivisi, filterJenis, filterTanggal, filterBulan, filterTahun, startDate, endDate]);
 
   // Daftar tahun diambil dari tabel `periods`, bukan daftar hardcoded.
   const yearOptions = useMemo(() => {
@@ -356,6 +364,12 @@ export function BendaharaTransaksiClient({ profile }: { profile: Profile }) {
             </Field>
             <Field label="Tanggal">
               <Input type="date" value={filterTanggal} onChange={(e) => setFilterTanggal(e.target.value)} />
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
             <Field label="Bulan">
               <Select value={filterBulan} onChange={(e) => setFilterBulan(e.target.value)}>

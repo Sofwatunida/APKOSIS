@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
-import { MONTH_NAMES_ID, endOfMonthISO } from "@/lib/date";
+import { MONTH_NAMES_ID, endOfMonthISO, formatDate, startOfMonthISO } from "@/lib/date";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
@@ -33,6 +33,8 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const [filterDivisi, setFilterDivisi] = useState(SEMUA_DIVISI_VALUE);
   const [filterMonth, setFilterMonth] = useState(currentMonth);
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
+  const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
 
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
@@ -58,13 +60,16 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   }, []);
 
   useEffect(() => {
+    setStartDate(startOfMonthISO(filterYear, filterMonth));
+    setEndDate(endOfMonthISO(filterYear, filterMonth));
+  }, [filterMonth, filterYear]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
-      const year = String(filterYear);
-      const month = String(filterMonth).padStart(2, "0");
-
-      const startDate = `${year}-${month}-01`;
-      const endDate = endOfMonthISO(filterYear, filterMonth);
+      const from = startDate || startOfMonthISO(filterYear, filterMonth);
+      const to = endDate || from;
+      const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
 
       // Fetch all transactions for saldo keseluruhan (all time)
       const { data: allTxs } = await supabase
@@ -98,8 +103,8 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
         .select("divisi_id, tanggal, jenis_transaksi, nominal")
-        .gte("tanggal", startDate)
-        .lte("tanggal", endDate);
+        .gte("tanggal", rangeStart)
+        .lte("tanggal", rangeEnd);
       const finMap: Record<string, { masuk: number; keluar: number }> = {};
       let totalMasuk = 0;
       let totalKeluar = 0;
@@ -122,7 +127,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
     // Muat ulang saat periode diganti supaya saldo awal tidak tertinggal
     // dari periode sebelumnya.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterMonth, filterYear, periodeId]);
+  }, [filterMonth, filterYear, startDate, endDate, periodeId]);
 
   if (loading) return <Spinner />;
 
@@ -134,6 +139,10 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
   const filterDivisiLabel = getDivisiFilterLabel(filterDivisi, divisiOptions);
+  const from = startDate || startOfMonthISO(filterYear, filterMonth);
+  const to = endDate || from;
+  const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
+  const periodeLabel = `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
 
   return (
     <div className="space-y-6">
@@ -144,7 +153,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Field label="Bulan">
               <Select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
                 {MONTH_NAMES_ID.map((m, i) => (
@@ -162,6 +171,12 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                   </option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
             <Field label="Divisi">
               <Select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)}>

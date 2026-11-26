@@ -7,7 +7,7 @@ import { formatRupiah } from "@/lib/format";
 import { MONTH_NAMES_ID } from "@/lib/date";
 import { fetchSaldoAwal, fetchSaldoAwalMap } from "@/lib/finance";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { ExportMenu } from "@/components/export-menu";
@@ -31,6 +31,8 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
 
   const [loading, setLoading] = useState(true);
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
+  const [endDate, setEndDate] = useState(`${currentYear}-12-31`);
   const [byMonth, setByMonth] = useState<Array<{ month: string; masuk: number; keluar: number }>>([]);
   const [yearlyData, setYearlyData] = useState<Array<{ year: string; Pemasukan: number; Pengeluaran: number }>>([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
@@ -39,13 +41,21 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
   >([]);
 
   useEffect(() => {
+    setStartDate(`${filterYear}-01-01`);
+    setEndDate(`${filterYear}-12-31`);
+  }, [filterYear]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
+      const from = startDate || `${filterYear}-01-01`;
+      const to = endDate || from;
+      const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
       const { data: txs } = await supabase
         .from("transaksi_keuangan")
         .select("divisi_id, tanggal, jenis_transaksi, nominal")
-        .gte("tanggal", `${filterYear}-01-01`)
-        .lte("tanggal", `${filterYear}-12-31`);
+        .gte("tanggal", rangeStart)
+        .lte("tanggal", rangeEnd);
 
       const map = new Map<string, { masuk: number; keluar: number }>();
       MONTHS.forEach((m) => map.set(m, { masuk: 0, keluar: 0 }));
@@ -107,7 +117,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       setLoading(false);
     }
     load();
-  }, [filterYear]);
+  }, [filterYear, startDate, endDate]);
 
   const totalMasuk = byMonth.reduce((s, d) => s + d.masuk, 0);
   const totalKeluar = byMonth.reduce((s, d) => s + d.keluar, 0);
@@ -132,7 +142,7 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
       <Card>
         <CardHeader title="Filter" />
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:max-w-xs">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Tahun">
               <Select value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}>
                 {yearOptions.map((y) => (
@@ -141,6 +151,12 @@ export function RekapTahunanClient({ profile }: { profile: Profile }) {
                   </option>
                 ))}
               </Select>
+            </Field>
+            <Field label="Dari Tanggal">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </Field>
+            <Field label="Sampai Tanggal">
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
         </CardContent>

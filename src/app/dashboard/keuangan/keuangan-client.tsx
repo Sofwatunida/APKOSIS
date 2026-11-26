@@ -98,6 +98,8 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
   // Search & Filter state (Requirement 5)
   const [searchQuery, setSearchQuery] = useState("");
   const [filterJenis, setFilterJenis] = useState<"all" | "pemasukan" | "pengeluaran">("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Receipt image upload state (Requirement 8)
   const [buktiFile, setBuktiFile] = useState<File | null>(null);
@@ -285,6 +287,8 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
   const filteredTransaksi = transaksi.filter((t) => {
     const { cleanKeterangan } = parseBukti(t.keterangan);
     if (filterJenis !== "all" && t.jenis_transaksi !== filterJenis) return false;
+    if (startDate && t.tanggal < startDate) return false;
+    if (endDate && t.tanggal > endDate) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchKet = cleanKeterangan.toLowerCase().includes(q);
@@ -392,6 +396,10 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 </button>
               </div>
 
+              <div className="flex items-center gap-2">
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 w-36 text-xs" />
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 w-36 text-xs" />
+              </div>
               {/* Search Bar (Requirement 5) */}
               <div className="relative w-full sm:w-60">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">

@@ -364,15 +364,9 @@ function reportDateRange(input: ExportInput): string {
 
 /** Teks normal dipakai ulang di tiga format agar tidak ada perbedaan isi. */
 export function reportMetaRows(input: ExportInput, periodLabel: string): [string, string][] {
-  const today = new Date().toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
   return [
     ["Unit / Divisi", input.division?.trim() || resolveDivision(input.subtitle, input.title)],
     ["Periode Kepengurusan", periodLabel],
     ["Rentang Tanggal", reportDateRange(input)],
-    ["Tanggal Pencetakan", today],
   ];
 }
