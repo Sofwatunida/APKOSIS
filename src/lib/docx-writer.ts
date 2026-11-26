@@ -197,7 +197,7 @@ function footerXml(identity: string): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="6" w:color="${DOCUMENT_PALETTE.border.replace("#", "")}"/></w:pBdr><w:jc w:val="left"/></w:pPr>${run(identity, { size: 8, color: DOCUMENT_PALETTE.muted })}</w:p>
-<w:p><w:pPr><w:jc w:val="right"/></w:pPr>${run("Halaman ", { size: 8, color: DOCUMENT_PALETTE.muted })}<w:fldSimple w:instr=" PAGE ">${run("1", { size: 8, color: DOCUMENT_PALETTE.muted })}</w:fldSimple>${run(" dari ", { size: 8, color: DOCUMENT_PALETTE.muted })}<w:fldSimple w:instr=" NUMPAGES ">${run("1", { size: 8, color: DOCUMENT_PALETTE.muted })}</w:fldSimple></w:p>
+<w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:fldSimple w:instr=" PAGE ">${run("1", { size: 8, color: DOCUMENT_PALETTE.muted })}</w:fldSimple></w:p>
 </w:ftr>`;
 }
 

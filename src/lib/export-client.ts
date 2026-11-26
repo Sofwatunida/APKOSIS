@@ -771,7 +771,7 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
     pageOps.push(`BT /F1 7.5 Tf 1 0 0 1 ${num(MARGIN_LEFT)} ${num(baseline)} Tm (${escapePdfText(footerIdentity(input.kop))}) Tj ET`);
     const center = doc.documentType;
     pageOps.push(`BT /F1 7.5 Tf 1 0 0 1 ${num((PAGE_W - textWidth(center, 7.5)) / 2)} ${num(baseline)} Tm (${escapePdfText(center)}) Tj ET`);
-    const pageNumText = `Halaman ${pageIdx + 1} dari ${totalPages}`;
+    const pageNumText = String(pageIdx + 1);
     const txRight = PAGE_W - MARGIN_RIGHT - textWidth(pageNumText, 7.5);
     pageOps.push(`BT /F1 7.5 Tf 1 0 0 1 ${num(txRight)} ${num(baseline)} Tm (${escapePdfText(pageNumText)}) Tj ET`);
   });
