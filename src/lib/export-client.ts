@@ -737,7 +737,8 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   drawSummary();
 
   // PENGESAHAN — dua kolom: pengaju di kiri dan pihak mengetahui di kanan.
-  ensureSpace(88);
+  ensureSpace(100);
+  topY += 12;
   const signatories = doc.approval.signatories;
   const sigColW = CONTENT_W / signatories.length;
   drawText(doc.approval.heading ?? "PENGESAHAN", 8.5, true, MARGIN_LEFT, topY, DOCUMENT_RGB.navy, CONTENT_W, "left", "F2");

@@ -530,7 +530,7 @@ function ShellInner({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {profile.role === "super_admin" && <RealtimeClock />}
+            <RealtimeClock />
             <PeriodePicker canSelectAllPeriods={profile.role === "super_admin"} />
             <ThemeToggle />
 

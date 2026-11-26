@@ -7,7 +7,6 @@ import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { getPeriodeContext } from "@/lib/period";
 import { ALL_PERIODS_VALUE } from "@/lib/period-constants";
 import {
-  AlertTriangle,
   Archive,
   CalendarDays,
   CalendarRange,
@@ -65,24 +64,6 @@ export default async function SuperAdminDashboard() {
             icon={<Layers className="h-5 w-5" />}
           />
         </div>
-
-        {upcoming > 0 && (
-          <Card>
-            <CardHeader
-              title="Ada periode yang belum aktif"
-              icon={<AlertTriangle className="h-5 w-5" />}
-            />
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Aktifkan periode baru dari halaman{" "}
-                <a className="underline" href="/dashboard/superadmin/periode">
-                  Kelola Periode
-                </a>{" "}
-                ketika kepengurusan sebelumnya selesai.
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         <Card>
           <CardHeader

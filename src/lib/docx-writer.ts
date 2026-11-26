@@ -188,7 +188,7 @@ function approvalBlock(approval: ApprovalSpec, width: number): string {
     bold: true,
     size: 10,
     color: DOCUMENT_PALETTE.navy,
-    before: 220,
+    before: 360,
     after: 100,
   })}${borderlessTable}`;
 }
