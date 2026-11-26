@@ -8,17 +8,19 @@
  * Jalankan: node scripts/verify-rpc-signatures.mjs
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 
-const sql = readFileSync(
-  join(root, "supabase/migrations/20261001000002_rls_authorization_periods.sql"),
-  "utf8"
-);
+const migrationDir = join(root, "supabase/migrations");
+const sql = readdirSync(migrationDir)
+  .filter((name) => name.endsWith(".sql"))
+  .sort()
+  .map((name) => readFileSync(join(migrationDir, name), "utf8"))
+  .join("\n\n");
 const types = readFileSync(join(root, "src/lib/database.types.ts"), "utf8");
 
 let fail = 0;
@@ -53,7 +55,7 @@ const bad = (m) => {
 const sqlFunctions = new Map();
 {
   const re =
-    /create\s+or\s+replace\s+function\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\)\s*\nreturns\s+(table\s*\([\s\S]*?\)|[\w\s]+)/gi;
+    /create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\)\s*\nreturns\s+(table\s*\([\s\S]*?\)|[\w\s]+)/gi;
   let m;
   while ((m = re.exec(sql)) !== null) {
     const name = m[1];

@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { getProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { setDivisionPasswordAction } from "../../actions/periode-actions";
 
 export interface SaveDivisionPasswordResult {
   ok: boolean;
@@ -17,43 +15,24 @@ export interface SaveDivisionPasswordResult {
  * periode dan Super Admin yang boleh mengubah kredensial divisi,
  * karena ketua/wakil tidak boleh mengganti password sendiri.
  *
- * Penjagaan sesungguhnya ada di RLS + fungsi `admin_set_division_password`
- * pada database; pengecekan di sini hanya lapisan pertama.
+ * Penjagaan sesungguhnya ada di RLS + RPC database. Semua validasi,
+ * audit, periode writable, dan revalidate dipusatkan di
+ * `setDivisionPasswordAction` supaya tidak ada dua jalur berbeda.
  */
 export async function saveDivisionPasswordAction(
   divisiId: string,
   password: string,
   periodeId?: string
 ): Promise<SaveDivisionPasswordResult> {
-  const profile = await getProfile();
-  if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
-    return {
-      ok: false,
-      message: "Hanya Admin atau Super Admin yang boleh mengatur password divisi.",
-    };
-  }
+  const formData = new FormData();
+  formData.set("divisi_id", divisiId);
+  formData.set("password", password);
+  formData.set("periode_id", periodeId ?? "");
 
-  if (!divisiId || !password) {
-    return { ok: false, message: "Password divisi tidak boleh kosong." };
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("admin_set_division_password", {
-    p_divisi_id: divisiId,
-    p_password: password,
-    p_periode_id: periodeId ?? null,
-  });
-
-  if (error || !data) {
-    return {
-      ok: false,
-      message:
-        error?.message ?? "Gagal menyimpan password divisi. Coba lagi.",
-    };
-  }
-
-  revalidatePath("/dashboard/admin/password-divisi");
-  revalidatePath("/dashboard/superadmin/akun");
-
-  return { ok: true, updatedAt: data };
+  const result = await setDivisionPasswordAction(formData);
+  return {
+    ok: result.ok,
+    message: result.message,
+    updatedAt: result.updatedAt,
+  };
 }

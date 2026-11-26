@@ -120,6 +120,7 @@ function ShellInner({
   periods,
   allPeriodsMode,
   readOnly,
+  canChangePeriod,
   selectedPeriodId,
   impersonation,
   children,
@@ -128,6 +129,7 @@ function ShellInner({
   periods: PeriodeOption[];
   allPeriodsMode: boolean;
   readOnly: boolean;
+  canChangePeriod: boolean;
   selectedPeriodId: string | null;
   impersonation: ImpersonationState | null;
   children: React.ReactNode;
@@ -531,7 +533,10 @@ function ShellInner({
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <RealtimeClock />
-            <PeriodePicker canSelectAllPeriods={profile.role === "super_admin"} />
+            <PeriodePicker
+              canSelectAllPeriods={profile.role === "super_admin"}
+              canChange={canChangePeriod}
+            />
             <ThemeToggle />
 
             <div className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-xs text-slate-600 shadow-xs sm:flex dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-400">
@@ -595,6 +600,7 @@ export function DashboardShell({
   periods,
   allPeriodsMode,
   readOnly,
+  canChangePeriod,
   selectedPeriodId,
   impersonation = null,
   children,
@@ -603,6 +609,7 @@ export function DashboardShell({
   periods: PeriodeOption[];
   allPeriodsMode: boolean;
   readOnly: boolean;
+  canChangePeriod: boolean;
   selectedPeriodId: string | null;
   impersonation?: ImpersonationState | null;
   children: React.ReactNode;
@@ -613,6 +620,7 @@ export function DashboardShell({
         periodeId={selectedPeriodId}
         allPeriodsMode={allPeriodsMode}
         readOnly={readOnly}
+        canChangePeriod={canChangePeriod}
         options={periods.map((p) => ({
           id: p.id,
           namaPeriode: p.namaPeriode,
@@ -626,6 +634,7 @@ export function DashboardShell({
           periods={periods}
           allPeriodsMode={allPeriodsMode}
           readOnly={readOnly}
+          canChangePeriod={canChangePeriod}
           selectedPeriodId={selectedPeriodId}
           impersonation={impersonation}
         >

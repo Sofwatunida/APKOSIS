@@ -63,14 +63,32 @@ export function DetailKeuanganClient({
   profile,
   initialDivisi,
   initialPeriode,
+  embedded = false,
+  onBack,
+  initialMonth,
+  initialYear,
+  initialStartDate,
+  initialEndDate,
+  historyMode = false,
 }: {
   profile: Profile;
   initialDivisi: string;
   initialPeriode: string;
+  embedded?: boolean;
+  onBack?: () => void;
+  initialMonth?: number;
+  initialYear?: number;
+  initialStartDate?: string;
+  initialEndDate?: string;
+  /** Riwayat: seluruh transaksi divisi+periode aktif, tidak terikat filter ringkasan. */
+  historyMode?: boolean;
 }) {
   const supabase = createClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
+  const initYear = initialYear ?? currentYear;
+  const initMonth = initialMonth ?? currentMonth;
+  const isHistory = embedded || historyMode;
 
   const [loading, setLoading] = useState(true);
   const [divisiOptions, setDivisiOptions] = useState<{ id: string; nama: string }[]>([]);
@@ -80,13 +98,14 @@ export function DetailKeuanganClient({
   );
   const [namaDivisi, setNamaDivisi] = useState("");
   const [periode, setPeriode] = useState<Periode>(
-    initialPeriode ? "tahunan" : "bulanan"
+    initialPeriode === "tahunan" ? "tahunan" : "bulanan"
   );
-  const [filterMonth, setFilterMonth] = useState(currentMonth);
-  const [filterYear, setFilterYear] = useState(currentYear);
-  const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
-  const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
+  const [filterMonth, setFilterMonth] = useState(initMonth);
+  const [filterYear, setFilterYear] = useState(initYear);
+  const [startDate, setStartDate] = useState(initialStartDate ?? "");
+  const [endDate, setEndDate] = useState(initialEndDate ?? "");
   const [filterJenis, setFilterJenis] = useState<"all" | "pemasukan" | "pengeluaran">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [saldoAwal, setSaldoAwal] = useState(0);
   const [viewBuktiUrl, setViewBuktiUrl] = useState<string | null>(null);
@@ -108,6 +127,19 @@ export function DetailKeuanganClient({
   }, [initialDivisi]);
 
   useEffect(() => {
+    if (embedded) {
+      setDivisiId(isSemuaDivisi(initialDivisi) ? SEMUA_DIVISI_VALUE : initialDivisi);
+      if (!historyMode) {
+        if (initialMonth !== undefined) setFilterMonth(initialMonth);
+        if (initialYear !== undefined) setFilterYear(initialYear);
+        if (initialStartDate !== undefined) setStartDate(initialStartDate);
+        if (initialEndDate !== undefined) setEndDate(initialEndDate);
+        if (initialPeriode === "tahunan" || initialPeriode === "bulanan") setPeriode(initialPeriode);
+      }
+    }
+  }, [embedded, historyMode, initialDivisi, initialMonth, initialYear, initialStartDate, initialEndDate, initialPeriode]);
+
+  useEffect(() => {
     if (semuaDivisi) {
       setNamaDivisi(SEMUA_DIVISI_LABEL);
       return;
@@ -116,38 +148,43 @@ export function DetailKeuanganClient({
   }, [divisiId, divisiOptions, semuaDivisi]);
 
   useEffect(() => {
-    if (periode === "bulanan") {
-      setStartDate(startOfMonthISO(filterYear, filterMonth));
-      setEndDate(endOfMonthISO(filterYear, filterMonth));
-    } else {
-      setStartDate(`${filterYear}-01-01`);
-      setEndDate(`${filterYear}-12-31`);
+    if (!embedded && !historyMode) {
+      if (periode === "bulanan") {
+        setStartDate(startOfMonthISO(filterYear, filterMonth));
+        setEndDate(endOfMonthISO(filterYear, filterMonth));
+      } else {
+        setStartDate(`${filterYear}-01-01`);
+        setEndDate(`${filterYear}-12-31`);
+      }
     }
-  }, [periode, filterMonth, filterYear]);
+  }, [embedded, historyMode, periode, filterMonth, filterYear]);
 
   useEffect(() => {
     async function load() {
-      // Belum ada pilihan & daftar divisi belum siap: tunggu.
       if (semuaDivisi && !optReady) {
         setLoading(false);
         return;
       }
       setLoading(true);
 
-      const from = startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`);
-      const to = endDate || from;
-      const [start, end] = from <= to ? [from, to] : [to, from];
-
       let query = supabase
         .from("transaksi_keuangan")
         .select("*, divisi(nomor_divisi, nama_divisi)")
-        .gte("tanggal", start)
-        .lte("tanggal", end)
         .order("tanggal", { ascending: false })
         .order("created_at", { ascending: false });
 
-      // "Semua Divisi" tidak memakai filter divisi_id — angka yang
-      // tampil adalah total data asli seluruh divisi pada periode ini.
+      if (!isHistory) {
+        const from = startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`);
+        const to = endDate || from;
+        const [start, end] = from <= to ? [from, to] : [to, from];
+        query = query.gte("tanggal", start).lte("tanggal", end);
+      } else if (startDate || endDate) {
+        const from = startDate || endDate!;
+        const to = endDate || startDate!;
+        const [start, end] = from <= to ? [from, to] : [to, from];
+        query = query.gte("tanggal", start).lte("tanggal", end);
+      }
+
       if (!semuaDivisi) query = query.eq("divisi_id", divisiId);
 
       const { data } = await query;
@@ -156,7 +193,7 @@ export function DetailKeuanganClient({
       setLoading(false);
     }
     load();
-  }, [divisiId, optReady, periode, filterMonth, filterYear, startDate, endDate, semuaDivisi]);
+  }, [divisiId, optReady, periode, filterMonth, filterYear, startDate, endDate, semuaDivisi, isHistory]);
 
   const total = useMemo(() => {
     let masuk = 0;
@@ -198,34 +235,72 @@ export function DetailKeuanganClient({
       .sort((a, b) => b.arus - a.arus);
   }, [rows]);
 
-  const filtered = useMemo(
-    () =>
-      rows.filter((t) => filterJenis === "all" || t.jenis_transaksi === filterJenis),
-    [rows, filterJenis]
-  );
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter((t) => {
+      if (filterJenis !== "all" && t.jenis_transaksi !== filterJenis) return false;
+      if (!q) return true;
+      const { cleanKeterangan } = parseBukti(t.keterangan);
+      const rincian = (t.jenis_transaksi === "pemasukan" ? t.sumber_pemasukan : t.digunakan_untuk) ?? "";
+      const jenis = t.jenis_transaksi.toLowerCase();
+      return (
+        cleanKeterangan.toLowerCase().includes(q) ||
+        rincian.toLowerCase().includes(q) ||
+        String(t.nominal).includes(q) ||
+        t.tanggal.includes(q) ||
+        jenis.includes(q) ||
+        (jenis === "pemasukan" ? "masuk" : "keluar").includes(q)
+      );
+    });
+  }, [rows, filterJenis, searchQuery]);
 
-  const from = startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`);
-  const to = endDate || from;
-  const [rangeStart, rangeEnd] = from <= to ? [from, to] : [to, from];
-  const labelPeriode = `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+  const grouped = useMemo(() => {
+    const map = new Map<string, { label: string; rows: Row[] }>();
+    filtered.forEach((r) => {
+      const d = new Date(r.tanggal + "T00:00:00");
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+      if (!map.has(key)) map.set(key, { label, rows: [] });
+      map.get(key)!.rows.push(r);
+    });
+    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([, v]) => v);
+  }, [filtered]);
+
+  const labelPeriode = isHistory
+    ? (startDate || endDate ? `${formatDate(startDate || endDate!)} - ${formatDate(endDate || startDate!)}` : "Seluruh riwayat periode aktif")
+    : `${formatDate((startDate || (periode === "bulanan" ? startOfMonthISO(filterYear, filterMonth) : `${filterYear}-01-01`)))} - ${formatDate((endDate || startDate || (periode === "bulanan" ? endOfMonthISO(filterYear, filterMonth) : `${filterYear}-12-31`)))}`;
 
   const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - i);
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Link
-          href={
-            profile.role === "sekretaris"
-              ? "/dashboard/sekretaris/rekap-keuangan"
-              : "/dashboard/monitoring/rekap-keuangan"
-          }
-          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
-        >
-          Kembali ke Rekap Keuangan
-        </Link>
+        {embedded ? (
+          onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
+            >
+              Kembali ke Rekap Keuangan
+            </button>
+          ) : null
+        ) : (
+          <Link
+            href={
+              profile.role === "bendahara"
+                ? "/dashboard/detail-keuangan"
+                : profile.role === "sekretaris"
+                  ? "/dashboard/sekretaris/rekap-keuangan"
+                  : "/dashboard/monitoring/rekap-keuangan"
+            }
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
+          >
+            Kembali ke Rekap Keuangan
+          </Link>
+        )}
         <PageHeader
-          title={`Detail Keuangan ${namaDivisi || "Divisi"}`}
+          title={isHistory ? `Riwayat Transaksi ${namaDivisi || "Divisi"}` : `Detail Keuangan ${namaDivisi || "Divisi"}`}
           action={
             <ExportMenu
               title={`Detail Keuangan ${namaDivisi}`}
@@ -262,63 +337,74 @@ export function DetailKeuanganClient({
         />
       </div>
 
-      <Card>
-        <CardHeader title="Filter" icon={<Wallet className="h-5 w-5" />} />
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Divisi">
-              <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
-                {divisiOptions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.nama}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Periode">
-              <Select
-                value={periode}
-                onChange={(e) => setPeriode(e.target.value as Periode)}
-              >
-                <option value="bulanan">Bulanan</option>
-                <option value="tahunan">Tahunan</option>
-              </Select>
-            </Field>
-            {periode === "bulanan" && (
-              <Field label="Bulan">
-                <Select
-                  value={filterMonth}
-                  onChange={(e) => setFilterMonth(Number(e.target.value))}
-                >
-                  {MONTH_NAMES_ID.map((m, i) => (
-                    <option key={m} value={i + 1}>
-                      {m}
+      {isHistory ? (
+        <Card>
+          <CardHeader title="Filter Riwayat" icon={<Wallet className="h-5 w-5" />} />
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Dari Tanggal">
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </Field>
+              <Field label="Sampai Tanggal">
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </Field>
+              <Field label="Cari">
+                <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Keterangan, tanggal, nominal, jenis..." />
+              </Field>
+              <div className="flex items-end">
+                <button type="button" onClick={() => { setStartDate(""); setEndDate(""); setSearchQuery(""); setFilterJenis("all"); }} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                  Reset Filter
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : !embedded && (
+        <Card>
+          <CardHeader title="Filter" icon={<Wallet className="h-5 w-5" />} />
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Divisi">
+                <Select value={divisiId} onChange={(e) => setDivisiId(e.target.value)}>
+                  {divisiOptions.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nama}
                     </option>
                   ))}
                 </Select>
               </Field>
-            )}
-            <Field label="Tahun">
-              <Select
-                value={filterYear}
-                onChange={(e) => setFilterYear(Number(e.target.value))}
-              >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Dari Tanggal">
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </Field>
-            <Field label="Sampai Tanggal">
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </Field>
-          </div>
-        </CardContent>
-      </Card>
+              <Field label="Periode">
+                <Select value={periode} onChange={(e) => setPeriode(e.target.value as Periode)}>
+                  <option value="bulanan">Bulanan</option>
+                  <option value="tahunan">Tahunan</option>
+                </Select>
+              </Field>
+              {periode === "bulanan" && (
+                <Field label="Bulan">
+                  <Select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
+                    {MONTH_NAMES_ID.map((m, i) => (
+                      <option key={m} value={i + 1}>{m}</option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+              <Field label="Tahun">
+                <Select value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}>
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Dari Tanggal">
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </Field>
+              <Field label="Sampai Tanggal">
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </Field>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -475,88 +561,59 @@ export function DetailKeuanganClient({
             <div className="p-5 sm:p-6">
               <EmptyState
                 title="Belum ada transaksi"
-                description={
-                  semuaDivisi
-                    ? `Tidak ada transaksi divisi mana pun pada ${labelPeriode}.`
-                    : `Tidak ada transaksi ${namaDivisi || "divisi"} pada ${labelPeriode}.`
-                }
+                description={searchQuery ? "Coba ubah kata kunci pencarian/filter." : (semuaDivisi ? `Tidak ada transaksi divisi mana pun pada ${labelPeriode}.` : `Tidak ada transaksi ${namaDivisi || "divisi"} pada ${labelPeriode}.`)}
               />
             </div>
           ) : (
-            <TableWrap minWidth={semuaDivisi ? 1120 : 980}>
-              <THead>
-                <tr>
-                  <TH>Tanggal</TH>
-                  {semuaDivisi && <TH>Divisi</TH>}
-                  <TH>Jenis</TH>
-                  <TH>Sumber / Digunakan Untuk</TH>
-                  <TH>Keterangan</TH>
-                  <TH>Bukti</TH>
-                  <TH align="right">Nominal</TH>
-                </tr>
-              </THead>
-              <TBody>
-                {filtered.map((t) => {
-                  const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
-                  const rincian =
-                    t.jenis_transaksi === "pemasukan"
-                      ? t.sumber_pemasukan
-                      : t.digunakan_untuk;
-                  return (
-                    <TR key={t.id}>
-                      <TD className="whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        {formatDate(t.tanggal)}
-                      </TD>
-                      {semuaDivisi && (
-                        <TD className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-300">
-                          {divisiLabel(t.divisi)}
-                        </TD>
-                      )}
-                      <TD className="whitespace-nowrap">
-                        <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
-                          {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
-                        </Badge>
-                      </TD>
-                      <TD className="min-w-[10rem] text-xs text-slate-600 dark:text-slate-400">
-                        {rincian ? (
-                          <span className="font-medium text-slate-700 dark:text-slate-300">
-                            {rincian}
-                          </span>
-                        ) : (
-                          <span
-                            className="text-slate-300 dark:text-slate-600"
-                            title="Transaksi lama sebelum kolom rincian tersedia"
-                          >
-                            -
-                          </span>
-                        )}
-                      </TD>
-                      <TD className="max-w-[18rem] text-xs text-slate-700 dark:text-slate-300">
-                        <span className="safe-text block">{cleanKeterangan || "-"}</span>
-                      </TD>
-                      <TD>
-                        <BuktiButton buktiRef={buktiRef} onOpen={setViewBuktiUrl} />
-                      </TD>
-                      <TD
-                        align="right"
-                        className="whitespace-nowrap font-bold"
-                      >
-                        <span
-                          className={
-                            t.jenis_transaksi === "pemasukan"
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-rose-600 dark:text-rose-400"
-                          }
-                        >
-                          {t.jenis_transaksi === "pemasukan" ? "+ " : "- "}
-                          {formatRupiah(t.nominal)}
-                        </span>
-                      </TD>
-                    </TR>
-                  );
-                })}
-              </TBody>
-            </TableWrap>
+            <div className="space-y-0">
+              {grouped.map((g) => (
+                <div key={g.label}>
+                  <div className="sticky top-0 z-[1] border-y border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                    {g.label}
+                  </div>
+                  <TableWrap minWidth={semuaDivisi ? 1120 : 980}>
+                    <THead>
+                      <tr>
+                        <TH>Tanggal</TH>
+                        {semuaDivisi && <TH>Divisi</TH>}
+                        <TH>Jenis</TH>
+                        <TH>Sumber / Digunakan Untuk</TH>
+                        <TH>Keterangan</TH>
+                        <TH>Bukti</TH>
+                        <TH align="right">Nominal</TH>
+                      </tr>
+                    </THead>
+                    <TBody>
+                      {g.rows.map((t) => {
+                        const { cleanKeterangan, buktiRef } = parseBukti(t.keterangan);
+                        const rincian = t.jenis_transaksi === "pemasukan" ? t.sumber_pemasukan : t.digunakan_untuk;
+                        return (
+                          <TR key={t.id}>
+                            <TD className="whitespace-nowrap text-xs font-semibold text-slate-800 dark:text-slate-200">{formatDate(t.tanggal)}</TD>
+                            {semuaDivisi && <TD className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-300">{divisiLabel(t.divisi)}</TD>}
+                            <TD className="whitespace-nowrap">
+                              <Badge color={t.jenis_transaksi === "pemasukan" ? "green" : "red"}>
+                                {t.jenis_transaksi === "pemasukan" ? "Pemasukan" : "Pengeluaran"}
+                              </Badge>
+                            </TD>
+                            <TD className="min-w-[10rem] text-xs text-slate-600 dark:text-slate-400">
+                              {rincian ? <span className="font-medium text-slate-700 dark:text-slate-300">{rincian}</span> : <span className="text-slate-300 dark:text-slate-600">-</span>}
+                            </TD>
+                            <TD className="max-w-[18rem] text-xs text-slate-700 dark:text-slate-300"><span className="safe-text block">{cleanKeterangan || "-"}</span></TD>
+                            <TD><BuktiButton buktiRef={buktiRef} onOpen={setViewBuktiUrl} /></TD>
+                            <TD align="right" className="whitespace-nowrap font-bold">
+                              <span className={t.jenis_transaksi === "pemasukan" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+                                {t.jenis_transaksi === "pemasukan" ? "+ " : "- "}{formatRupiah(t.nominal)}
+                              </span>
+                            </TD>
+                          </TR>
+                        );
+                      })}
+                    </TBody>
+                  </TableWrap>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

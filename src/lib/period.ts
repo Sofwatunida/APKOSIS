@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { PeriodStatus } from "./database.types";
 import { createRawClient } from "./supabase/server";
 import { getProfile } from "./auth";
+import { isSuperAdmin } from "./role";
 import type { Profile } from "./types";
 import {
   ALL_PERIODS_VALUE,
@@ -28,14 +29,17 @@ export interface PeriodeContext {
   allPeriodsMode: boolean;
   /** true hanya untuk super_admin. */
   canSelectAllPeriods: boolean;
+  /** true bila user boleh mengganti periode lewat UI/cookie. */
+  canChangePeriod: boolean;
   /** true bila periode aktif tidak bisa ditambah/diubah datanya. */
   readOnly: boolean;
   canWrite: boolean;
 }
 
-function isSuperAdmin(profile: Profile | null): boolean {
-  return profile?.role === "super_admin";
-}
+/** Hasil validasi periode tulis sebelum server action memanggil database. */
+export type WritablePeriodeResult =
+  | { ok: true; periodeId: string | null }
+  | { ok: false; message: string };
 
 /**
  * SATU-SUMBER daftar periode.
@@ -92,18 +96,30 @@ export async function clearPeriodCookie(): Promise<void> {
  * Menentukan periode yang dipakai halaman.
  *
  * Aturan:
- *  1. Cookie selalu divalidasi ulang ke tabel `periods`.
- *     Nilai yang tidak dikenal / tidak punya akses diabaikan.
- *  2. Tanpa cookie -> periode aktif (bukan `new Date().getFullYear()`).
- *  3. "Semua periode" hanya untuk super_admin.
+ *  1. Admin Periode TIDAK pernah memakai cookie: satu-satunya sumber
+ *     kebenaran adalah `profile.periode_id` (hasil penugasan Super Admin).
+ *     Cookie, URL, body request, maupun manipulasi frontend diabaikan.
+ *  2. Super Admin tetap boleh memilih periode lewat cookie, termasuk
+ *     mode "Semua Periode".
+ *  3. Role lain mempertahankan perilaku yang sudah ada.
  */
 export const getPeriodeContext = cache(
   async (profile: Profile | null): Promise<PeriodeContext> => {
     const periods = await getPeriods();
-    const active = periods.find((p) => p.status === "active") ?? periods[0] ?? null;
-
-    const raw = await getRawPeriodCookie();
     const superAdmin = isSuperAdmin(profile);
+    const admin = profile?.role === "admin";
+
+    // Admin hanya melihat SATU periode penugasannya. Jangan pernah
+    // mengirim daftar lengkap periodes ke Client Component.
+    const options = admin
+      ? profile?.periode_id
+        ? periods.filter((p) => p.id === profile.periode_id)
+        : []
+      : periods;
+    const active =
+      options.find((p) => p.status === "active") ?? options[0] ?? null;
+
+    const raw = admin ? null : await getRawPeriodCookie();
 
     if (raw === ALL_PERIODS_VALUE && superAdmin) {
       return {
@@ -114,15 +130,16 @@ export const getPeriodeContext = cache(
           tahunSelesai: 0,
           status: "active",
         },
-        options: periods,
+        options,
         allPeriodsMode: true,
         canSelectAllPeriods: true,
+        canChangePeriod: true,
         readOnly: false,
         canWrite: true,
       };
     }
 
-    const fromCookie = raw ? periods.find((p) => p.id === raw) : null;
+    const fromCookie = raw ? options.find((p) => p.id === raw) : null;
     const selected = fromCookie ?? active;
 
     if (!selected) {
@@ -134,22 +151,22 @@ export const getPeriodeContext = cache(
           tahunSelesai: 0,
           status: "inactive",
         },
-        options: [],
+        options,
         allPeriodsMode: false,
         canSelectAllPeriods: superAdmin,
+        canChangePeriod: !admin,
         readOnly: true,
         canWrite: false,
       };
     }
 
-    // Admin hanya boleh Cruise satu periode yang ditugaskan kepadanya.
-    // Tapi daftar periode tetap ditampilkan agar bisa berpindah view.
     return {
       selected,
-      options: periods,
+      options,
       allPeriodsMode: false,
       canSelectAllPeriods: superAdmin,
-      readOnly: selected.status === "archived",
+      canChangePeriod: !admin,
+      readOnly: selected.status !== "active",
       canWrite: selected.status === "active",
     };
   }
@@ -183,6 +200,71 @@ export function assertPeriodWritableId(periodeId: string): void {
   if (periodeId === ALL_PERIODS_VALUE) {
     throw new Error("Pilih satu periode spesifik untuk menyimpan data.");
   }
+}
+
+/**
+ * Satu-satunya gerbang periode untuk server action yang menulis data.
+ *
+ * Admin tidak boleh menentukan periode lewat FormData: nilai yang dikirim
+ * hanya diterima bila sama dengan penugasan di `profile.periode_id`.
+ * Super Admin boleh memilih periode mana pun, tetapi tetap tidak boleh
+ * menulis ke periode yang bukan `active`.
+ */
+export async function resolveWritablePeriodeId(
+  profile: Profile | null,
+  requestedPeriodeId?: string | null,
+  options: { allowEmptyForSuperAdmin?: boolean } = {}
+): Promise<WritablePeriodeResult> {
+  const superAdmin = isSuperAdmin(profile);
+  if (!profile || (profile.role !== "admin" && !superAdmin)) {
+    return {
+      ok: false,
+      message: "Hanya Admin atau Super Admin yang boleh melakukan tindakan ini.",
+    };
+  }
+
+  const ctx = await getPeriodeContext(profile);
+  const requested =
+    requestedPeriodeId && requestedPeriodeId !== ALL_PERIODS_VALUE
+      ? requestedPeriodeId
+      : null;
+
+  if (superAdmin && !requested && options.allowEmptyForSuperAdmin) {
+    return { ok: true, periodeId: null };
+  }
+
+  let periodeId: string | null;
+  if (superAdmin) {
+    periodeId = requested ?? (ctx.allPeriodsMode ? null : ctx.selected.id || null);
+  } else {
+    if (requested && requested !== ctx.selected.id) {
+      return {
+        ok: false,
+        message: `Anda hanya dapat mengelola periode ${ctx.selected.namaPeriode}.`,
+      };
+    }
+    periodeId = ctx.selected.id || null;
+  }
+
+  if (!periodeId) {
+    return {
+      ok: false,
+      message: ctx.allPeriodsMode
+        ? "Pilih satu periode spesifik untuk menyimpan data."
+        : "Periode belum ditentukan. Hubungi Super Admin.",
+    };
+  }
+
+  const target = (await getPeriods()).find((p) => p.id === periodeId);
+  if (!target) return { ok: false, message: "Periode tidak ditemukan." };
+  if (target.status !== "active") {
+    return {
+      ok: false,
+      message: `Periode ${target.namaPeriode} tidak writable dan hanya bisa dibaca.`,
+    };
+  }
+
+  return { ok: true, periodeId: target.id };
 }
 
 /** Halaman yang butuh periode valid akan diarahkan ke dashboard. */

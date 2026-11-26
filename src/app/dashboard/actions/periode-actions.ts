@@ -6,6 +6,8 @@ import { getProfile, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
 import { formatDivisiLabel } from "@/lib/divisi-options";
+import { validateDivisiPassword } from "@/lib/division-password";
+import { resolveWritablePeriodeId } from "@/lib/period";
 import type { Json } from "@/lib/database.types";
 
 export interface PeriodActionResult {
@@ -300,14 +302,17 @@ export async function setDivisionPasswordAction(
   const periodeId = String(formData.get("periode_id") ?? "") || null;
 
   if (!divisiId) return fail("Divisi tidak valid.");
-  if (password.length < 4) return fail("Password divisi minimal 4 karakter.");
-  if (password.length > 128) return fail("Password divisi maksimal 128 karakter.");
+  const passwordError = validateDivisiPassword(password);
+  if (passwordError) return fail(passwordError);
+
+  const writable = await resolveWritablePeriodeId(profile, periodeId);
+  if (!writable.ok) return fail(writable.message);
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("admin_division_account_save", {
     p_divisi_id: divisiId,
     p_password: password,
-    p_periode_id: periodeId,
+    p_periode_id: writable.periodeId,
   });
 
   if (error) {
@@ -416,17 +421,28 @@ export async function setDivisiPeriodAction(formData: FormData): Promise<PeriodA
   const periodeId = String(formData.get("periode_id") ?? "") || null;
   if (!divisiId) return fail("Divisi tidak valid.");
 
+  // Admin tidak boleh melepas divisi ke "tanpa periode": periode
+  // penugasannya satu-satunya yang diperbolehkan.
+  if (profile.role === "admin" && !periodeId) {
+    return fail("Periode penugasan Admin tidak ditemukan.");
+  }
+
+  const writable = await resolveWritablePeriodeId(profile, periodeId, {
+    allowEmptyForSuperAdmin: true,
+  });
+  if (!writable.ok) return fail(writable.message);
+
   const supabase = await createClient();
   const { error } = await supabase.rpc("admin_divisi_set_period", {
     p_divisi_id: divisiId,
-    p_periode_id: periodeId,
+    p_periode_id: writable.periodeId,
   });
 
   if (error) {
-    await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: periodeId ?? "lepas", success: false });
-    return fail(error.message);
+    await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: writable.periodeId ?? "lepas", success: false });
+    return fail(pesanDb(error.message));
   }
-  await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: periodeId ?? "lepas", success: true });
+  await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: writable.periodeId ?? "lepas", success: true });
   revalidatePath("/dashboard/superadmin/akun");
   revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/admin/divisi");

@@ -33,6 +33,7 @@ export async function AppShellRoot({
       periods={ctx.options}
       allPeriodsMode={ctx.allPeriodsMode}
       readOnly={ctx.readOnly}
+      canChangePeriod={ctx.canChangePeriod}
       selectedPeriodId={ctx.allPeriodsMode ? null : ctx.selected.id || null}
       impersonation={impersonation}
     >

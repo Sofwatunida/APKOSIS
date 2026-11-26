@@ -25,6 +25,7 @@ interface PeriodeContextValue {
   allPeriodsMode: boolean;
   options: PeriodeClientOption[];
   readOnly: boolean;
+  canChangePeriod: boolean;
   changePeriode: (value: string) => void;
 }
 
@@ -33,6 +34,7 @@ const PeriodeContext = createContext<PeriodeContextValue>({
   allPeriodsMode: false,
   options: [],
   readOnly: false,
+  canChangePeriod: true,
   changePeriode: () => {},
 });
 
@@ -50,12 +52,14 @@ export function PeriodeProvider({
   allPeriodsMode,
   options,
   readOnly,
+  canChangePeriod,
   children,
 }: {
   periodeId: string | null;
   allPeriodsMode: boolean;
   options: PeriodeClientOption[];
   readOnly: boolean;
+  canChangePeriod: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -66,22 +70,27 @@ export function PeriodeProvider({
       allPeriodsMode,
       options,
       readOnly,
+      canChangePeriod,
       changePeriode: () => {},
     }),
-    [periodeId, allPeriodsMode, options, readOnly]
+    [periodeId, allPeriodsMode, options, readOnly, canChangePeriod]
   );
 
   useEffect(() => {
-    setClientPeriodScope(periodeId ?? readPeriodCookie());
-  }, [periodeId]);
+    // Admin tidak pernah boleh mengambil scope dari cookie.
+    setClientPeriodScope(
+      periodeId ?? (canChangePeriod ? readPeriodCookie() : null)
+    );
+  }, [periodeId, canChangePeriod]);
 
   const changePeriode = useCallback(
     (next: string) => {
+      if (!canChangePeriod) return;
       writePeriodCookie(next);
       setClientPeriodScope(next);
       router.refresh();
     },
-    [router]
+    [router, canChangePeriod]
   );
 
   const ctx = useMemo(

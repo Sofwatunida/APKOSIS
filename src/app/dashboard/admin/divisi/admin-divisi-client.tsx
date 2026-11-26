@@ -15,6 +15,7 @@ interface DivisiRow {
   id: string;
   nomorDivisi: number;
   namaDivisi: string;
+  periodeId: string;
 }
 
 interface PeriodOption {
@@ -26,9 +27,13 @@ interface PeriodOption {
 export function AdminDivisiClient({
   divisi,
   periods,
+  canChange = true,
+  readOnly = false,
 }: {
   divisi: DivisiRow[];
   periods: PeriodOption[];
+  canChange?: boolean;
+  readOnly?: boolean;
 }) {
   const { success, error } = useToast();
   const [pending, startTransition] = useTransition();
@@ -49,7 +54,14 @@ export function AdminDivisiClient({
     startTransition(async () => {
       const result = await setDivisiPeriodAction(fd);
       if (result.ok) success(result.message);
-      else error(result.message);
+      else {
+        setChoices((prev) => {
+          const next = { ...prev };
+          delete next[divisiId];
+          return next;
+        });
+        error(result.message);
+      }
     });
   }
 
@@ -71,11 +83,11 @@ export function AdminDivisiClient({
             <TD className="text-right">
               <Select
                 className="ml-auto w-auto"
-                value={choices[d.id] ?? ""}
-                disabled={pending}
+                value={choices[d.id] ?? d.periodeId}
+                disabled={pending || !canChange || readOnly}
                 onChange={(e) => handle(d.id, e.target.value)}
               >
-                <option value="">Belum ditentukan</option>
+                {!d.periodeId && <option value="">Belum ditentukan</option>}
                 {periods.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.namaPeriode}

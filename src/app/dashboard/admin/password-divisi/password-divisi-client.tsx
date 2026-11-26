@@ -17,6 +17,10 @@ import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { formatDivisiLabel } from "@/lib/divisi-options";
+import {
+  DIVISI_PASSWORD_MAX_LENGTH,
+  DIVISI_PASSWORD_MIN_LENGTH,
+} from "@/lib/division-password";
 import { saveDivisionPasswordAction } from "./actions";
 
 export interface DivisiPasswordRow {
@@ -26,8 +30,6 @@ export interface DivisiPasswordRow {
   hasPassword: boolean;
   updatedAt: string | null;
 }
-
-const MIN_PASSWORD_LENGTH = 4;
 
 function label(nomor: number, nama: string): string {
   return formatDivisiLabel(nomor, nama);
@@ -79,10 +81,10 @@ export function PasswordDivisiClient({
       setRowError((prev) => ({ ...prev, [row.id]: "Password divisi belum diisi." }));
       return;
     }
-    if (value.length < MIN_PASSWORD_LENGTH) {
+    if (value.length < DIVISI_PASSWORD_MIN_LENGTH) {
       setRowError((prev) => ({
         ...prev,
-        [row.id]: `Password divisi minimal ${MIN_PASSWORD_LENGTH} karakter.`,
+        [row.id]: `Password divisi minimal ${DIVISI_PASSWORD_MIN_LENGTH} karakter.`,
       }));
       return;
     }
@@ -154,18 +156,17 @@ export function PasswordDivisiClient({
       <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs dark:border-slate-800/80 dark:bg-slate-900/60">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          {sudahDiatur} / {divisi.length} divisi sudah punya password
+          {sudahDiatur} / {divisi.length}{" "}divisi sudah punya password
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
           <AlertTriangle className="h-3.5 w-3.5" />
-          {divisi.length - sudahDiatur} belum punya password
+          {divisi.length - sudahDiatur}{" "}belum punya password
         </span>
       </div>
 
       <Card>
         <CardHeader
           title="Daftar Divisi"
-          subtitle="Isi password baru lalu tekan Simpan. Password yang sudah tersimpan tidak bisa dibaca kembali — catat atau bagikan langsung kepada user divisi."
           icon={<KeyRound className="h-4 w-4" />}
         />
         <CardContent>
@@ -186,7 +187,7 @@ export function PasswordDivisiClient({
                 return (
                   <li
                     key={row.id}
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 lg:flex-row lg:items-center lg:gap-5"
+                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 xl:flex-row xl:items-center xl:gap-5"
                   >
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -207,20 +208,20 @@ export function PasswordDivisiClient({
                     </div>
 
                     <form
-                      className="flex flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:flex-1"
+                      className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start xl:w-auto xl:flex-1"
                       onSubmit={(e) => {
                         e.preventDefault();
                         mintaKonfirmasi(meta);
                       }}
                     >
-                      <div className="relative flex-1 lg:min-w-72">
+                      <div className="relative min-w-0 flex-1 xl:min-w-72">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                           <KeyRound className="h-4 w-4" />
                         </div>
                         <input
                           type={isRevealed ? "text" : "password"}
                           value={value}
-                          maxLength={128}
+                          maxLength={DIVISI_PASSWORD_MAX_LENGTH}
                           autoComplete="new-password"
                           spellCheck={false}
                           aria-label={`Password baru ${label(row.nomorDivisi, row.namaDivisi)}`}
@@ -254,26 +255,33 @@ export function PasswordDivisiClient({
                         </button>
                       </div>
 
-                      <div className="flex shrink-0 gap-2">
-                        <Button type="submit" size="md" disabled={isSaving}>
-                          {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                          <span>Simpan</span>
-                        </Button>
-                        {(value || baruDisimpan === row.id) && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="md"
-                            onClick={() => bersihkanNilai(meta)}
-                            title="Kosongkan kolom password"
-                            aria-label={`Kosongkan kolom password ${label(row.nomorDivisi, row.namaDivisi)}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                      <div className="flex min-w-0 flex-col items-start gap-1">
+                        <div className="flex gap-2">
+                          <Button type="submit" size="md" disabled={isSaving}>
+                            {isSaving ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                            <span>Simpan</span>
                           </Button>
+                          {(value || baruDisimpan === row.id) && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="md"
+                              onClick={() => bersihkanNilai(meta)}
+                              title="Kosongkan kolom password"
+                              aria-label={`Kosongkan kolom password ${label(row.nomorDivisi, row.namaDivisi)}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {waktu && (
+                          <p className="max-w-full whitespace-normal text-[11px] leading-4 text-slate-400 dark:text-slate-500">
+                            Terakhir diperbarui: {waktu}
+                          </p>
                         )}
                       </div>
                     </form>
@@ -293,12 +301,6 @@ export function PasswordDivisiClient({
                           ketik, bukan dibaca dari database. Tekan ikon tong untuk
                           mengosongkannya.
                         </span>
-                      </p>
-                    )}
-
-                    {waktu && (
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        Terakhir diperbarui: {waktu}
                       </p>
                     )}
                   </li>

@@ -13,28 +13,26 @@ export interface DivisiSummary {
 }
 
 /**
- * Kartu ringkasan keuangan per divisi yang bisa diklik untuk membuka
- * halaman "Detail Keuangan". Dipakai di Rekap Keuangan (Monitoring/Sekretaris)
- * supaya angka pada rekap selalu bisa ditelusuri ke transaksi aslinya.
+ * Kartu ringkasan keuangan per divisi. Bisa membuka detail via Link atau
+ * callback onSelect (untuk tampilan inline di halaman yang sama).
  */
 export function DivisiSummaryCard({
   divisi,
   periode,
+  onSelect,
 }: {
   divisi: DivisiSummary;
   periode: string;
+  onSelect?: (divisiId: string) => void;
 }) {
   const saldoAwal = divisi.saldoAwal ?? 0;
   const saldo = saldoAwal + divisi.masuk - divisi.keluar;
   const href = `/dashboard/detail-keuangan?divisi=${encodeURIComponent(
     divisi.id
   )}&periode=${encodeURIComponent(periode)}`;
-
-  return (
-    <Link
-      href={href}
-      className="group block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-500"
-    >
+  const className = "group block w-full text-left rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-500";
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <h4 className="font-semibold text-slate-800 dark:text-slate-200">
           {divisi.nama}
@@ -74,6 +72,20 @@ export function DivisiSummaryCard({
       <p className="mt-2 text-[11px] text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400">
         Lihat detail transaksi &rarr;
       </p>
+    </>
+  );
+
+  if (onSelect) {
+    return (
+      <button type="button" onClick={() => onSelect(divisi.id)} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {content}
     </Link>
   );
 }

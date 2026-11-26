@@ -1259,11 +1259,7 @@ function AccountPasswordModal({
           </div>
         </Field>
 
-        <p className="text-xs text-muted-foreground">
-          Minimal 8 karakter, maksimal 128, serta mengandung huruf dan angka.
-        </p>
-
-        {formError && (
+               {formError && (
           <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
             {formError}
           </p>

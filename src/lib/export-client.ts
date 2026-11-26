@@ -746,17 +746,17 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   signatories.forEach((s, i) => {
     const blockW = Math.min(sigColW, 190);
     const x = signatories.length === 1
-      ? MARGIN_LEFT + CONTENT_W - blockW
+      ? MARGIN_LEFT + (CONTENT_W - blockW) / 2
       : MARGIN_LEFT + i * (CONTENT_W - blockW);
     s.label.split("\n").forEach((line, li) =>
-      drawText(line, 8, true, x, topY + li * 10, DOCUMENT_RGB.text, blockW, "left", "F2")
+      drawText(line, 8, true, x, topY + li * 10, DOCUMENT_RGB.text, blockW, "center", "F2")
     );
-    drawText("........................................", 8, false, x, topY + 28, DOCUMENT_RGB.border, blockW);
+    drawText("........................................", 8, false, x, topY + 42, DOCUMENT_RGB.border, blockW, "center");
     if (s.name.trim()) {
-      drawText(s.name, 8.5, true, x, topY + 40, DOCUMENT_RGB.navy, blockW, "left", "F2");
+      drawText(s.name, 8.5, true, x, topY + 54, DOCUMENT_RGB.navy, blockW, "center", "F2");
     }
   });
-  topY += 58;
+  topY += 72;
 
   if (pages.length > 1 && ops.length <= 2) pages.pop();
 

@@ -13,15 +13,17 @@ import {
   ACTIVE_PERIOD_SENTINEL,
 } from "../period-constants";
 import { scopeBuilderWithPeriod } from "../period-scope";
+import { getImpersonation } from "../impersonation";
 
 /**
  * Server-side Supabase client.
  *
  * - Mengirim `x-division-token` supaya RLS (`current_divisi_id()`)
  *   tahu divisi yang sedang dipilih oleh akun divisi bersama.
- * - Semua `.from(<tabel periode>)` otomatis difilter `periode_id`
- *   sesuai cookie periode. Nilai cookie tetap divalidasi ulang di
- *   database, jadi tidak bisa dipakai menusupkan data periode lain.
+ * - Semua `.from(<tabel periode>)` otomatis difilter `periode_id`.
+ *   Untuk Admin Periode, filter DIAMBIL dari `profiles.periode_id`;
+ *   cookie tidak pernah dipakai. Super Admin dan role lain masih
+ *   memakai cookie yang divalidasi ulang ke tabel `periods`.
  */
 
 /** Klien tanpa period scope, dipakai untuk mencari periode aktif. */
@@ -64,18 +66,46 @@ export const createRawClient = cache(async (): Promise<SupabaseClient<Database>>
 });
 
 /**
- * Mengubah nilai cookie menjadi id periode yang konkret.
+ * Mengubah hak akses pengguna + cookie menjadi id periode konkret.
  *
- * - `semua-periode` -> null (tanpa filter, hanya super_admin, dan
- *   keamanannya tetap dijaga RLS).
- * - uuid -> dipakai langsung, RLS tetap menolak bila tidak berhak.
+ * - Admin Periode -> selalu `profiles.periode_id`, cookie diabaikan.
+ * - Super Admin menyamar -> periode akun tujuan penyamarannya.
+ * - `semua-periode` -> null (tanpa filter, hanya super_admin; RLS
+ *   tetap berlaku untuk pembacaan).
+ * - uuid -> divalidasi ke tabel `periods`.
  * - kosong -> periode aktif, dibaca dari tabel `periods`.
  */
 const resolvePeriodId = cache(
   async (raw: string | null): Promise<string | null> => {
-    if (raw === ALL_PERIODS_VALUE) return null;
-
     const supabase = await createRawClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, periode_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile) {
+        const impersonation =
+          profile.role === "super_admin" ? await getImpersonation() : null;
+
+        if (impersonation?.periodeId) return impersonation.periodeId;
+
+        if (!impersonation && profile.role === "admin") {
+          // Cookie periode palsu / basi tidak pernah dipakai Admin.
+          return profile.periode_id ?? null;
+        }
+
+        if (raw === ALL_PERIODS_VALUE && profile.role === "super_admin") {
+          return null;
+        }
+      }
+    }
 
     // Cookie kosong / sentinel -> periode aktif.
     if (!raw || raw === ACTIVE_PERIOD_SENTINEL) {

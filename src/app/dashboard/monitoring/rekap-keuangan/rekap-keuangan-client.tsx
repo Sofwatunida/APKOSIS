@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/feedback";
 import { DivisiSummaryCard } from "@/components/divisi-summary-card";
 import { FinanceSummary } from "@/components/finance-summary";
 import { ExportMenu } from "@/components/export-menu";
+import { DetailKeuanganClient } from "@/app/dashboard/detail-keuangan/detail-keuangan-client";
 import {
   SEMUA_DIVISI_VALUE,
   buildDivisiOptions,
@@ -35,6 +36,14 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
   const [filterYear, setFilterYear] = useState(currentYear);
   const [startDate, setStartDate] = useState(startOfMonthISO(currentYear, currentMonth));
   const [endDate, setEndDate] = useState(endOfMonthISO(currentYear, currentMonth));
+  const [selectedDivisi, setSelectedDivisi] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (selectedDivisi) {
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedDivisi]);
 
   const [financePerDivisi, setFinancePerDivisi] = useState<Record<string, { masuk: number; keluar: number }>>({});
   const [financeMonthly, setFinanceMonthly] = useState<{ masuk: number; keluar: number }>({ masuk: 0, keluar: 0 });
@@ -282,6 +291,7 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                   key={d.id}
                   divisi={{ id: d.id, nama: d.nama, saldoAwal: d.saldoAwal, masuk: d.masuk, keluar: d.keluar }}
                   periode="tahunan"
+                  onSelect={setSelectedDivisi}
                 />
               ))}
           </div>
@@ -308,12 +318,27 @@ export function RekapKeuanganClient({ profile }: { profile: Profile }) {
                       keluar: f.keluar,
                     }}
                     periode="bulanan"
+                    onSelect={setSelectedDivisi}
                   />
                 );
               })}
           </div>
         </CardContent>
       </Card>
+
+      {selectedDivisi && (
+        <div id="detail-transaksi-divisi" ref={detailRef}>
+          <DetailKeuanganClient
+            key={selectedDivisi}
+            profile={profile}
+            initialDivisi={selectedDivisi}
+            initialPeriode="bulanan"
+            embedded
+            historyMode
+            onBack={() => setSelectedDivisi(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

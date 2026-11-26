@@ -8,17 +8,12 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
  
+  { label: "Dashboard", href: "/dashboard/superadmin", roles: ["super_admin"] },
+  { label: "Dashboard", href: "/dashboard/admin", roles: ["admin"] },
   {
     label: "Dashboard",
-    href: "/dashboard/superadmin",
-    roles: [
-      "super_admin",
-      "admin",
-      "division_admin",
-      "monitoring",
-      "sekretaris",
-      "bendahara",
-    ],
+    href: "/dashboard",
+    roles: ["division_admin", "monitoring", "sekretaris", "bendahara"],
   },
   {
     label: "Kelola Periode",
@@ -84,7 +79,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: "Rekap Keuangan",
     href: "/dashboard/detail-keuangan",
-    roles: ["monitoring", "sekretaris", "bendahara"],
+    roles: ["bendahara"],
   },
   {
     label: "Semua Divisi",

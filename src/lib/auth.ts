@@ -80,6 +80,9 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     ...real,
     role: imp.role,
     divisi_id: imp.role === "division_admin" ? imp.divisiId : real.divisi_id,
+    // Periode akun tujuan ikut ditimpa supaya Admin Periode hasil
+    // penyamaran tetap terikat pada penugasannya sendiri.
+    periode_id: imp.periodeId ?? real.periode_id,
   };
 });
 

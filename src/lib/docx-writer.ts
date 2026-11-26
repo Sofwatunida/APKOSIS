@@ -161,22 +161,23 @@ function approvalBlock(approval: ApprovalSpec, width: number): string {
   const noBorder = "<w:tcBorders><w:top w:val=\"nil\"/><w:left w:val=\"nil\"/><w:bottom w:val=\"nil\"/><w:right w:val=\"nil\"/><w:insideH w:val=\"nil\"/><w:insideV w:val=\"nil\"/></w:tcBorders>";
   const signatureCell = (label: string, name: string, cellWidth: number) =>
     `<w:tc><w:tcPr><w:tcW w:w="${Math.round(cellWidth)}" w:type="dxa"/>${noBorder}<w:vAlign w:val="top"/><w:tcMar><w:top w:w="70" w:type="dxa"/><w:bottom w:w="70" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tcMar></w:tcPr>${paragraph(
-      `${run(label, { size: 9, bold: true, color: DOCUMENT_PALETTE.navy })}${run("\n\n\n\n", { size: 9 })}${run("........................................", { size: 9, color: DOCUMENT_PALETTE.muted })}${name ? run(`\n${name}`, { size: 9.5, bold: true }) : ""}`,
-      { align: "left" }
+      `${run(label, { size: 9, bold: true, color: DOCUMENT_PALETTE.navy })}${run("\n\n\n\n\n\n", { size: 9 })}${run("........................................", { size: 9, color: DOCUMENT_PALETTE.muted })}${name ? run(`\n${name}`, { size: 9.5, bold: true }) : ""}`,
+      { align: "center" }
     )}</w:tc>`;
 
-  const leftW = Math.round(width * 0.65);
-  const rightW = width - leftW;
   const colWidth = Math.floor(width / Math.max(count, 1));
+  const sigW = Math.round(width * 0.38);
+  const sideW = Math.round((width - sigW) / 2);
   const widths =
     count === 1
-      ? [leftW, rightW]
+      ? [sideW, sigW, width - sideW - sigW]
       : Array.from({ length: count }, (_, i) =>
           i === count - 1 ? width - colWidth * (count - 1) : colWidth
         );
+  const emptyCell = (w: number) => `<w:tc><w:tcPr><w:tcW w:w="${Math.round(w)}" w:type="dxa"/>${noBorder}</w:tcPr>${paragraph("")}</w:tc>`;
   const cells =
     count === 1
-      ? `<w:tc><w:tcPr><w:tcW w:w="${leftW}" w:type="dxa"/>${noBorder}</w:tcPr>${paragraph("")}</w:tc>${signatureCell(signatories[0].label, signatories[0].name.trim(), rightW)}`
+      ? `${emptyCell(widths[0])}${signatureCell(signatories[0].label, signatories[0].name.trim(), widths[1])}${emptyCell(widths[2])}`
       : signatories
           .map((s, i) =>
             signatureCell(s.label, s.name.trim(), i === count - 1 ? widths[i] : colWidth)

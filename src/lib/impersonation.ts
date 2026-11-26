@@ -38,6 +38,8 @@ export interface ImpersonationView {
   role: Role;
   /** Wajib diisi bila role = division_admin; selain itu selalu null. */
   divisiId: string | null;
+  /** Periode penugasan akun tujuan, dipakai sebagai scope saat menyamar. */
+  periodeId?: string | null;
   accountId?: string | null;
   accountName?: string | null;
 }
@@ -79,6 +81,10 @@ export const getImpersonation = cache(
       return {
         role: role as Role,
         divisiId,
+        periodeId:
+          typeof parsed.periodeId === "string" && UUID_RE.test(parsed.periodeId)
+            ? parsed.periodeId
+            : null,
         accountId:
           typeof parsed.accountId === "string" && UUID_RE.test(parsed.accountId)
             ? parsed.accountId
@@ -113,6 +119,7 @@ export async function setImpersonationCookie(
   const payload: ImpersonationState = {
     role: state.role,
     divisiId: state.role === "division_admin" ? state.divisiId : null,
+    periodeId: state.periodeId ?? null,
     accountId: state.accountId ?? null,
     accountName: state.accountName ?? null,
     startedAt: new Date().toISOString(),

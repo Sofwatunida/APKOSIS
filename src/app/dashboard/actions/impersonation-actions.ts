@@ -62,7 +62,7 @@ export async function startImpersonationAction(input: {
 
   const { data: target, error } = await supabase
     .from("profiles")
-    .select("id, nama, email, role, divisi_id")
+    .select("id, nama, email, role, divisi_id, periode_id")
     .eq("id", accountId)
     .maybeSingle();
   if (error || !target) return fail("Akun tujuan tidak ditemukan.");
@@ -95,6 +95,7 @@ export async function startImpersonationAction(input: {
   await setImpersonationCookie({
     role,
     divisiId,
+    periodeId: target.periode_id,
     accountId: target.id,
     accountName,
   });

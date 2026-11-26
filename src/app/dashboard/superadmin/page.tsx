@@ -77,7 +77,6 @@ export default async function SuperAdminDashboard() {
                   <TH>Periode</TH>
                   <TH>Tahun</TH>
                   <TH>Status</TH>
-                  <TH>Tautan</TH>
                 </tr>
               </THead>
               <TBody>
@@ -89,14 +88,6 @@ export default async function SuperAdminDashboard() {
                     </TD>
                     <TD className="whitespace-nowrap">
                       {periodBadge(p.status)}
-                    </TD>
-                    <TD>
-                      <a
-                        className="underline"
-                        href={`/dashboard/superadmin/akun?periode=${p.id}`}
-                      >
-                        Kelola akun & divisi
-                      </a>
                     </TD>
                   </TR>
                 ))}
