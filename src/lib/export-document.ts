@@ -249,67 +249,11 @@ const AUTO_SUM_KEYS = [
  * Baris __total tidak dijumlahkan ulang agar tidak dobel hitung.
  */
 export function computeSummary(
-  columns: ExportColumn[],
-  rows: Record<string, unknown>[],
+  _columns: ExportColumn[],
+  _rows: Record<string, unknown>[],
   extra: SummaryItem[] = []
 ): SummaryItem[] {
-  const dataRows = rows.filter((r) => !r.__total);
-  const items: SummaryItem[] = [
-    { label: "Jumlah data", value: `${formatNumber(dataRows.length)} entri` },
-  ];
-
-  columns.forEach((column) => {
-    const key = column.key.toLowerCase();
-    const wanted = column.summarize === "sum" || column.summarize === "count";
-    const auto = !column.summarize && AUTO_SUM_KEYS.some((k) => key.includes(k));
-    if (!wanted && !auto) return;
-
-    if (column.summarize === "count") {
-      const count = dataRows.filter((r) => {
-        const v = r[column.key];
-        return v !== null && v !== undefined && String(v).trim() !== "";
-      }).length;
-      items.push({ label: `Jumlah ${column.header}`, value: `${formatNumber(count)} entri` });
-      return;
-    }
-
-    const values = dataRows
-      .map((r) => parseNumeric(r[column.key]))
-      .filter((n): n is number => n !== null);
-    if (values.length === 0) return;
-    const total = values.reduce((a, b) => a + b, 0);
-    const isCurrency =
-      column.format === "currency" ||
-      dataRows.some((r) => /rp\b/i.test(String(r[column.key] ?? "")));
-    items.push({
-      label: `Total ${column.header}`,
-      value: isCurrency ? formatCurrency(total) : formatNumber(total),
-    });
-  });
-
-  rows.filter((r) => r.__total).forEach((row) => {
-    const label = String(row[columns[0]?.key ?? ""] ?? "Total").trim() || "Total";
-    const numericColumn = columns.find((c) => parseNumeric(row[c.key]) !== null);
-    if (!numericColumn) return;
-    const n = parseNumeric(row[numericColumn.key]) ?? 0;
-    items.push({
-      label,
-      value: /rp\b/i.test(String(row[numericColumn.key])) ? formatCurrency(n) : formatNumber(n),
-    });
-  });
-
-  extra.forEach((item) => {
-    if (item?.label && item?.value) items.push(item);
-  });
-
-  const seen = new Set<string>();
-  return items
-    .filter((item) => {
-      if (seen.has(item.label)) return false;
-      seen.add(item.label);
-      return true;
-    })
-    .slice(0, 7);
+  return extra.filter((item) => item?.label && item?.value);
 }
 
 const MONTHS_ID = [
@@ -364,9 +308,11 @@ function reportDateRange(input: ExportInput): string {
 
 /** Teks normal dipakai ulang di tiga format agar tidak ada perbedaan isi. */
 export function reportMetaRows(input: ExportInput, periodLabel: string): [string, string][] {
+  const dataRows = input.rows.filter((r) => !r.__total);
   return [
     ["Unit / Divisi", input.division?.trim() || resolveDivision(input.subtitle, input.title)],
     ["Periode Kepengurusan", periodLabel],
     ["Rentang Tanggal", reportDateRange(input)],
+    ["Jumlah Data", `${formatNumber(dataRows.length)} entri`],
   ];
 }

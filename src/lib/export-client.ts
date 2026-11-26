@@ -651,8 +651,8 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   strokeRect(MARGIN_LEFT, topY, CONTENT_W, metaHeight, DOCUMENT_RGB.border, 0.5);
   topY += metaHeight + 6;
 
-  // Ringkasan dihitung dari data, bukan angka manual.
   function drawSummary() {
+    if (doc.summary.length === 0) return;
     const lineH = 10.5;
     const h = doc.summary.length * lineH + 14;
     if (topY + h > PAGE_H - BOTTOM) beginPage(true);

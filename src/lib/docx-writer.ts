@@ -158,12 +158,12 @@ function headerBlock(
 function approvalBlock(approval: ApprovalSpec, width: number): string {
   const signatories = approval.signatories;
   const count = signatories.length;
+  const noBorder = "<w:tcBorders><w:top w:val=\"nil\"/><w:left w:val=\"nil\"/><w:bottom w:val=\"nil\"/><w:right w:val=\"nil\"/><w:insideH w:val=\"nil\"/><w:insideV w:val=\"nil\"/></w:tcBorders>";
   const signatureCell = (label: string, name: string, cellWidth: number) =>
-    cell(
+    `<w:tc><w:tcPr><w:tcW w:w="${Math.round(cellWidth)}" w:type="dxa"/>${noBorder}<w:vAlign w:val="top"/><w:tcMar><w:top w:w="70" w:type="dxa"/><w:bottom w:w="70" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tcMar></w:tcPr>${paragraph(
       `${run(label, { size: 9, bold: true, color: DOCUMENT_PALETTE.navy })}${run("\n\n\n\n", { size: 9 })}${run("........................................", { size: 9, color: DOCUMENT_PALETTE.muted })}${name ? run(`\n${name}`, { size: 9.5, bold: true }) : ""}`,
-      cellWidth,
-      { align: "left", valign: "top" }
-    );
+      { align: "left" }
+    )}</w:tc>`;
 
   const leftW = Math.round(width * 0.65);
   const rightW = width - leftW;
@@ -176,12 +176,13 @@ function approvalBlock(approval: ApprovalSpec, width: number): string {
         );
   const cells =
     count === 1
-      ? `${cell("", leftW)}${signatureCell(signatories[0].label, signatories[0].name.trim(), rightW)}`
+      ? `<w:tc><w:tcPr><w:tcW w:w="${leftW}" w:type="dxa"/>${noBorder}</w:tcPr>${paragraph("")}</w:tc>${signatureCell(signatories[0].label, signatories[0].name.trim(), rightW)}`
       : signatories
           .map((s, i) =>
             signatureCell(s.label, s.name.trim(), i === count - 1 ? widths[i] : colWidth)
           )
           .join("");
+  const borderlessTable = `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders></w:tblPr><w:tblGrid>${widths.map((w) => `<w:gridCol w:w="${Math.round(w)}"/>`).join("")}</w:tblGrid><w:tr>${cells}</w:tr></w:tbl>`;
 
   return `${textParagraph(approval.heading ?? "PENGESAHAN", {
     bold: true,
@@ -189,7 +190,7 @@ function approvalBlock(approval: ApprovalSpec, width: number): string {
     color: DOCUMENT_PALETTE.navy,
     before: 220,
     after: 100,
-  })}${table([cells], widths)}`;
+  })}${borderlessTable}`;
 }
 
 function footerXml(identity: string): string {
@@ -294,8 +295,10 @@ export async function buildDocxBlob(
       1
     )
   );
-  body.push(textParagraph("RINGKASAN", { bold: true, size: 10, color: DOCUMENT_PALETTE.navy, before: 200, after: 80 }));
-  body.push(table(summaryRows, [contentW * 0.6, contentW * 0.4]));
+  if (summaryRows.length > 0) {
+    body.push(textParagraph("RINGKASAN", { bold: true, size: 10, color: DOCUMENT_PALETTE.navy, before: 200, after: 80 }));
+    body.push(table(summaryRows, [contentW * 0.6, contentW * 0.4]));
+  }
   body.push(approvalBlock(options.approval, contentW));
 
   const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
