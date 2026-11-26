@@ -28,12 +28,10 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  Sparkles,
   Layers,
   CheckCircle2,
   Clock,
   Plus,
-  ArrowRight,
   Eye,
   AlertCircle,
   Check,
@@ -289,7 +287,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md dark:border-white/15 dark:bg-white/10 dark:text-slate-100">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-brand-500 dark:text-brand-300" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500 dark:bg-brand-300" />
               <span className="truncate">Divisi OSIS • Periode {periodeLabel}</span>
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
@@ -380,10 +378,9 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
           action={
             <Link
               href="/dashboard/laporan"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
             >
-              <span>{laporanToday ? "Buka Halaman Laporan" : "+ Isi Laporan"}</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              {laporanToday ? "Buka Halaman Laporan" : "+ Isi Laporan"}
             </Link>
           }
         />
@@ -597,10 +594,9 @@ function MonitoringDashboard({ profile }: { profile: Profile }) {
           action={
             <Link
               href="/dashboard/monitoring/divisi"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 shadow-xs transition hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:border-brand-300"
+              className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 shadow-xs transition hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:border-brand-300"
             >
-              <span>Lihat Semua Divisi</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              Lihat Semua Divisi
             </Link>
           }
         />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { formatRupiah } from "@/lib/format";
-import { ArrowRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 export interface DivisiSummary {
   id: string;
@@ -39,7 +39,7 @@ export function DivisiSummaryCard({
         <h4 className="font-semibold text-slate-800 dark:text-slate-200">
           {divisi.nama}
         </h4>
-        <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600" />
       </div>
       <div className="mt-2 space-y-1">
         <div className="flex justify-between text-xs">

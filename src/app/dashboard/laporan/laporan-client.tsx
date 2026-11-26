@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -30,7 +30,6 @@ import {
   Plus,
   Calendar,
   AlertCircle,
-  Sparkles,
   X,
   Check,
   ShoppingBag,
@@ -74,6 +73,9 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   const [editingReport, setEditingReport] = useState<LaporanHarian | null>(null);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const formCardRef = useRef<HTMLDivElement>(null);
+  const pelaporRef = useRef<HTMLDivElement>(null);
+  const penerimaRef = useRef<HTMLDivElement>(null);
 
   // detail modal state
   const [detailReport, setDetailReport] = useState<LaporanHarian | null>(null);
@@ -225,6 +227,19 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.divisi_id]);
 
+  function focusFirstInvalid(errors: Record<string, string>) {
+    const target =
+      (errors.pelapor_id ? pelaporRef.current : null) ||
+      (errors.penerima_laporan ? penerimaRef.current : null) ||
+      formCardRef.current;
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      const field = target.querySelector("select, input, textarea") as HTMLElement | null;
+      field?.focus();
+    }, 250);
+  }
+
   function validate() {
     const e: Record<string, string> = {};
     if (!form.tanggal) e.tanggal = "Tanggal wajib diisi.";
@@ -232,6 +247,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
     if (!form.pelapor_id) e.pelapor_id = "Pilih nama pelapor.";
     if (!form.penerima_laporan) e.penerima_laporan = "Pilih penerima laporan.";
     setFormErrors(e);
+    if (Object.keys(e).length > 0) focusFirstInvalid(e);
     return Object.keys(e).length === 0;
   }
 
@@ -270,14 +286,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
   async function handleAddOpsi() {
     const trimmed = newOpsi.trim();
     if (!profile.divisi_id || !trimmed) return;
-    if (
-      opsiKegiatan.some(
-        (o) => o.nama_kegiatan.toLowerCase() === trimmed.toLowerCase()
-      )
-    ) {
-      error("Kegiatan tersebut sudah ada di daftar.");
-      return;
-    }
+    // Kegiatan boleh sama/berulang, jadi tidak diblokir duplikat nama.
 
     setSavingOpsi(true);
     const { data, error: insErr } = await supabase
@@ -516,7 +525,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       />
 
       {/* Form Input Card */}
-      <Card>
+      <Card ref={formCardRef}>
         <CardHeader
           title={
             editingReport
@@ -554,31 +563,35 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                 />
               </Field>
 
-              <Field label="Pelapor (Ketua / Wakil)" error={formErrors.pelapor_id}>
-                <Select
-                  value={form.pelapor_id}
-                  onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
-                >
-                  <option value="">Pilih Pelapor</option>
-                  {pelaporOptions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nama}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+              <div ref={pelaporRef}>
+                <Field label="Pelapor (Ketua / Wakil)" error={formErrors.pelapor_id}>
+                  <Select
+                    value={form.pelapor_id}
+                    onChange={(e) => setForm({ ...form, pelapor_id: e.target.value })}
+                  >
+                    <option value="">Pilih Pelapor</option>
+                    {pelaporOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nama}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
 
-              <Field label="Penerima Laporan" error={formErrors.penerima_laporan}>
-                <Select
-                  value={form.penerima_laporan}
-                  onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
-                >
-                  <option value="">Pilih penerima</option>
-                  <option value="ketua_umum">Ketua Umum</option>
-                  <option value="ketua_1">Ketua 1</option>
-                  <option value="ketua_2 OSIS">Ketua 2</option>
-                </Select>
-              </Field>
+              <div ref={penerimaRef}>
+                <Field label="Penerima Laporan" error={formErrors.penerima_laporan}>
+                  <Select
+                    value={form.penerima_laporan}
+                    onChange={(e) => setForm({ ...form, penerima_laporan: e.target.value })}
+                  >
+                    <option value="">Pilih penerima</option>
+                    <option value="ketua_umum">Ketua Umum</option>
+                    <option value="ketua_1">Ketua 1</option>
+                    <option value="ketua_2 OSIS">Ketua 2</option>
+                  </Select>
+                </Field>
+              </div>
             </div>
 
             <Field label="Kegiatan yang Dilakukan" error={formErrors.kegiatan_hari_ini}>

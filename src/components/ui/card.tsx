@@ -1,16 +1,12 @@
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 
-export function Card({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`card-base ${className}`}>{children}</div>
-  );
-}
+export const Card = forwardRef<HTMLDivElement, { children: ReactNode; className?: string }>(
+  function Card({ children, className = "" }, ref) {
+    return (
+      <div ref={ref} className={`card-base ${className}`}>{children}</div>
+    );
+  }
+);
 
 export function CardHeader({
   title,

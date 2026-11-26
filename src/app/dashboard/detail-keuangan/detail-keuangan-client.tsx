@@ -30,7 +30,6 @@ import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
 import { BuktiButton, BuktiPreviewModal } from "@/components/ui/bukti";
 import { ExportMenu } from "@/components/export-menu";
 import {
-  ArrowLeft,
   TrendingUp,
   TrendingDown,
   Coins,
@@ -223,7 +222,6 @@ export function DetailKeuanganClient({
           }
           className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
           Kembali ke Rekap Keuangan
         </Link>
         <PageHeader

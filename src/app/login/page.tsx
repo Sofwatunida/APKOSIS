@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ToastProvider } from "@/components/ui/toast";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
@@ -49,15 +49,11 @@ export default function LoginPage() {
 
         <div className="relative w-full max-w-[420px] animate-fade-in">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 inline-flex items-center rounded-full border border-brand-200/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-brand-700 shadow-sm backdrop-blur dark:border-brand-500/20 dark:bg-slate-900/70 dark:text-brand-300">
+            <div className="mx-auto mb-2 inline-flex items-center rounded-full border border-brand-200/90 bg-white/100 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-brand-700 shadow-sm backdrop-blur dark:border-brand-500/20 dark:bg-slate-900/70 dark:text-brand-300">
               APKOSIS
             </div>
-            <h1 className="text-[2rem] font-bold tracking-tight text-slate-950 dark:text-white">
-              Masuk
-            </h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Gunakan akun OSIS Anda untuk melanjutkan.
-            </p>
+      
+          
           </div>
 
           <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.2)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-[0_20px_60px_-24px_rgba(0,0,0,0.55)] md:p-8">
@@ -115,9 +111,8 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <Button type="submit" className="h-12 w-full gap-2 rounded-2xl text-sm font-semibold" size="lg" loading={loading}>
-                <span>{loading ? "Memverifikasi..." : "Masuk"}</span>
-                {!loading && <ArrowRight className="h-4 w-4" />}
+              <Button type="submit" className="h-12 w-full rounded-2xl text-sm font-semibold" size="lg" loading={loading}>
+                {loading ? "Memverifikasi..." : "Masuk"}
               </Button>
             </form>
           </div>
