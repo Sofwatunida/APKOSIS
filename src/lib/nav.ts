@@ -40,15 +40,9 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/superadmin/backup",
     roles: ["super_admin"],
   },
-  { label: "Ringkasan", href: "/dashboard/admin", roles: ["admin"] },
   {
     label: "Password Divisi",
     href: "/dashboard/admin/password-divisi",
-    roles: ["admin"],
-  },
-  {
-    label: "Kelola Divisi",
-    href: "/dashboard/admin/divisi",
     roles: ["admin"],
   },
   {

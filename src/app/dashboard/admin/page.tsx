@@ -78,51 +78,31 @@ export default async function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader title="Pengelolaan Divisi" />
-            <CardContent>
+        <Card>
+          <CardHeader title="Status Divisi" />
+          <CardContent>
+            {(divisi ?? []).length === 0 ? (
+              <EmptyState
+                title="Belum ada divisi"
+                description="Data divisi belum tersedia."
+              />
+            ) : (
               <ul className="space-y-2 text-sm">
-                <li>
-                  <a className="underline" href="/dashboard/admin/password-divisi">
-                    Reset Password Divisi
-                  </a>
-                </li>
-                <li>
-                  <a className="underline" href="/dashboard/admin/divisi">
-                    Hubungkan Divisi ke Periode
-                  </a>
-                </li>
+                {(divisi ?? []).map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <span>
+                      {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
+                    </span>
+                    <Badge color="slate">Terdaftar</Badge>
+                  </li>
+                ))}
               </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader title="Status Divisi" />
-            <CardContent>
-              {(divisi ?? []).length === 0 ? (
-                <EmptyState
-                  title="Belum ada divisi"
-                  description="Data divisi belum tersedia."
-                />
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {(divisi ?? []).map((d) => (
-                    <li
-                      key={d.id}
-                      className="flex items-center justify-between gap-3"
-                    >
-                      <span>
-                        {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
-                      </span>
-                      <Badge color="slate">Terdaftar</Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppShell>
   );

@@ -175,7 +175,7 @@ export function PasswordDivisiClient({
               Belum ada data divisi.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-200/80 dark:divide-slate-800/80">
+            <ul className="space-y-4">
               {divisi.map((row) => {
                 const meta = status[row.id] ?? row;
                 const value = values[row.id] ?? "";
@@ -187,77 +187,80 @@ export function PasswordDivisiClient({
                 return (
                   <li
                     key={row.id}
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 xl:flex-row xl:items-center xl:gap-5"
+                    className="rounded-2xl border border-slate-200/80 bg-white/60 p-4 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/40 sm:p-5"
                   >
-                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                          {label(row.nomorDivisi, row.namaDivisi)}
-                        </p>
-                      </div>
+                    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <h4 className="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">
+                        {label(row.nomorDivisi, row.namaDivisi)}
+                      </h4>
                       {meta.hasPassword ? (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                           <ShieldCheck className="h-3.5 w-3.5" />
                           Sudah diatur
                         </span>
                       ) : (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                           Belum diatur
                         </span>
                       )}
                     </div>
 
                     <form
-                      className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start xl:w-auto xl:flex-1"
+                      className="space-y-3"
                       onSubmit={(e) => {
                         e.preventDefault();
                         mintaKonfirmasi(meta);
                       }}
                     >
-                      <div className="relative min-w-0 flex-1 xl:min-w-72">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                          <KeyRound className="h-4 w-4" />
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                        <div className="relative min-w-0 flex-1">
+                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                            <KeyRound className="h-4 w-4" />
+                          </div>
+                          <input
+                            type={isRevealed ? "text" : "password"}
+                            value={value}
+                            maxLength={DIVISI_PASSWORD_MAX_LENGTH}
+                            autoComplete="new-password"
+                            spellCheck={false}
+                            aria-label={`Password baru ${label(row.nomorDivisi, row.namaDivisi)}`}
+                            placeholder="Password baru"
+                            onChange={(e) => {
+                              setValues((prev) => ({ ...prev, [row.id]: e.target.value }));
+                              setRowError((prev) => ({ ...prev, [row.id]: "" }));
+                              setBaruDisimpan((prev) =>
+                                prev === row.id ? null : prev
+                              );
+                            }}
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-brand-500 dark:focus:ring-brand-500/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevealed((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
+                            }
+                            className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                            aria-label={
+                              isRevealed
+                                ? `Sembunyikan password ${label(row.nomorDivisi, row.namaDivisi)}`
+                                : `Tampilkan password ${label(row.nomorDivisi, row.namaDivisi)}`
+                            }
+                          >
+                            {isRevealed ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
-                        <input
-                          type={isRevealed ? "text" : "password"}
-                          value={value}
-                          maxLength={DIVISI_PASSWORD_MAX_LENGTH}
-                          autoComplete="new-password"
-                          spellCheck={false}
-                          aria-label={`Password baru ${label(row.nomorDivisi, row.namaDivisi)}`}
-                          placeholder="Password baru"
-                          onChange={(e) => {
-                            setValues((prev) => ({ ...prev, [row.id]: e.target.value }));
-                            setRowError((prev) => ({ ...prev, [row.id]: "" }));
-                            setBaruDisimpan((prev) =>
-                              prev === row.id ? null : prev
-                            );
-                          }}
-                          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-brand-500 dark:focus:ring-brand-500/10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRevealed((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
-                          }
-                          className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
-                          aria-label={
-                            isRevealed
-                              ? `Sembunyikan password ${label(row.nomorDivisi, row.namaDivisi)}`
-                              : `Tampilkan password ${label(row.nomorDivisi, row.namaDivisi)}`
-                          }
-                        >
-                          {isRevealed ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
 
-                      <div className="flex min-w-0 flex-col items-start gap-1">
-                        <div className="flex gap-2">
-                          <Button type="submit" size="md" disabled={isSaving}>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button
+                            type="submit"
+                            size="sm"
+                            className="h-10 px-3.5 text-sm"
+                            disabled={isSaving}
+                          >
                             {isSaving ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
@@ -269,7 +272,8 @@ export function PasswordDivisiClient({
                             <Button
                               type="button"
                               variant="ghost"
-                              size="md"
+                              size="sm"
+                              className="h-10 w-10 px-0"
                               onClick={() => bersihkanNilai(meta)}
                               title="Kosongkan kolom password"
                               aria-label={`Kosongkan kolom password ${label(row.nomorDivisi, row.namaDivisi)}`}
@@ -278,31 +282,32 @@ export function PasswordDivisiClient({
                             </Button>
                           )}
                         </div>
-                        {waktu && (
-                          <p className="max-w-full whitespace-normal text-[11px] leading-4 text-slate-400 dark:text-slate-500">
-                            Terakhir diperbarui: {waktu}
-                          </p>
-                        )}
                       </div>
+
+                      {waktu && (
+                        <p className="text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                          Terakhir diperbarui: {waktu}
+                        </p>
+                      )}
+
+                      {error && (
+                        <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                          {error}
+                        </p>
+                      )}
+
+                      {baruDisimpan === row.id && (
+                        <p className="flex items-start gap-1.5 text-xs leading-relaxed text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            Password yang baru saja Anda tentukan masih terlihat di kolom
+                            ini agar bisa disalin. Nilai ini berasal dari yang Anda
+                            ketik, bukan dibaca dari database. Tekan ikon tong untuk
+                            mengosongkannya.
+                          </span>
+                        </p>
+                      )}
                     </form>
-
-                    {error && (
-                      <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                        {error}
-                      </p>
-                    )}
-
-                    {baruDisimpan === row.id && (
-                      <p className="flex items-start gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span>
-                          Password yang baru saja Anda tentukan masih terlihat di kolom
-                          ini agar bisa disalin. Nilai ini berasal dari yang Anda
-                          ketik, bukan dibaca dari database. Tekan ikon tong untuk
-                          mengosongkannya.
-                        </span>
-                      </p>
-                    )}
                   </li>
                 );
               })}

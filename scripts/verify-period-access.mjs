@@ -76,24 +76,26 @@ console.log("2. Navigasi Dashboard per role");
   );
 }
 
-console.log("3. Kelola Divisi Periode");
+console.log("3. Kelola Divisi Periode (Super Admin)");
 {
-  const page = read("src/app/dashboard/admin/divisi/page.tsx");
+  const page = read("src/app/dashboard/superadmin/akun/page.tsx");
   const client = read(
-    "src/app/dashboard/admin/divisi/admin-divisi-client.tsx"
+    "src/app/dashboard/superadmin/akun/accounts-admin-client.tsx"
   );
+  const actions = read("src/app/dashboard/actions/periode-actions.ts");
   check(
     "server select dan kirim periode_id asli",
-    has(page, "id, nomor_divisi, nama_divisi, periode_id") &&
-      has(page, "periodeId: d.periode_id ?? \"\"")
+    has(page, 'periodeId: actualPeriodeById.get(d.divisi_id) ?? ""') &&
+      has(client, 'fd.set("periode_id", periodeId)')
   );
   check(
     "dropdown initialized dari periode_id DB",
-    has(client, "value={choices[d.id] ?? d.periodeId}")
+    has(client, "value={d.periodeId}")
   );
+  check("dropdown terkunci saat pending", has(client, "disabled={pending}"));
   check(
-    "dropdown terkunci untuk Admin / read-only",
-    has(client, "disabled={pending || !canChange || readOnly}")
+    "server action hanya untuk Super Admin",
+    has(actions, 'profile.role !== "super_admin"')
   );
 }
 

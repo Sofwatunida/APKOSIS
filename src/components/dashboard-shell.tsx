@@ -26,6 +26,8 @@ import {
   CalendarCheck2,
   CalendarDays,
   CalendarRange,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   ClipboardList,
   Coins,
@@ -36,15 +38,12 @@ import {
   Gauge,
   HandCoins,
   KeyRound,
-  Layers,
   LayoutDashboard,
   ListChecks,
   LogOut,
   Menu,
   Network,
   Package,
-  PanelLeftClose,
-  PanelLeftOpen,
   Printer,
   ReceiptText,
   ScrollText,
@@ -76,7 +75,6 @@ const NAV_ICONS: Record<string, typeof LayoutDashboard> = {
   "/dashboard/superadmin/backup": Database,
   "/dashboard/admin": Gauge,
   "/dashboard/admin/password-divisi": KeyRound,
-  "/dashboard/admin/divisi": Layers,
   "/dashboard/admin/program-kerja": ListChecks,
   "/dashboard/laporan": ClipboardList,
   "/dashboard/anggota": UsersRound,
@@ -243,7 +241,7 @@ function ShellInner({
   /**
    * Menu aktif = href paling spesifik (terpanjang) yang cocok dengan path
    * saat ini. Tanpa ini, `/dashboard/superadmin/periode` membuat BOTH
-   * "Ringkasan Sistem" (`/dashboard/superadmin`) DAN "Kelola Periode"
+   * "Dashboard" (`/dashboard/superadmin`) DAN "Kelola Periode"
    * aktif sekaligus — menimbulkan menu ganda.
    */
   const activeHref = allHrefs
@@ -305,13 +303,13 @@ function ShellInner({
 
   const buildSidebar = (
     v: boolean,
-    options?: { collapsible?: boolean; onClose?: () => void }
+    options?: { onClose?: () => void }
   ) => (
     <div className="sidebar-surface flex h-full flex-col overflow-hidden">
       {/* Bagian atas: brand + menu navigasi (menu panjang discroll sendiri) */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Brand Header - identitas hanya tulisan "APKOSIS", tanpa logo/icon tambahan.
-            Tombol ciutkan/perluas sidebar diletakkan DI DALAM sidebar. */}
+            Toggle sidebar berada di tepi sidebar desktop, bukan di header ini. */}
         <div
           className={`flex shrink-0 items-center border-b border-slate-200/80 dark:border-slate-800/80 ${
             v
@@ -341,22 +339,6 @@ function ShellInner({
               </>
             )}
           </Link>
-
-          {options?.collapsible && (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              className="hidden shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:inline-flex dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              aria-label="Tampilkan/sembunyikan sidebar"
-              title={v ? "Perluas sidebar" : "Ciutkan sidebar"}
-            >
-              {v ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </button>
-          )}
 
           {options?.onClose && (
             <button
@@ -467,7 +449,21 @@ function ShellInner({
 
       {/* Desktop Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-30 hidden lg:block transition-[width] duration-300 border-r shadow-card dark:shadow-elevated ${collapsed ? "w-16" : "w-64"}`}>
-        {buildSidebar(collapsed, { collapsible: true })}
+        {buildSidebar(collapsed)}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="absolute right-0 top-1/2 z-40 hidden h-8 w-8 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full text-slate-400 transition-all duration-300 hover:bg-slate-100/80 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 lg:flex dark:text-slate-500 dark:hover:bg-slate-800/80 dark:hover:text-slate-100"
+          aria-label={collapsed ? "Tampilkan Sidebar" : "Sembunyikan Sidebar"}
+          aria-expanded={!collapsed}
+          title={collapsed ? "Tampilkan Sidebar" : "Sembunyikan Sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
       </aside>
 
       {/* Mobile Drawer */}

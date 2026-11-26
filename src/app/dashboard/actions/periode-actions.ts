@@ -326,7 +326,6 @@ export async function setDivisionPasswordAction(
   await writeAuditLog({ action: "atur_password_divisi", targetType: "divisi", targetId: divisiId, success: true });
 
   revalidatePath("/dashboard/admin/password-divisi");
-  revalidatePath("/dashboard/admin/divisi");
   revalidatePath("/dashboard/superadmin/divisi");
   revalidatePath("/dashboard/superadmin/akun");
 
@@ -413,19 +412,13 @@ export async function setAccountPasswordAction(
 /** Mengaitkan / melepas divisi ke suatu periode. */
 export async function setDivisiPeriodAction(formData: FormData): Promise<PeriodActionResult> {
   const profile = await getProfile();
-  if (!profile || (profile.role !== "super_admin" && profile.role !== "admin")) {
+  if (!profile || profile.role !== "super_admin") {
     return fail("Tidak punya izin.");
   }
 
   const divisiId = String(formData.get("divisi_id") ?? "");
   const periodeId = String(formData.get("periode_id") ?? "") || null;
   if (!divisiId) return fail("Divisi tidak valid.");
-
-  // Admin tidak boleh melepas divisi ke "tanpa periode": periode
-  // penugasannya satu-satunya yang diperbolehkan.
-  if (profile.role === "admin" && !periodeId) {
-    return fail("Periode penugasan Admin tidak ditemukan.");
-  }
 
   const writable = await resolveWritablePeriodeId(profile, periodeId, {
     allowEmptyForSuperAdmin: true,
@@ -445,7 +438,6 @@ export async function setDivisiPeriodAction(formData: FormData): Promise<PeriodA
   await writeAuditLog({ action: "atur_periode_divisi", targetType: "divisi", targetId: divisiId, detail: writable.periodeId ?? "lepas", success: true });
   revalidatePath("/dashboard/superadmin/akun");
   revalidatePath("/dashboard/superadmin/divisi");
-  revalidatePath("/dashboard/admin/divisi");
   return ok("Periode divisi diperbarui.");
 }
 

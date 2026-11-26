@@ -198,7 +198,7 @@ src/
 ├─ app/
 │  ├─ dashboard/
 │  │  ├─ superadmin/        # periode, akun, divisi (super admin)
-│  │  ├─ admin/             # ringkasan, password divisi, divisi
+│  │  ├─ admin/             # dashboard, password divisi
 │  │  ├─ monitoring/ sekretaris/ bendahara/
 │  │  └─ laporan/ anggota/ keuangan/ inventaris/ kebutuhan/ ...
 │  └─ dashboard/actions/    # server action periode & akun

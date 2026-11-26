@@ -30,12 +30,6 @@ export default async function AdminPasswordDivisiPage() {
             updatedAt: row.updated_at,
           }))}
         />
-
-        <p className="text-sm">
-          <a className="underline" href="/dashboard/admin/divisi">
-            Kelola divisi periode ini
-          </a>
-        </p>
       </div>
     </AppShell>
   );
