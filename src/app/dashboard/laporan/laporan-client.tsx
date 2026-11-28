@@ -530,7 +530,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
           title={
             editingReport
               ? `Edit Laporan — Tanggal ${formatDate(editingReport.tanggal)}`
-              : "Form Laporan Harian"
+              : "Laporan Harian"
           }
          
           icon={<ClipboardList className="h-5 w-5" />}

@@ -119,6 +119,10 @@ export function AccountsAdminClient({
     useState<AccountRow | null>(null);
 
   useEffect(() => {
+    router.prefetch("/dashboard");
+  }, [router]);
+
+  useEffect(() => {
     const id = setTimeout(
       () => setDebouncedAccountSearch(accountSearch.trim().toLowerCase()),
       250

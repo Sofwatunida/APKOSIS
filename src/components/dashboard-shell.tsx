@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -40,6 +41,7 @@ import {
   KeyRound,
   LayoutDashboard,
   ListChecks,
+  Loader2,
   LogOut,
   Menu,
   Network,
@@ -111,6 +113,28 @@ interface ImpersonationState {
   accountId?: string | null;
   accountName?: string | null;
   startedAt: string;
+}
+
+function StopImpersonationSubmit() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-xs transition hover:bg-amber-100 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 dark:border-amber-500/50 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950"
+    >
+      {pending ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <ShieldCheck className="h-3.5 w-3.5" />
+      )}
+      <span className="hidden sm:inline">
+        {pending ? "Memulihkan..." : "Kembali ke Super Admin"}
+      </span>
+      <span className="sm:hidden">{pending ? "Memulihkan..." : "Kembali"}</span>
+    </button>
+  );
 }
 
 function ShellInner({
@@ -523,14 +547,7 @@ function ShellInner({
                 </span>
               </div>
               <form action={stopImpersonationAction}>
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-xs transition hover:bg-amber-100 active:scale-[0.98] dark:border-amber-500/50 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Kembali ke Super Admin</span>
-                  <span className="sm:hidden">Kembali</span>
-                </button>
+                <StopImpersonationSubmit />
               </form>
             </div>
           )}

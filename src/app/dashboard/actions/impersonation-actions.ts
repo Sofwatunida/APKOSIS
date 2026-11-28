@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getActiveImpersonation, getRealProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit";
@@ -28,17 +29,14 @@ function fail(message: string): ImpersonationActionResult {
  * bisa memulai/menghentikan mode ini.
  */
 async function requireRealSuperAdmin(): Promise<
-  | {
-      supabase: Awaited<ReturnType<typeof createClient>>;
-      real: NonNullable<Awaited<ReturnType<typeof getRealProfile>>>;
-    }
+  | { real: NonNullable<Awaited<ReturnType<typeof getRealProfile>>> }
   | { error: ImpersonationActionResult }
 > {
   const real = await getRealProfile();
   if (!real || real.role !== "super_admin") {
     return { error: fail("Hanya Super Admin yang boleh memakai Mode Penyamaran.") };
   }
-  return { supabase: await createClient(), real };
+  return { real };
 }
 
 /**
@@ -55,7 +53,8 @@ export async function startImpersonationAction(input: {
 }): Promise<ImpersonationActionResult> {
   const auth = await requireRealSuperAdmin();
   if ("error" in auth) return auth.error;
-  const { supabase, real } = auth;
+  const { real } = auth;
+  const supabase = await createClient();
 
   const accountId = (input.accountId ?? "").trim();
   if (!accountId) return fail("Akun tujuan tidak ditemukan.");
@@ -100,12 +99,14 @@ export async function startImpersonationAction(input: {
     accountName,
   });
 
-  await writeAuditLog({
-    action: "mulai_mode_penyamaran",
-    targetType: "profile",
-    targetId: target.id,
-    detail: `akun ${accountName} (${target.email ?? "-"}) sebagai ${role}${divisiDetail}`,
-    success: true,
+  after(async () => {
+    await writeAuditLog({
+      action: "mulai_mode_penyamaran",
+      targetType: "profile",
+      targetId: target.id,
+      detail: `akun ${accountName} (${target.email ?? "-"}) sebagai ${role}${divisiDetail}`,
+      success: true,
+    });
   });
 
   // Sengaja TIDAK memakai redirect(): aksi ini dipanggil langsung dari
@@ -122,17 +123,19 @@ export async function startImpersonationAction(input: {
  * dihapus lebih dulu supaya tampilan kembali normal seketika.
  */
 export async function stopImpersonationAction(): Promise<void> {
-  const auth = await requireRealSuperAdmin();
-  if ("error" in auth) redirect("/dashboard");
+  const real = await getRealProfile();
+  if (!real || real.role !== "super_admin") redirect("/dashboard");
 
   const active = await getActiveImpersonation();
-  await writeAuditLog({
-    action: "akhiri_mode_penyamaran",
-    targetType: "role",
-    detail: `kembali ke tampilan Super Admin${
-      active?.accountName ? ` dari akun ${active.accountName}` : ""
-    }`,
-    success: true,
+  after(async () => {
+    await writeAuditLog({
+      action: "akhiri_mode_penyamaran",
+      targetType: "role",
+      detail: `kembali ke tampilan Super Admin${
+        active?.accountName ? ` dari akun ${active.accountName}` : ""
+      }`,
+      success: true,
+    });
   });
 
   await clearImpersonationCookie();
