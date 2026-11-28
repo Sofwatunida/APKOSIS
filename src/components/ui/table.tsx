@@ -28,7 +28,7 @@ export function TableWrap({
 
   return (
     <div
-      className={`w-full min-w-0 overflow-x-auto ${maxHeight ? "overflow-y-auto" : ""} ${className}`}
+      className={`w-full min-w-0 overflow-x-auto overscroll-contain ${maxHeight ? "overflow-y-auto" : ""} ${className}`}
       style={maxHeight ? { maxHeight } : undefined}
     >
       <div className="min-w-full">

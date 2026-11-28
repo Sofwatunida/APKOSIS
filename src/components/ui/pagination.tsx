@@ -103,7 +103,7 @@ export function TablePagination({
               <ChevronLeft className="h-4 w-4" />
               <span>Sebelumnya</span>
             </Button>
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 text-xs font-medium text-muted-foreground">
               Hal {page} / {pageCount}
             </span>
             <Button

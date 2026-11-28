@@ -205,7 +205,7 @@ export function PengajuanDanaBendaharaClient({ profile }: { profile: Profile }) 
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
           <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
             Menunggu Persetujuan

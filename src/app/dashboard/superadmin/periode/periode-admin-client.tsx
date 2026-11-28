@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { TableWrap, THead, TH, TBody, TR, TD } from "@/components/ui/table";
-import { activatePeriodeAction, archivePeriodeAction } from "../../actions/periode-actions";
+import {
+  activatePeriodeAction,
+  archivePeriodeAction,
+  deletePeriodeAction,
+} from "../../actions/periode-actions";
 
 export interface PeriodeRow {
   id: string;
@@ -71,6 +75,23 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
     setBusy(id);
     startTransition(async () => {
       const result = await archivePeriodeAction(makeFormData(id));
+      setBusy(null);
+      if (result.ok) success(result.message);
+      else error(result.message);
+    });
+  }
+
+  function remove(id: string, nama: string) {
+    if (
+      !window.confirm(
+        `Hapus periode ${nama}?\n\nSeluruh data periode ini (laporan, transaksi, anggota, dan data terkait lain) akan dihapus permanen. Penugasan admin/divisi dilepas dan kredensial divisi pada periode ini ikut terhapus.\n\nTindakan ini tidak bisa dibatalkan.`
+      )
+    ) {
+      return;
+    }
+    setBusy(id);
+    startTransition(async () => {
+      const result = await deletePeriodeAction(makeFormData(id));
       setBusy(null);
       if (result.ok) success(result.message);
       else error(result.message);
@@ -143,6 +164,17 @@ export function PeriodeAdminClient({ periods }: { periods: PeriodeRow[] }) {
                       onClick={() => archive(p.id, p.nama_periode)}
                     >
                       Arsipkan
+                    </Button>
+                  )}
+                  {p.status !== "active" && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={pending || busy === p.id}
+                      onClick={() => remove(p.id, p.nama_periode)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Hapus
                     </Button>
                   )}
                 </div>

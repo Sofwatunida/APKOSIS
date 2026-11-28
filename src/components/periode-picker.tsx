@@ -28,14 +28,19 @@ export function PeriodePicker({
     const label = options.find((o) => o.id === periodeId);
     return (
       <div
-        className="inline-flex w-auto items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 py-2 pl-3 pr-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+        className="inline-flex max-w-[9rem] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-600 sm:max-w-none sm:gap-2 sm:px-3 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
         aria-label="Periode penugasan"
       >
-        <CalendarRange className="h-4 w-4" />
-        <span className="whitespace-nowrap">
-          {label
-            ? `${label.namaPeriode} (${PERIOD_STATUS_LABELS[label.status]})`
-            : "Periode belum ditentukan"}
+        <CalendarRange className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 break-words sm:whitespace-nowrap">
+          {label ? (
+            <>
+              <span className="block truncate">{label.namaPeriode}</span>
+              <span className="hidden sm:inline"> ({PERIOD_STATUS_LABELS[label.status]})</span>
+            </>
+          ) : (
+            "Periode belum ditentukan"
+          )}
         </span>
       </div>
     );
@@ -46,8 +51,8 @@ export function PeriodePicker({
       aria-label="Pilih periode"
       value={currentValue}
       onChange={(e) => changePeriode(e.target.value)}
-      wrapperClassName="w-auto"
-      className="w-auto py-2 pl-8 pr-9 text-xs font-semibold"
+      wrapperClassName="w-full max-w-[9rem] sm:w-auto sm:max-w-none"
+      className="w-full min-w-0 truncate py-2 pl-8 pr-9 text-xs font-semibold sm:w-auto"
       leftIcon={<CalendarRange className="h-4 w-4" />}
     >
       {canSelectAllPeriods && (

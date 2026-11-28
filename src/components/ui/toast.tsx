@@ -49,11 +49,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, success, error }}>
       {children}
-      <div className="pointer-events-none fixed bottom-5 right-5 z-[100] flex flex-col gap-2.5 max-w-sm w-full">
+      <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-[100] mx-auto flex max-h-[55dvh] w-auto max-w-sm flex-col gap-2.5 overflow-y-auto overscroll-contain sm:bottom-5 sm:left-auto sm:right-5 sm:mx-0 sm:max-h-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-4 shadow-elevated dark:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.4)] backdrop-blur-md animate-slide-up"
+            className="pointer-events-auto flex min-w-0 items-start gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 p-3 shadow-elevated dark:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.4)] backdrop-blur-md animate-slide-up sm:p-4"
           >
             <div className="shrink-0 mt-0.5">
               {t.type === "success" && (
@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             </p>
             <button
               onClick={() => remove(t.id)}
-              className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition dark:hover:bg-slate-800 dark:hover:text-slate-300"
+              className="tap-target shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition dark:hover:bg-slate-800 dark:hover:text-slate-300"
               aria-label="Tutup notifikasi"
             >
               <X className="h-4 w-4" />

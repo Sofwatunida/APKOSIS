@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <ToastProvider>
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 p-4 selection:bg-brand-500 selection:text-white dark:bg-slate-950 md:p-8">
+      <div className="relative flex min-h-dvh items-center justify-center overflow-x-hidden bg-slate-50 px-4 py-8 selection:bg-brand-500 selection:text-white dark:bg-slate-950 sm:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.12),transparent_45%),radial-gradient(circle_at_bottom,rgba(14,165,233,0.08),transparent_40%)] dark:bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.18),transparent_45%),radial-gradient(circle_at_bottom,rgba(14,165,233,0.1),transparent_40%)]" />
 
         <div className="absolute right-4 top-4 z-20">
@@ -56,7 +56,7 @@ export default function LoginPage() {
           
           </div>
 
-          <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.2)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-[0_20px_60px_-24px_rgba(0,0,0,0.55)] md:p-8">
+          <div className="min-w-0 rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.2)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-[0_20px_60px_-24px_rgba(0,0,0,0.55)] sm:p-8">
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                    className="tap-target absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300 sm:pr-4"
                     aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -107,7 +107,7 @@ export default function LoginPage() {
               {error && (
                 <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300" role="alert">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
+                  <span className="min-w-0 break-words">{error}</span>
                 </div>
               )}
 

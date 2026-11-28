@@ -268,7 +268,7 @@ export function KebutuhanDivisiBendaharaClient({ profile }: { profile: Profile }
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
         {STATUS_KEBUTUHAN.map((s) => (
           <button
             key={s}

@@ -180,10 +180,10 @@ export function ReportsClient({
               </Select>
             </Field>
             <Field label="Dari tanggal">
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="min-w-0 text-xs" />
             </Field>
             <Field label="Sampai tanggal">
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="min-w-0 text-xs" />
             </Field>
           </div>
         </CardContent>

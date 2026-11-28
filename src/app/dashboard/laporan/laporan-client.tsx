@@ -532,11 +532,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
               ? `Edit Laporan — Tanggal ${formatDate(editingReport.tanggal)}`
               : "Form Laporan Harian"
           }
-          subtitle={
-            editingReport
-              ? undefined
-              : "Pilih tanggal kapan saja (hari ini, susulan/kemarin, atau rencana esok)."
-          }
+         
           icon={<ClipboardList className="h-5 w-5" />}
           action={
             editingReport && (
@@ -947,7 +943,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
       >
         {detailReport && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm min-[360px]:grid-cols-2">
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-slate-700 dark:bg-slate-900/60">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tanggal</p>
                 <p className="mt-0.5 font-bold text-slate-900 dark:text-white">{formatDate(detailReport.tanggal)}</p>
@@ -960,7 +956,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 dark:text-slate-400">Kegiatan</p>
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {detailReport.kegiatan_hari_ini}
               </div>
             </div>
@@ -989,7 +985,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                           )}
                         </p>
                         {k.keterangan && (
-                          <p className="mt-0.5 text-xs text-slate-400">{k.keterangan}</p>
+                          <p className="mt-0.5 break-words text-xs text-slate-400">{k.keterangan}</p>
                         )}
                       </div>
                       <KebutuhanStatusBadge status={k.status} />
@@ -1013,11 +1009,11 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
                     <div key={k.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs leading-relaxed space-y-1.5 dark:border-slate-700 dark:bg-slate-900/60">
                       <p className="font-semibold text-rose-700 flex items-start gap-1.5 dark:text-rose-400">
                         <span className="shrink-0">⚠️</span>
-                        <span>Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></span>
+                        <span className="min-w-0 break-words">Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></span>
                       </p>
                       <p className="font-semibold text-emerald-700 flex items-start gap-1.5 dark:text-emerald-400">
                         <span className="shrink-0">💡</span>
-                        <span>Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></span>
+                        <span className="min-w-0 break-words">Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></span>
                       </p>
                     </div>
                   ))}
@@ -1032,7 +1028,7 @@ export function LaporanHarianClient({ profile }: { profile: Profile }) {
             {detailReport.informasi_lain && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 dark:text-slate-400">Informasi Lain-lain</p>
-                <p className="rounded-2xl border border-slate-200/80 bg-white p-3.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <p className="rounded-2xl border border-slate-200/80 bg-white p-3.5 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap break-words shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {detailReport.informasi_lain}
                 </p>
               </div>

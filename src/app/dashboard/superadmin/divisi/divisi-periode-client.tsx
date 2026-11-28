@@ -169,7 +169,7 @@ export function DivisiPeriodeClient({
                     disabled={pending}
                     title="Ubah data divisi"
                     aria-label={`Ubah ${formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                    className="tap-target inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -179,7 +179,7 @@ export function DivisiPeriodeClient({
                     disabled={pending}
                     title="Hapus divisi"
                     aria-label={`Hapus ${formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                    className="tap-target inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

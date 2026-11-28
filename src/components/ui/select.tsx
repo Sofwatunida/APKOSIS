@@ -32,10 +32,12 @@ export interface SelectProps
   wrapperClassName?: string;
   menuClassName?: string;
   leftIcon?: ReactNode;
-  searchable?: boolean;
+  searchable?: boolean | "auto";
   searchPlaceholder?: string;
   searchEmptyLabel?: string;
 }
+
+const SEARCHABLE_OPTION_THRESHOLD = 12;
 
 function optionText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -81,7 +83,7 @@ export function Select({
   wrapperClassName = "",
   menuClassName = "",
   leftIcon,
-  searchable = false,
+  searchable: searchableProp = "auto",
   searchPlaceholder = "Cari...",
   searchEmptyLabel = "Tidak ada hasil",
   value,
@@ -101,6 +103,10 @@ export function Select({
   const listId = `${useId()}-listbox`;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const options = useMemo(() => collectOptions(children), [children]);
+  const isSearchable =
+    searchableProp === "auto"
+      ? options.length > SEARCHABLE_OPTION_THRESHOLD
+      : searchableProp;
   const enabledIndexes = useMemo(
     () => options.reduce<number[]>((acc, option, index) => {
       if (!option.disabled) acc.push(index);
@@ -113,11 +119,11 @@ export function Select({
   const searchRef = useRef<HTMLInputElement>(null);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const shownOptions = useMemo(() => {
-    if (!searchable || !normalizedQuery) return options;
+    if (!isSearchable || !normalizedQuery) return options;
     return options.filter((option) =>
       optionText(option.label).toLocaleLowerCase().includes(normalizedQuery),
     );
-  }, [options, searchable, normalizedQuery]);
+  }, [options, isSearchable, normalizedQuery]);
   const shownEnabledIndexes = useMemo(
     () =>
       shownOptions.reduce<number[]>((acc, option, index) => {
@@ -145,8 +151,8 @@ export function Select({
   );
 
   useEffect(() => {
-    if (open && searchable) searchRef.current?.focus();
-  }, [open, searchable]);
+    if (open && isSearchable) searchRef.current?.focus();
+  }, [open, isSearchable]);
 
   const closeMenu = useCallback(() => {
     setOpen(false);
@@ -269,7 +275,7 @@ export function Select({
   const optionList =
     shownOptions.length === 0 ? (
       <p className="select-empty">
-        {searchable && normalizedQuery ? searchEmptyLabel : "Tidak ada pilihan"}
+        {isSearchable && normalizedQuery ? searchEmptyLabel : "Tidak ada pilihan"}
       </p>
     ) : (
       shownOptions.map((option, index) => {
@@ -314,7 +320,7 @@ export function Select({
         autoFocus={autoFocus}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-controls={searchable ? `${listId}-options` : listId}
+        aria-controls={isSearchable ? `${listId}-options` : listId}
         aria-activedescendant={
           open && shownOptions[activeIndex] ? `${listId}-option-${activeIndex}` : undefined
         }
@@ -346,12 +352,12 @@ export function Select({
         }}
         onEscape={closeMenu}
         className={menuClassName}
-        role={searchable ? "dialog" : "listbox"}
+        role={isSearchable ? "dialog" : "listbox"}
         id={listId}
         ariaLabel={rest["aria-label"]}
         ariaLabelledBy={rest["aria-labelledby"]}
       >
-        {searchable && (
+        {isSearchable && (
           <div className="select-search">
             <Search aria-hidden className="select-search-icon" strokeWidth={2} />
             <input
@@ -370,12 +376,12 @@ export function Select({
             />
           </div>
         )}
-        {searchable ? (
+        {isSearchable ? (
           <div id={`${listId}-options`} role="listbox" className="select-options-scroll">
             {optionList}
           </div>
         ) : (
-          optionList
+          <div className="select-options-scroll">{optionList}</div>
         )}
       </DropdownPanel>
     </div>

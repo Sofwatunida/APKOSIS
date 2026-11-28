@@ -147,6 +147,27 @@ function ShellInner({
   // localStorage supaya konsisten antar halaman. Default: terbuka (expanded),
   // sehingga tampilan role lain tidak berubah sama sekali.
   const [collapsed, setCollapsed] = useState(false);
+  const stickyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = stickyRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty(
+        "--apkosis-header-offset",
+        `${el.getBoundingClientRect().height}px`,
+      );
+    };
+    update();
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    observer?.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [impersonation]);
 
   useEffect(() => {
     try {
@@ -344,7 +365,7 @@ function ShellInner({
             <button
               type="button"
               onClick={options.onClose}
-              className="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="tap-target inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
               aria-label="Tutup menu"
             >
               <X className="h-4 w-4" />
@@ -354,7 +375,7 @@ function ShellInner({
 
         {/* Navigation — satu daftar menu tanpa label grup. `min-h-0` + `flex-1`
             membuat nav tetap bisa discroll tanpa mendorong kartu user keluar layar. */}
-        <nav className={`min-h-0 flex-1 overflow-y-auto py-5 ${v ? "px-2.5" : "px-3.5"}`}>
+        <nav className={`min-h-0 flex-1 overflow-y-auto overscroll-contain py-5 ${v ? "px-2.5" : "px-3.5"}`}>
           <ul className="space-y-1">
             {navItems.map((item) => {
               const IconComponent = getNavIcon(item.href);
@@ -409,7 +430,7 @@ function ShellInner({
               onClick={handleKeluarDivisi}
               title="Keluar & pilih divisi lain"
               aria-label="Keluar & pilih divisi lain"
-              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400"
+              className="tap-target rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -436,7 +457,7 @@ function ShellInner({
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen overflow-x-clip bg-slate-50 dark:bg-slate-950">
       {navigating && (
         <div
           role="progressbar"
@@ -473,7 +494,7 @@ function ShellInner({
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 w-64 border-r shadow-2xl animate-slide-up">
+          <aside className="fixed inset-y-0 left-0 w-64 max-w-[calc(100vw-3rem)] border-r shadow-2xl animate-slide-up">
             {buildSidebar(false, { onClose: () => setMobileOpen(false) })}
           </aside>
         </div>
@@ -484,7 +505,7 @@ function ShellInner({
         {/* Sticky Top Header — banner Mode Penyamaran (jika aktif) ikut
             menempel di atas, supaya indikator "MODE PENYAMARAN AKTIF"
             selalu terlihat di setiap halaman. */}
-        <div className="sticky top-0 z-20">
+        <div ref={stickyRef} className="sticky top-0 z-20">
           {impersonation && (
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 bg-amber-50 px-4 py-2 lg:px-8 dark:border-amber-500/40 dark:bg-amber-950/70">
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -492,8 +513,8 @@ function ShellInner({
                   <ShieldAlert className="h-3.5 w-3.5" />
                   Mode Penyamaran Aktif
                 </span>
-                <span className="text-amber-800 dark:text-amber-300">
-                  Anda sedang melihat sistem sebagai{" "}
+                <span className="min-w-0 break-words text-amber-800 dark:text-amber-300">
+                  <span className="hidden sm:inline">Anda sedang melihat sistem sebagai </span>
                   <strong>
                     {impersonation.accountName
                       ? `${impersonation.accountName} (${ROLE_LABELS[impersonation.role]})`
@@ -507,16 +528,17 @@ function ShellInner({
                   className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-xs transition hover:bg-amber-100 active:scale-[0.98] dark:border-amber-500/50 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950"
                 >
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Kembali ke Super Admin</span>
+                  <span className="hidden sm:inline">Kembali ke Super Admin</span>
+                  <span className="sm:hidden">Kembali</span>
                 </button>
               </form>
             </div>
           )}
-          <header className="flex h-16 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/85">
+          <header className="flex min-h-16 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-200/80 bg-white/85 px-4 py-2 backdrop-blur-md lg:px-8 dark:border-slate-800/80 dark:bg-slate-900/85">
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+              className="tap-target rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label="Buka menu navigasi"
             >
               <Menu className="h-5 w-5" />
@@ -527,8 +549,8 @@ function ShellInner({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <RealtimeClock />
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-3">
+            <RealtimeClock className="hidden sm:inline-flex" />
             <PeriodePicker
               canSelectAllPeriods={profile.role === "super_admin"}
               canChange={canChangePeriod}
@@ -547,20 +569,20 @@ function ShellInner({
               <button
                 onClick={handleKeluarDivisi}
                 title="Keluar & pilih divisi lain"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-100 active:scale-[0.98] dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20 sm:min-h-0"
               >
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Keluar</span>
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Keluar</span>
               </button>
             )}
 
             {(role !== "division_admin" || impersonation) && (
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 sm:min-h-0 lg:hidden"
               >
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Logout</span>
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             )}
           </div>
@@ -568,10 +590,10 @@ function ShellInner({
         </div>
 
         {/* Content Body
-            `min-w-0` + `overflow-x-hidden` menjaga tabel/konten lebar tetap
+            `min-w-0` + `overflow-x-clip` menjaga tabel/konten lebar tetap
             bisa digeser di dalam container-nya sendiri, bukan memaksa seluruh
             halaman melebar keluar viewport. */}
-        <main className="page-body mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <main className="page-body mx-auto w-full min-w-0 max-w-7xl overflow-x-clip p-4 sm:p-6 lg:p-8">
           {readOnly && (
             <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
               <Archive className="mt-0.5 h-4 w-4 shrink-0" />

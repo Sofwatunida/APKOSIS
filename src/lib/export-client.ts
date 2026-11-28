@@ -737,7 +737,7 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
   drawSummary();
 
   // PENGESAHAN — dua kolom: pengaju di kiri dan pihak mengetahui di kanan.
-  ensureSpace(100);
+  ensureSpace(120);
   topY += 12;
   const signatories = doc.approval.signatories;
   const sigColW = CONTENT_W / signatories.length;
@@ -751,12 +751,12 @@ async function buildPdfBlob(doc: PreparedDocument): Promise<Blob> {
     s.label.split("\n").forEach((line, li) =>
       drawText(line, 8, true, x, topY + li * 10, DOCUMENT_RGB.text, blockW, "center", "F2")
     );
-    drawText("........................................", 8, false, x, topY + 42, DOCUMENT_RGB.border, blockW, "center");
+    drawText("........................................", 8, false, x, topY + 56, DOCUMENT_RGB.border, blockW, "center");
     if (s.name.trim()) {
-      drawText(s.name, 8.5, true, x, topY + 54, DOCUMENT_RGB.navy, blockW, "center", "F2");
+      drawText(s.name, 8.5, true, x, topY + 70, DOCUMENT_RGB.navy, blockW, "center", "F2");
     }
   });
-  topY += 72;
+  topY += 90;
 
   if (pages.length > 1 && ops.length <= 2) pages.pop();
 

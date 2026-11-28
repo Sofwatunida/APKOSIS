@@ -4,6 +4,8 @@
 
 :root {
   color-scheme: light;
+  --apkosis-header-height: 4rem;
+  --apkosis-header-offset: 4.5rem;
 }
 
 @layer base {
@@ -67,8 +69,12 @@
   }
 
   /* Cegah URL panjang / string tanpa spasi merusak layout di seluruh aplikasi */
-  p, span, td, th, li, dd, dt, label, h1, h2, h3, h4 {
+  p, li, dd, dt {
     overflow-wrap: anywhere;
+  }
+
+  h1, h2, h3, h4, span, label {
+    overflow-wrap: break-word;
   }
 
   /* Isi tabel boleh membungkus di batas kata, tapi TIDAK dipecah per huruf
@@ -170,6 +176,9 @@
     box-shadow:
       0 16px 40px -14px rgba(15, 23, 42, 0.18),
       0 4px 12px -4px rgba(15, 23, 42, 0.08);
+    max-height: min(70dvh, 32rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     @apply border border-slate-200/70 bg-white p-1.5 dark:border-slate-800/80 dark:bg-slate-900;
     animation: dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -213,6 +222,7 @@
 
   .select-options-scroll {
     @apply max-h-64 overflow-y-auto overscroll-contain;
+    max-height: min(16rem, 55dvh);
   }
 
   .select-empty {
@@ -224,6 +234,11 @@
   .card-base,
   .page-body {
     min-width: 0;
+    overflow-x: clip;
+  }
+
+  .tap-target {
+    @apply min-h-11 min-w-11 sm:min-h-0 sm:min-w-0;
   }
 
   /* Sidebar / navigation rail - mengikuti theme, tidak ada background gelap

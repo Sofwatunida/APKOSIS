@@ -152,7 +152,7 @@ export function BackupClient({ periods }: { periods: PeriodOption[] }) {
               </Select>
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleBackup} disabled={backuping || !periodeId} className="gap-2">
+              <Button onClick={handleBackup} disabled={backuping || !periodeId} className="w-full gap-2 sm:w-auto">
                 {backuping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 <span>{backuping ? "Menyiapkan..." : "Unduh Backup JSON"}</span>
               </Button>
@@ -251,10 +251,10 @@ function RestoreSection({
               onChange={(e) => handleFile(e.target.files?.[0])}
             />
           </Field>
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <Button
               variant="outline"
-              className="gap-2"
+              className="w-full gap-2 sm:w-auto"
               disabled={!preview || backingUp || !periodeId}
               onClick={handlePreRestoreBackup}
             >
@@ -266,7 +266,7 @@ function RestoreSection({
               <span>{backingUp ? "Menyiapkan..." : "Backup Pra-Pemulihan"}</span>
             </Button>
             <Button
-              className="gap-2"
+              className="w-full gap-2 sm:w-auto"
               disabled={!payloadText || pending}
               onClick={applyRestore}
             >
@@ -350,7 +350,7 @@ function ResetSection({
             <div className="flex items-end">
               <Button
                 variant="danger"
-                className="gap-2"
+                className="w-full gap-2 sm:w-auto"
                 disabled={!periodeId}
                 onClick={() => setStep(2)}
               >
@@ -380,11 +380,11 @@ function ResetSection({
                   autoComplete="off"
                 />
               </Field>
-              <div className="flex items-end gap-2">
-                <Button variant="danger" disabled={!canReset} onClick={execute}>
+              <div className="flex flex-wrap items-end gap-2">
+                <Button variant="danger" className="w-full sm:w-auto" disabled={!canReset} onClick={execute}>
                   {pending ? "Mereset..." : "Ya, Reset Sekarang"}
                 </Button>
-                <Button variant="secondary" disabled={pending} onClick={() => setStep(1)}>
+                <Button variant="secondary" className="w-full sm:w-auto" disabled={pending} onClick={() => setStep(1)}>
                   Batal
                 </Button>
               </div>

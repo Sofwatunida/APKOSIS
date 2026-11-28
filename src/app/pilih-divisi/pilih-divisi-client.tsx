@@ -82,24 +82,24 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 md:p-8 bg-slate-50 dark:bg-slate-950">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-x-hidden bg-slate-50 px-4 py-8 dark:bg-slate-950 sm:p-8">
       <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <ThemeToggle />
       </div>
 
       <div className="relative w-full max-w-2xl animate-fade-in">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+        <div className="mb-8 px-10 text-center sm:px-12">
+          <h1 className="break-words text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
             {selected
               ? formatDivisiLabel(selected.nomorDivisi, selected.namaDivisi)
               : "Pilih Divisi"}
           </h1>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 shadow-card p-6 md:p-8">
+        <div className="min-w-0 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 shadow-card p-5 sm:p-8">
           {selected ? (
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatDivisiLabel(selected.nomorDivisi, selected.namaDivisi)}
@@ -147,7 +147,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition dark:hover:text-slate-300"
+                    className="tap-target absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition dark:hover:text-slate-300 sm:pr-3.5"
                     aria-label={
                       showPassword ? "Sembunyikan password" : "Tampilkan password"
                     }
@@ -167,7 +167,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                   role="alert"
                 >
                   <span className="font-bold">⚠️</span>
-                  <span>{error}</span>
+                  <span className="min-w-0 break-words">{error}</span>
                 </div>
               )}
 
@@ -179,7 +179,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
           ) : (
             <div>
               {activeDivisiId && (
-                <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-50 px-4 py-3 dark:bg-emerald-900/20">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-50 px-4 py-3 dark:bg-emerald-900/20">
                   <p className="text-xs text-emerald-700 dark:text-emerald-300">
                     Anda sedang mengelola{" "}
                     <span className="font-semibold">
@@ -207,7 +207,7 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                   Belum ada data divisi.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3">
                   {divisi.map((d) => (
                     <button
                       key={d.id}
@@ -217,10 +217,10 @@ export function PilihDivisiClient({ divisi, activeDivisiId }: PilihDivisiClientP
                         setPassword("");
                         setError(null);
                       }}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition hover:border-brand-500 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-500 dark:hover:bg-slate-950"
+                      className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left transition hover:border-brand-500 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-500 dark:hover:bg-slate-950"
                     >
                       <span className="min-w-0">
-                        <span className="mt-0.5 block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <span className="mt-0.5 block break-words text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {formatDivisiLabel(d.nomorDivisi, d.namaDivisi)}
                         </span>
                       </span>

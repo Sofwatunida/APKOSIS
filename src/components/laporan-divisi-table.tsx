@@ -301,7 +301,7 @@ export function LaporanDivisiTable() {
           <div className="py-8 text-center text-xs text-slate-400">Memuat detail laporan...</div>
         ) : detail ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm min-[360px]:grid-cols-2">
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-slate-700 dark:bg-slate-900/60">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tanggal Laporan</p>
                 <p className="mt-0.5 font-bold text-slate-900 dark:text-white">{formatDate(detail.tanggal)}</p>
@@ -314,7 +314,7 @@ export function LaporanDivisiTable() {
 
             <div>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kegiatan Hari Ini</p>
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {detail.kegiatan_hari_ini}
               </div>
             </div>
@@ -327,11 +327,11 @@ export function LaporanDivisiTable() {
                     <div key={k.id} className="space-y-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs leading-relaxed dark:border-slate-700 dark:bg-slate-900/60">
                       <p className="flex items-start gap-1.5 font-semibold text-rose-700 dark:text-rose-400">
                         <span className="shrink-0">⚠️</span>
-                        <span>Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></span>
+                        <span className="min-w-0 break-words">Kendala: <span className="font-normal text-slate-800 dark:text-slate-200">{k.kendala}</span></span>
                       </p>
                       <p className="flex items-start gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
                         <span className="shrink-0">💡</span>
-                        <span>Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></span>
+                        <span className="min-w-0 break-words">Solusi: <span className="font-normal text-slate-800 dark:text-slate-200">{k.solusi}</span></span>
                       </p>
                     </div>
                   ))}
@@ -346,7 +346,7 @@ export function LaporanDivisiTable() {
             {detail.informasi_lain && (
               <div>
                 <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Informasi Lain</p>
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {detail.informasi_lain}
                 </div>
               </div>

@@ -893,7 +893,7 @@ function IconButton({
       disabled={disabled}
       title={title}
       aria-label={label}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 ${toneClass}`}
+      className={`tap-target inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition disabled:pointer-events-none disabled:opacity-50 dark:text-slate-400 ${toneClass}`}
     >
       {children}
     </button>

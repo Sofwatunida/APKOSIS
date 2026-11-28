@@ -954,6 +954,10 @@ Relationships: [
         };
         Returns: undefined;
       };
+      admin_period_delete: {
+        Args: { p_periode_id: string };
+        Returns: Json;
+      };
       admin_period_list_all: {
         Args: Record<PropertyKey, never>;
         Returns: Array<{

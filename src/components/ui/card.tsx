@@ -23,7 +23,7 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-200/80 bg-gradient-to-b from-slate-50/60 to-transparent px-5 py-4 dark:border-slate-800/80 dark:from-slate-800/40 ${className}`}
+      className={`flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-200/80 bg-gradient-to-b from-slate-50/60 to-transparent px-5 py-4 dark:border-slate-800/80 dark:from-slate-800/40 ${className}`}
     >
       <div className="flex min-w-0 items-center gap-3">
         {icon && (
@@ -32,7 +32,7 @@ export function CardHeader({
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
+          <h3 className="break-words text-base font-semibold tracking-tight text-slate-900 dark:text-white">
             {title}
           </h3>
           {subtitle && (
@@ -42,7 +42,7 @@ export function CardHeader({
           )}
         </div>
       </div>
-      {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
+      {action && <div className="flex min-w-0 flex-wrap items-center gap-2">{action}</div>}
     </div>
   );
 }
@@ -54,7 +54,7 @@ export function CardContent({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`p-5 sm:p-6 ${className}`}>{children}</div>;
+  return     <div className={`min-w-0 p-5 sm:p-6 ${className}`}>{children}</div>;
 }
 
 /** Judul halaman yang konsisten untuk seluruh role. */
@@ -66,13 +66,13 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+    <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           {title}
         </h1>
       </div>
-      {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
+      {action && <div className="flex min-w-0 flex-wrap items-center gap-2">{action}</div>}
     </div>
   );
 }

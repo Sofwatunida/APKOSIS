@@ -282,7 +282,7 @@ async function handleSave() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Deskripsi / Tugas Pokok Divisi
                 </p>
-                <div className="mt-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <div className="mt-2 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {divisi.deskripsi || (
                     <span className="text-slate-400 italic">Belum ada deskripsi divisi.</span>
                   )}

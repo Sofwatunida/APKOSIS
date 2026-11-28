@@ -103,14 +103,14 @@ export function RichTextEditor({
   }
 
   const baseBtn =
-    "inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-slate-300 dark:hover:bg-slate-700/70 dark:hover:text-white";
+    "tap-target inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-200/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-slate-300 dark:hover:bg-slate-700/70 dark:hover:text-white";
   const activeBtn = "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-white";
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-300 bg-white transition-shadow focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/20 dark:border-slate-600 dark:bg-slate-900 dark:focus-within:border-brand-500 dark:focus-within:ring-brand-500/20">
       <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-700 dark:bg-slate-800/60">
         <Select
-          wrapperClassName="w-auto"
+          wrapperClassName="w-auto max-w-[9rem] sm:max-w-none"
           className="h-8 w-auto rounded-[10px] px-2.5 py-0 pr-8 text-xs font-medium"
           value={active.block}
           onChange={(e) => setBlock(e.target.value as Heading)}

@@ -366,11 +366,11 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 })}
               />
               {/* Filter Jenis Tabs */}
-              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+              <div className="flex w-full flex-wrap rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 sm:inline-flex sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setFilterJenis("all")}
-                  className={`rounded-lg px-3 py-1 transition ${
+                  className={`min-h-11 flex-1 px-2.5 py-1 transition sm:min-h-0 sm:flex-none sm:px-3 ${
                     filterJenis === "all" ? "bg-white text-slate-900 shadow-xs font-semibold dark:bg-slate-900 dark:text-white" : "hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
@@ -379,7 +379,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 <button
                   type="button"
                   onClick={() => setFilterJenis("pemasukan")}
-                  className={`rounded-lg px-3 py-1 transition ${
+                  className={`min-h-11 flex-1 px-2.5 py-1 transition sm:min-h-0 sm:flex-none sm:px-3 ${
                     filterJenis === "pemasukan" ? "bg-emerald-50 text-emerald-700 shadow-xs font-semibold dark:bg-emerald-900/20 dark:text-emerald-400" : "hover:text-emerald-700 dark:hover:text-emerald-400"
                   }`}
                 >
@@ -388,7 +388,7 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 <button
                   type="button"
                   onClick={() => setFilterJenis("pengeluaran")}
-                  className={`rounded-lg px-3 py-1 transition ${
+                  className={`min-h-11 flex-1 px-2.5 py-1 transition sm:min-h-0 sm:flex-none sm:px-3 ${
                     filterJenis === "pengeluaran" ? "bg-rose-50 text-rose-700 shadow-xs font-semibold dark:bg-rose-900/20 dark:text-rose-400" : "hover:text-rose-700 dark:hover:text-rose-400"
                   }`}
                 >
@@ -396,9 +396,9 @@ export function KeuanganClient({ profile }: { profile: Profile }) {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 w-36 text-xs" />
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 w-36 text-xs" />
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 min-w-0 flex-1 text-xs sm:w-36 sm:flex-none" />
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 min-w-0 flex-1 text-xs sm:w-36 sm:flex-none" />
               </div>
               {/* Search Bar (Requirement 5) */}
               <div className="relative w-full sm:w-60">

@@ -93,10 +93,10 @@ export default async function AdminDashboard() {
                     key={d.id}
                     className="flex items-center justify-between gap-3"
                   >
-                    <span>
+                    <span className="min-w-0 break-words">
                       {formatDivisiLabel(d.nomor_divisi, d.nama_divisi)}
                     </span>
-                    <Badge color="slate">Terdaftar</Badge>
+                    <Badge color="slate" className="shrink-0">Terdaftar</Badge>
                   </li>
                 ))}
               </ul>

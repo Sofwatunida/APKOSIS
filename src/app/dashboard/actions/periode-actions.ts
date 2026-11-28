@@ -19,6 +19,33 @@ export interface PeriodActionResult {
   periodeId?: string;
 }
 
+function pesanHapusPeriode(message: string, code?: string): string {
+  const teks = pesanDb(message);
+  const lower = teks.toLowerCase();
+  const kode = (code ?? "").toUpperCase();
+
+  if (lower.includes("periode tidak ditemukan")) return teks;
+  if (lower.includes("periode aktif tidak dapat dihapus")) return teks;
+  if (lower.includes("minimal harus ada satu periode")) return teks;
+
+  if (
+    kode === "PGRST202" ||
+    kode === "42883" ||
+    lower.includes("could not find the function") ||
+    lower.includes("does not exist") ||
+    lower.includes("function public.admin_period_delete")
+  ) {
+    return "Fitur hapus periode belum aktif di database. Jalankan migration 20261127000000_admin_period_delete.sql di Supabase.";
+  }
+  if (kode === "42501" || lower.includes("permission denied") || lower.includes("hanya super admin")) {
+    return "Hanya Super Admin yang dapat menghapus periode.";
+  }
+  if (kode === "23503" || lower.includes("foreign key constraint") || lower.includes("violates foreign key")) {
+    return "Periode masih terhubung dengan data lain. Hubungi administrator sebelum menghapusnya.";
+  }
+  return teks;
+}
+
 /**
  * Adapter untuk `<form action={...}>` yang wajib return `void`.
  *
@@ -196,6 +223,57 @@ export async function archivePeriodeAction(formData: FormData): Promise<PeriodAc
   await writeAuditLog({ action: "arsipkan_periode", targetType: "periode", targetId: periodeId, success: true });
   revalidatePath("/dashboard/superadmin/periode");
   return ok("Periode diarsipkan. Datanya tetap bisa dibaca.");
+}
+
+export async function deletePeriodeAction(formData: FormData): Promise<PeriodActionResult> {
+  const auth = await requireSuperAdmin();
+  if ("error" in auth) return auth.error;
+
+  const periodeId = String(formData.get("periode_id") ?? "");
+  if (!periodeId) return fail("Periode tidak valid.");
+
+  const { data: current } = await auth.supabase
+    .from("periods")
+    .select("nama_periode")
+    .eq("id", periodeId)
+    .maybeSingle();
+
+  const { data, error } = await auth.supabase.rpc("admin_period_delete", {
+    p_periode_id: periodeId,
+  });
+
+  const detail = current?.nama_periode ?? periodeId;
+  if (error) {
+    await writeAuditLog({
+      action: "hapus_periode",
+      targetType: "periode",
+      targetId: periodeId,
+      detail,
+      success: false,
+    });
+    return fail(pesanHapusPeriode(error.message, error.code));
+  }
+
+  const summary = (data ?? {}) as Record<string, unknown>;
+  const total = Object.entries(summary)
+    .filter(([key]) => key !== "periode")
+    .reduce((sum, [, value]) => sum + (Number(value) || 0), 0);
+  const nama = typeof summary.periode === "string" ? summary.periode : detail;
+
+  await writeAuditLog({
+    action: "hapus_periode",
+    targetType: "periode",
+    targetId: periodeId,
+    detail: nama,
+    success: true,
+  });
+
+  revalidatePath("/dashboard/superadmin/periode");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/superadmin/akun");
+  revalidatePath("/dashboard/superadmin/backup");
+  revalidatePath("/dashboard/superadmin/laporan");
+  return ok(`Periode ${nama} dihapus. ${total} baris data terkait ikut dihapus.`);
 }
 
 export async function updatePeriodeAction(formData: FormData): Promise<PeriodActionResult> {

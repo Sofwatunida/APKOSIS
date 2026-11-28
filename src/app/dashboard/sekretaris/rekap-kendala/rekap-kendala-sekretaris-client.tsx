@@ -64,7 +64,7 @@ function DivisiSelector({ divisi }: { divisi: DivisiRekapOpsi[] }) {
           {divisi.length === 0 ? (
             <EmptyState title="Belum ada data divisi." />
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3">
               {divisi.map((d) => (
                 <Link
                   key={d.id}

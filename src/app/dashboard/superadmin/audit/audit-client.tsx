@@ -136,12 +136,12 @@ export function AuditClient({
             <option value="fail">Gagal</option>
           </Select>
         </Field>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
           <Field label="Dari tanggal">
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="min-w-0 text-xs" />
           </Field>
           <Field label="Sampai">
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="min-w-0 text-xs" />
           </Field>
         </div>
       </div>

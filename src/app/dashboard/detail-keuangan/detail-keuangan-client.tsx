@@ -530,7 +530,7 @@ export function DetailKeuanganClient({
           title="Rincian Transaksi"
           icon={<Wallet className="h-5 w-5" />}
           action={
-            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+            <div className="flex w-full flex-wrap items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 sm:inline-flex sm:w-auto">
               {(
                 [
                   ["all", "Semua"],
@@ -542,7 +542,7 @@ export function DetailKeuanganClient({
                   key={val}
                   type="button"
                   onClick={() => setFilterJenis(val)}
-                  className={`rounded-lg px-3 py-1 transition ${
+                  className={`min-h-11 px-2.5 py-1 transition sm:min-h-0 sm:px-3 ${
                     filterJenis === val
                       ? "bg-white font-semibold text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white"
                       : "hover:text-slate-900 dark:hover:text-white"
@@ -568,7 +568,7 @@ export function DetailKeuanganClient({
             <div className="space-y-0">
               {grouped.map((g) => (
                 <div key={g.label}>
-                  <div className="sticky top-0 z-[1] border-y border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                  <div className="sticky top-[var(--apkosis-header-offset)] z-[1] border-y border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
                     {g.label}
                   </div>
                   <TableWrap minWidth={semuaDivisi ? 1120 : 980}>

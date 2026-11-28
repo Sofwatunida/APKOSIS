@@ -76,7 +76,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                 return (
                   <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
+                      <h3 className="min-w-0 break-words font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
                       <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:bg-brand-900/20 dark:text-brand-400">
                         Unggulan
                       </span>
@@ -94,7 +94,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                     {p.file_name && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                         <span>📎</span>
-                        <span className="truncate max-w-[220px]">{p.file_name}</span>
+                        <span className="min-w-0 max-w-full truncate">{p.file_name}</span>
                       </p>
                     )}
                     {(cleanDesc || p.file_path) && (
@@ -103,7 +103,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => setViewUnggulan({ title: p.nama_program ?? "Program Unggulan", desc: cleanDesc })}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                            className="tap-target rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                           >
                             Lihat
                           </button>
@@ -112,7 +112,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                           <button
                             type="button"
                             onClick={() => handleDownloadFile(p)}
-                            className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
+                            className="tap-target rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
                           >
                             Download File
                           </button>
@@ -136,7 +136,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {items.map((p) => (
                 <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                  <h3 className="font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
+                  <h3 className="min-w-0 break-words font-semibold text-slate-900 dark:text-white">{p.nama_program}</h3>
                   {p.deskripsi && (
                     <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{p.deskripsi}</p>
                   )}
@@ -145,7 +145,7 @@ export function ProgramKerjaReadOnly({ profile }: { profile: Profile }) {
                       <button
                         type="button"
                         onClick={() => handleDownloadFile(p)}
-                        className="rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
+                        className="tap-target rounded-lg border border-brand-500 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400"
                       >
                         Download File
                       </button>

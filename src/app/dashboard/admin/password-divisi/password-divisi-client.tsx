@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,11 +9,13 @@ import {
   KeyRound,
   Loader2,
   Save,
+  Search,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, PageHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { formatDivisiLabel } from "@/lib/divisi-options";
@@ -65,6 +67,20 @@ export function PasswordDivisiClient({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [baruDisimpan, setBaruDisimpan] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const visible = useMemo(() => {
+    if (!debounced) return divisi;
+    return divisi.filter((d) =>
+      label(d.nomorDivisi, d.namaDivisi).toLowerCase().includes(debounced)
+    );
+  }, [debounced, divisi]);
 
   function mintaKonfirmasi(row: DivisiPasswordRow) {
     const value = values[row.id] ?? "";
@@ -170,13 +186,27 @@ export function PasswordDivisiClient({
           icon={<KeyRound className="h-4 w-4" />}
         />
         <CardContent>
+          <div className="relative mb-4 w-full max-w-none sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama divisi..."
+              aria-label="Cari divisi"
+              className="pl-9"
+            />
+          </div>
           {divisi.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
               Belum ada data divisi.
             </p>
+          ) : visible.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              Tidak ada divisi yang cocok dengan pencarian.
+            </p>
           ) : (
             <ul className="space-y-4">
-              {divisi.map((row) => {
+              {visible.map((row) => {
                 const meta = status[row.id] ?? row;
                 const value = values[row.id] ?? "";
                 const isRevealed = Boolean(revealed[row.id]);
@@ -232,14 +262,14 @@ export function PasswordDivisiClient({
                                 prev === row.id ? null : prev
                               );
                             }}
-                            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-brand-500 dark:focus:ring-brand-500/10"
+                            className="h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-10 pr-11 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs transition-all duration-150 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-brand-500 dark:focus:ring-brand-500/10"
                           />
                           <button
                             type="button"
                             onClick={() =>
                               setRevealed((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
                             }
-                            className="absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                            className="tap-target absolute inset-y-0 right-0 flex h-full w-10 items-center justify-center text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
                             aria-label={
                               isRevealed
                                 ? `Sembunyikan password ${label(row.nomorDivisi, row.namaDivisi)}`
@@ -254,11 +284,11 @@ export function PasswordDivisiClient({
                           </button>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <Button
                             type="submit"
                             size="sm"
-                            className="h-10 px-3.5 text-sm"
+                            className="h-10 w-full px-3.5 text-sm sm:w-auto"
                             disabled={isSaving}
                           >
                             {isSaving ? (

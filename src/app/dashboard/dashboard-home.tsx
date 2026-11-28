@@ -286,11 +286,11 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
 
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md dark:border-white/15 dark:bg-white/10 dark:text-slate-100">
+            <div className="mb-3 flex w-full max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md dark:border-white/15 dark:bg-white/10 dark:text-slate-100 sm:inline-flex sm:w-auto">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500 dark:bg-brand-300" />
-              <span className="truncate">Divisi OSIS • Periode {periodeLabel}</span>
+              <span className="min-w-0 truncate">Divisi OSIS • Periode {periodeLabel}</span>
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
+            <h1 className="break-words text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
               {divisi
                 ? formatDivisiLabel(divisi.nomor_divisi, divisi.nama_divisi)
                 : "Dashboard Divisi"}
@@ -304,7 +304,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
               href="/dashboard/laporan"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] dark:border-white/20 dark:bg-white dark:hover:bg-slate-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] dark:border-white/20 dark:bg-white dark:hover:bg-slate-100"
             >
               <Plus className="h-4 w-4 text-slate-500" />
               <span>{laporanToday ? "Buka Laporan Hari Ini" : "Buat Laporan Hari Ini"}</span>
@@ -454,7 +454,7 @@ function DivisionDashboard({ profile }: { profile: Profile }) {
       >
         {detailReport && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm min-[360px]:grid-cols-2">
               <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900/60">
                 <p className="text-xs text-slate-400">Tanggal Laporan</p>
                 <p className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(detailReport.tanggal)}</p>
